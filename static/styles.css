@@ -70,3 +70,16 @@
 
 /* Ocultar controles de reintento mientras no corresponden. */
 [hidden]{display:none!important}
+
+/* Recurso compartible para primera campaña orgánica */
+.promo-section{padding-top:20px;padding-bottom:65px}
+.promo-panel{display:flex;align-items:center;justify-content:space-between;gap:35px;background:radial-gradient(ellipse at 78% 25%,#31523b,#192c2f 68%);border:1px solid #59735e;border-radius:16px;padding:36px 40px}
+.promo-copy{max-width:720px}
+.promo-copy h2{font:700 clamp(27px,4vw,41px)/1.18 "Space Grotesk",sans-serif;letter-spacing:-1px;margin:10px 0}
+.promo-copy p{font-size:14px;line-height:1.85;color:#c7d7d0;margin:0 0 22px}
+.promo-actions{display:flex;flex-wrap:wrap;gap:12px}
+.promo-actions .btn{font:700 13px "DM Sans",sans-serif;cursor:pointer;text-align:center}
+.promo-stamp{width:154px;height:154px;border:2px solid #baff80;border-radius:20px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;transform:rotate(8deg)}
+.promo-stamp span{color:#bdff86;font:700 84px/.85 "Space Grotesk",sans-serif}
+.promo-stamp small{font-weight:800;font-size:11px;letter-spacing:1px;text-align:center;color:#d4f1c4;margin-top:13px}
+@media(max-width:740px){.promo-panel{padding:28px 23px;gap:20px}.promo-stamp{display:none}.promo-actions{flex-direction:column}.promo-actions .btn{width:100%}}
