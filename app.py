@@ -131,6 +131,10 @@ async def send_contact(request: Request, background: BackgroundTasks):
     if string("website"):
         return JSONResponse({"ok": True}, status_code=201)
 
+    # Never accept real customer data without durable storage configured.
+    if os.getenv("CONTACT_STORAGE_READY", "0") != "1":
+        raise HTTPException(503, detail="El formulario está en preparación. Pronto habilitaremos las consultas.")
+
     name, email = string("name"), string("email")
     org, category, message = string("organization"), string("category"), string("message")
     if not (2 <= len(name) <= 100 and len(email) <= 180 and EMAIL.fullmatch(email)
