@@ -59,6 +59,9 @@ form?.addEventListener('submit',async event=>{
  const organization=String(fd.get('organization')||'').trim();
  const category=String(fd.get('category')||'').trim();
  const message=String(fd.get('message')||'').trim();
+ const deadline=String(fd.get('deadline')||'').trim();
+ const stage=String(fd.get('stage')||'').trim();
+ const budget=String(fd.get('budget')||'').trim();
  const honey=String(fd.get('website')||'').trim();
  if(honey)return;
  if(!name||name.length<2||name.length>100||!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)||!category||message.length<15||message.length>5000||!form.elements.namedItem('consent').checked){
@@ -72,7 +75,7 @@ form?.addEventListener('submit',async event=>{
    method:'POST',
    headers:{'Content-Type':'application/json','Accept':'application/json'},
    body:JSON.stringify({
-    name,email,organization,category,message,
+    name,email,organization,category,message,deadline,stage,budget,
     _subject:'FLUYNOVA | Nueva consulta: '+category,
     _replyto:email,
     _template:'table',
