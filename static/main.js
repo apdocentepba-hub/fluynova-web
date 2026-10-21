@@ -166,3 +166,12 @@ alternateSend?.addEventListener('click',()=>{
  if(error){feedback(error,'error');return;}
  HTMLFormElement.prototype.submit.call(form);
 });
+
+
+// Compartir de forma voluntaria: no accede a contactos ni envía mensajes sin elección.
+const shareFluynova=document.getElementById('share-fluynova');
+shareFluynova?.addEventListener('click',()=>{
+ const url='https://fluynova-web.onrender.com/guia-automatizacion/?utm_source=whatsapp&utm_medium=referral&utm_campaign=lanzamiento';
+ const message='¿Tenés un negocio o conocés a alguien que pierde tiempo con planillas y tareas repetitivas? FLUYNOVA publicó una guía gratuita con ideas para automatizarlas. '+url;
+ window.open('https://api.whatsapp.com/send?text='+encodeURIComponent(message),'_blank','noopener,noreferrer');
+});
