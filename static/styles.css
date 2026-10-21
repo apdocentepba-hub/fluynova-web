@@ -67,3 +67,6 @@
 .calc-action:hover,.calc-action:focus-visible{background:#bcff85;color:#10261a}
 @media(max-width:920px){.time-calc-card{grid-template-columns:1fr}.time-calc-result{border-left:0;border-top:1px solid #405c51}}
 @media(max-width:580px){.time-calc-fields{grid-template-columns:1fr;padding:22px}.time-calc-result{padding:22px}}
+
+/* Ocultar controles de reintento mientras no corresponden. */
+[hidden]{display:none!important}
