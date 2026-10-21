@@ -98,7 +98,7 @@ form?.addEventListener('submit',async event=>{
  const deadline=String(fd.get('deadline')||'').trim();
  const stage=String(fd.get('stage')||'').trim();
  const budget=String(fd.get('budget')||'').trim();
- const honey=String(fd.get('website')||'').trim();
+ const honey=String(fd.get('_honey')||'').trim();
  if(honey)return;
  if(!name||name.length<2||name.length>100||!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)||!category||message.length<15||message.length>5000||!form.elements.namedItem('consent').checked){
   feedback('Completá los campos obligatorios, un correo válido y una descripción de al menos 15 caracteres.','error');return;
