@@ -1,20 +1,34 @@
 # FLUYNOVA
 
-Sitio de automatización de procesos y desarrollo de software a medida.
+Web pública para automatización de procesos, integraciones y desarrollo de software a medida.
 
-Este repositorio incluye la landing page, formulario de consultas, API en FastAPI y panel privado para gestionar mensajes.
+## Web pública
+
+https://fluynova-web.onrender.com
+
+## Recepción de consultas
+
+- Correo oficial de consultas: **martin.nicolas.podubinio@gmail.com** (conectado y verificado).
+- En la web existe un enlace `mailto:` que permite escribir directamente a esa cuenta y funciona sin servidor de correo.
+- La recepción automática vía **FormSubmit** está implementada pero **deshabilitada** hasta validar el correo receptor. El estado visible se consulta en `GET /api/config`.
+- Para activar el correo por primera vez, usar la página temporal `/validar-notificaciones-fluynova.html`, pulsar el botón de envío de prueba y seguir el enlace de verificación que llegue a Gmail. Tras esa confirmación, cambiar `FORMSUBMIT_ACTIVE=1` en el servicio Render. **No habilitarlo antes de verificar la recepción**.
+- El formulario envía una solicitud HTTPS a FormSubmit; `_subject` comienza con `FLUYNOVA | Nueva consulta:`, `_replyto` contiene el correo de quien consulta. FormSubmit conserva un archivo de formularios por 30 días (según su documentación).
+- El panel `/admin` y la API `/api/contact` son prototipos anteriores con SQLite local; **no habilitar `CONTACT_STORAGE_READY` en Render gratuito** porque el disco es efímero. No se guardan en este panel las consultas enviadas por FormSubmit. Para gestionar consultas desde el panel, implementar una base externa persistente y sincronizarla con los formularios.
 
 ## Ejecución local
 
-```bash
+```sh
 pip install -r requirements.txt
 uvicorn app:app --reload
 ```
 
-Abrí `http://localhost:8000`. Panel privado en `/admin`, protegido por `ADMIN_USER` y `ADMIN_PASSWORD` de al menos 12 caracteres.
+Abrí `http://127.0.0.1:8000`. Las variables de ejemplo figuran en `.env.example`. Para desarrollo local puede usarse SQLite, no para persistencia en Render gratuito.
 
-## Publicación
+## Seguridad y publicación
 
-Requiere un servidor con Python y HTTPS, además de almacenamiento persistente para SQLite (`DATA_DIR`). GitHub Pages puede mostrar un sitio estático, pero **no** ejecuta la API de este proyecto ni recibe formularios. Configurá las variables de `.env.example` en tu proveedor antes de desplegar.
+- No subir secretos ni contraseñas a GitHub.
+- Configurar `ADMIN_USER` y `ADMIN_PASSWORD` como secretos en Render (no mostrarlos ni copiarlos al código).
+- El servicio gratuito Render bloquea conexiones SMTP salientes en puertos 25, 465 y 587: por eso no se emplea SMTP.
+- Completar identificación legal de la persona responsable, conservar la política de privacidad actualizada y revisar el proveedor de formularios antes de difusión comercial.
 
-**Estado:** versión inicial. Revisar aviso legal, datos del responsable, políticas de conservación y configuración de correo antes de publicar.
+Estado: landing publicada, contacto directo disponible, formulario automático pendiente de verificación.
