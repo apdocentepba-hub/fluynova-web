@@ -12,6 +12,46 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
+      - name: Descargar la versión publicada en GitHub
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Esperar a que Render publique los archivos actualizados
+        shell: bash
+        run: |
+          set -euo pipefail
+          archivos="$(git diff --name-only HEAD^ HEAD -- 'static/' || true)"
+          if [ -z "$archivos" ]; then
+            echo "No se modificó contenido público."
+            exit 0
+          fi
+          for intento in $(seq 1 30); do
+            pendientes=0
+            while IFS= read -r archivo; do
+              [ -z "$archivo" ] && continue
+              [ -f "$archivo" ] || continue
+              relativo="${archivo#static/}"
+              if [ "$relativo" = "index.html" ]; then
+                ruta="/"
+              elif [[ "$relativo" == */index.html ]]; then
+                ruta="/${relativo%index.html}"
+              else
+                ruta="/$relativo"
+              fi
+              codigo="$(curl -fsSL --max-time 12 --output /tmp/fluynova-publicado "https://fluynova-web.onrender.com$ruta" && echo OK || true)"
+              if [ "$codigo" != "OK" ] || ! cmp -s "$archivo" /tmp/fluynova-publicado; then
+                pendientes=$((pendientes + 1))
+              fi
+            done <<< "$archivos"
+            if [ "$pendientes" -eq 0 ]; then
+              echo "Render publicó el contenido actualizado; se puede notificar."
+              exit 0
+            fi
+            echo "Esperando despliegue de Render: $pendientes archivo(s) aún pendientes. Intento $intento."
+            sleep 8
+          done
+          echo "Render no publicó la misma versión dentro de la ventana de comprobación." >&2
+          exit 1
       - name: Confirmar que la web publicó el archivo de verificación
         shell: bash
         run: |
