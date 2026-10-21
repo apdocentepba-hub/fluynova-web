@@ -86,44 +86,89 @@ document.querySelectorAll('[data-topic]').forEach(link=>link.addEventListener('c
  if(!msg.value)msg.value='Me interesa: '+link.dataset.topic+'. Quisiera saber cómo se podría implementar. ';
 }));
 
-form?.addEventListener('submit',async event=>{
- event.preventDefault();
- if(!contactEnabled){feedback('El envío automático todavía no está activo. Escribinos directamente al correo indicado debajo.','error');return;}
+const alternateSend=document.getElementById('alternate-send');
+let pendingLead=null;
+
+function getLeadFromForm(){
  const fd=new FormData(form);
- const name=String(fd.get('name')||'').trim();
- const email=String(fd.get('email')||'').trim();
- const organization=String(fd.get('organization')||'').trim();
- const category=String(fd.get('category')||'').trim();
- const message=String(fd.get('message')||'').trim();
- const deadline=String(fd.get('deadline')||'').trim();
- const stage=String(fd.get('stage')||'').trim();
- const budget=String(fd.get('budget')||'').trim();
- const honey=String(fd.get('_honey')||'').trim();
- if(honey)return;
- if(!name||name.length<2||name.length>100||!/^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$/.test(email)||!category||message.length<15||message.length>5000||!form.elements.namedItem('consent').checked){
-  feedback('Completá los campos obligatorios, un correo válido y una descripción de al menos 15 caracteres.','error');return;
+ const str=k=>String(fd.get(k)||'').trim();
+ return {
+  name:str('name'),email:str('email'),organization:str('organization'),
+  category:str('category'),message:str('message'),deadline:str('deadline'),
+  stage:str('stage'),budget:str('budget'),website:str('_honey'),
+  consent:form.elements.namedItem('consent').checked
+ };
+}
+function validateLead(v){
+ return v.name.length>=2&&v.name.length<=100
+  &&/^[^\\s@<>]+@[^\\s@<>]+\\.[^\\s@<>]+$/.test(v.email)
+  &&v.category&&v.message.length>=15&&v.message.length<=5000&&v.consent;
+}
+async function deliverLead(v,method){
+ let url,body;
+ if(method==='server'){
+  url='/api/lead';
+  body=v;
+ }else{
+  url='https://formsubmit.co/ajax/'+encodeURIComponent(CONTACT_EMAIL);
+  body={
+   name:v.name,email:v.email,organization:v.organization,category:v.category,
+   message:v.message,plazo:v.deadline,etapa:v.stage,presupuesto:v.budget,
+   _subject:'FLUYNOVA | Nueva consulta: '+v.category,
+   _replyto:v.email,_template:'table',_honey:v.website
+  };
  }
+ const response=await fetch(url,{
+  method:'POST',
+  headers:{'Content-Type':'application/json','Accept':'application/json'},
+  body:JSON.stringify(body)
+ });
+ let result;
+ try{result=await response.json();}catch{throw new Error('El servidor no devolvió una confirmación válida.');}
+ const accepted=method==='server'?(result.ok===true):(result.success===true||result.success==='true');
+ if(!response.ok||!accepted){
+  throw new Error(String(result.detail||result.message||'El servicio rechazó la consulta.').slice(0,200));
+ }
+ return true;
+}
+async function sendLead(v,method){
  sendButton.disabled=true;
  sendButton.textContent='Enviando consulta…';
+ if(alternateSend)alternateSend.hidden=true;
  status.className='form-status';
  try{
-  const response=await fetch('/api/lead',{
-   method:'POST',
-   headers:{'Content-Type':'application/json','Accept':'application/json'},
-   body:JSON.stringify({
-    name,email,organization,category,message,deadline,stage,budget,website:honey,consent:true
-   })
-  });
-  const result=await response.json();
-  if(!response.ok||result.ok!==true){
-   throw new Error(typeof result.detail==='string'?result.detail:'No se pudo confirmar el envío.');
-  }
-  feedback('El formulario fue recibido por el servicio de envíos. Te responderemos por correo.','success');
+  await deliverLead(v,method);
+  pendingLead=null;
+  feedback('El proveedor confirmó la recepción del formulario. Te responderemos por correo.','success');
   form.reset();
  }catch(error){
-  feedback('No pudimos confirmar el envío. '+(error?.message||'')+' También podés escribirnos a '+CONTACT_EMAIL+'.','error');
+  feedback('No se pudo confirmar el envío. '+(error?.message||'Problema de conexión.')+' Si el problema continúa, escribinos al correo indicado abajo.','error');
+  if(method==='direct'){
+   pendingLead=v;
+   if(alternateSend)alternateSend.hidden=false;
+  }else{
+   pendingLead=null;
+  }
  }finally{
   sendButton.disabled=false;
   sendButton.innerHTML='Enviar mi consulta <span aria-hidden="true">↗</span>';
  }
+}
+form?.addEventListener('submit',event=>{
+ event.preventDefault();
+ if(!contactEnabled){
+  feedback('El envío automático todavía no está activo. Usá el correo de contacto indicado debajo.','error');
+  return;
+ }
+ const lead=getLeadFromForm();
+ if(lead.website)return;
+ if(!validateLead(lead)){
+  feedback('Completá nombre, correo válido, categoría, descripción (mínimo 15 caracteres) y consentimiento.','error');
+  return;
+ }
+ sendLead(lead,'direct');
+});
+alternateSend?.addEventListener('click',()=>{
+ if(!pendingLead||!contactEnabled)return;
+ sendLead(pendingLead,'server');
 });
