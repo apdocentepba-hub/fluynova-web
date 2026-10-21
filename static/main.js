@@ -75,7 +75,7 @@ form?.addEventListener('submit',async event=>{
    method:'POST',
    headers:{'Content-Type':'application/json','Accept':'application/json'},
    body:JSON.stringify({
-    name,email,organization,category,message,deadline,stage,budget,
+    name,email,organization,category,message,plazo:deadline,etapa:stage,presupuesto:budget,
     _subject:'FLUYNOVA | Nueva consulta: '+category,
     _replyto:email,
     _template:'table',
