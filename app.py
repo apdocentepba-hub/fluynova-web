@@ -378,39 +378,4 @@ def robots():
     return Response(rules, media_type="text/plain")
 
 
-# One-time diagnostic, switched off by default. Remove after verifying.
-if os.getenv("FLUYNOVA_VERIFY_RELAY_ONCE", "0") == "1":
-    import json as _verify_json
-    import threading as _verify_threading
-    import urllib.request as _verify_urllib
-
-    def _verify_single_lead():
-        time.sleep(8)
-        body = {
-            "name": "FLUYNOVA QA nuevo formulario",
-            "email": "martin.nicolas.podubinio@gmail.com",
-            "organization": "FLUYNOVA",
-            "category": "Automatizar tareas",
-            "message": "PRUEBA TECNICA NUEVA DEL SERVIDOR. Verificacion del formulario interno /api/lead. No es un cliente; no responder.",
-            "deadline": "Sin definir",
-            "stage": "Es una idea",
-            "budget": "Necesito una estimación",
-            "website": "",
-            "consent": True
-        }
-        try:
-            port = os.getenv("PORT", "10000")
-            req = _verify_urllib.Request(
-                "http://127.0.0.1:" + port + "/api/lead",
-                data=_verify_json.dumps(body).encode("utf-8"),
-                headers={"Content-Type": "application/json", "Origin": "https://fluynova-web.onrender.com"},
-                method="POST")
-            with _verify_urllib.urlopen(req, timeout=25) as result:
-                print("FLUYNOVA_RELAY_TEST", result.status,
-                      result.read(400).decode("utf-8", errors="replace"), flush=True)
-        except Exception as err:
-            print("FLUYNOVA_RELAY_TEST_FAILED", type(err).__name__, str(err)[:180], flush=True)
-
-    _verify_threading.Thread(target=_verify_single_lead, daemon=True).start()
-
 app.mount("/", StaticFiles(directory=STATIC, html=True), name="static")
