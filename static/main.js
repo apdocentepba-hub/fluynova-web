@@ -27,7 +27,7 @@ async function loadContactAvailability(){
   const res=await fetch('/api/config',{cache:'no-store'});
   if(!res.ok)throw new Error('No se pudo verificar la configuración');
   const info=await res.json();
-  contactEnabled=info.contact_enabled===true&&info.contact_method==='server_proxy';
+  contactEnabled=info.contact_enabled===true&&info.contact_method==='formsubmit';
   if(!contactEnabled){
    sendButton.textContent='Formulario en preparación';
    feedback('El envío automático está pendiente de verificación. Por ahora podés escribirnos directamente al correo indicado abajo.','error');
@@ -88,8 +88,7 @@ document.querySelectorAll('[data-topic]').forEach(link=>link.addEventListener('c
 
 const alternateSend=document.getElementById('alternate-send');
 let pendingLead=null;
-
-function getLeadFromForm(){
+function currentLead(){
  const fd=new FormData(form);
  const str=k=>String(fd.get(k)||'').trim();
  return {
@@ -99,76 +98,62 @@ function getLeadFromForm(){
   consent:form.elements.namedItem('consent').checked
  };
 }
-function validateLead(v){
+function validLead(v){
  return v.name.length>=2&&v.name.length<=100
   &&/^[^\\s@<>]+@[^\\s@<>]+\\.[^\\s@<>]+$/.test(v.email)
   &&v.category&&v.message.length>=15&&v.message.length<=5000&&v.consent;
 }
-async function deliverLead(v,method){
- let url,body;
- if(method==='server'){
-  url='/api/lead';
-  body=v;
- }else{
-  url='https://formsubmit.co/ajax/'+encodeURIComponent(CONTACT_EMAIL);
-  body={
-   name:v.name,email:v.email,organization:v.organization,category:v.category,
-   message:v.message,plazo:v.deadline,etapa:v.stage,presupuesto:v.budget,
-   _subject:'FLUYNOVA | Nueva consulta: '+v.category,
-   _replyto:v.email,_template:'table',_honey:v.website
-  };
- }
- const response=await fetch(url,{
+async function deliverDirect(v){
+ const body={
+  name:v.name,email:v.email,organization:v.organization,category:v.category,
+  message:v.message,plazo:v.deadline,etapa:v.stage,presupuesto:v.budget,
+  _subject:'FLUYNOVA | Nueva consulta: '+v.category,
+  _replyto:v.email,_template:'table',_honey:v.website
+ };
+ const response=await fetch('https://formsubmit.co/ajax/'+encodeURIComponent(CONTACT_EMAIL),{
   method:'POST',
   headers:{'Content-Type':'application/json','Accept':'application/json'},
   body:JSON.stringify(body)
  });
  let result;
- try{result=await response.json();}catch{throw new Error('El servidor no devolvió una confirmación válida.');}
- const accepted=method==='server'?(result.ok===true):(result.success===true||result.success==='true');
- if(!response.ok||!accepted){
-  throw new Error(String(result.detail||result.message||'El servicio rechazó la consulta.').slice(0,200));
- }
- return true;
-}
-async function sendLead(v,method){
- sendButton.disabled=true;
- sendButton.textContent='Enviando consulta…';
- if(alternateSend)alternateSend.hidden=true;
- status.className='form-status';
- try{
-  await deliverLead(v,method);
-  pendingLead=null;
-  feedback('El proveedor confirmó la recepción del formulario. Te responderemos por correo.','success');
-  form.reset();
- }catch(error){
-  feedback('No se pudo confirmar el envío. '+(error?.message||'Problema de conexión.')+' Si el problema continúa, escribinos al correo indicado abajo.','error');
-  if(method==='direct'){
-   pendingLead=v;
-   if(alternateSend)alternateSend.hidden=false;
-  }else{
-   pendingLead=null;
-  }
- }finally{
-  sendButton.disabled=false;
-  sendButton.innerHTML='Enviar mi consulta <span aria-hidden="true">↗</span>';
+ try{result=await response.json();}catch{throw new Error('El proveedor no devolvió una confirmación válida.');}
+ if(!response.ok||!(result.success===true||result.success==='true')){
+  throw new Error(String(result.message||'El proveedor rechazó la consulta.').slice(0,200));
  }
 }
-form?.addEventListener('submit',event=>{
+form?.addEventListener('submit',async event=>{
  event.preventDefault();
  if(!contactEnabled){
   feedback('El envío automático todavía no está activo. Usá el correo de contacto indicado debajo.','error');
   return;
  }
- const lead=getLeadFromForm();
- if(lead.website)return;
- if(!validateLead(lead)){
+ const v=currentLead();
+ if(v.website)return;
+ if(!validLead(v)){
   feedback('Completá nombre, correo válido, categoría, descripción (mínimo 15 caracteres) y consentimiento.','error');
   return;
  }
- sendLead(lead,'direct');
+ pendingLead=null;
+ if(alternateSend)alternateSend.hidden=true;
+ sendButton.disabled=true;
+ sendButton.textContent='Enviando consulta…';
+ status.className='form-status';
+ try{
+  await deliverDirect(v);
+  feedback('El proveedor confirmó la recepción de tu consulta. Te responderemos por correo.','success');
+  form.reset();
+ }catch(error){
+  pendingLead=v;
+  feedback('No pudimos confirmar el envío: '+(error?.message||'problema de conexión')+'. Podés intentar el método tradicional o escribir directamente al correo indicado abajo.','error');
+  if(alternateSend)alternateSend.hidden=false;
+ }finally{
+  sendButton.disabled=false;
+  sendButton.innerHTML='Enviar mi consulta <span aria-hidden="true">↗</span>';
+ }
 });
+// Respaldo sin AJAX: un POST HTML normal a FormSubmit, con confirmación de su página.
 alternateSend?.addEventListener('click',()=>{
- if(!pendingLead||!contactEnabled)return;
- sendLead(pendingLead,'server');
+ if(!pendingLead||!form||!contactEnabled)return;
+ if(!validLead(currentLead()))return;
+ HTMLFormElement.prototype.submit.call(form);
 });
