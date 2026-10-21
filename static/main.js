@@ -27,7 +27,7 @@ async function loadContactAvailability(){
   const res=await fetch('/api/config',{cache:'no-store'});
   if(!res.ok)throw new Error('No se pudo verificar la configuración');
   const info=await res.json();
-  contactEnabled=info.contact_enabled===true&&info.contact_method==='formsubmit';
+  contactEnabled=info.contact_enabled===true&&info.contact_method==='server_proxy';
   if(!contactEnabled){
    sendButton.textContent='Formulario en preparación';
    feedback('El envío automático está pendiente de verificación. Por ahora podés escribirnos directamente al correo indicado abajo.','error');
@@ -107,25 +107,21 @@ form?.addEventListener('submit',async event=>{
  sendButton.textContent='Enviando consulta…';
  status.className='form-status';
  try{
-  const response=await fetch('https://formsubmit.co/ajax/'+encodeURIComponent(CONTACT_EMAIL),{
+  const response=await fetch('/api/lead',{
    method:'POST',
    headers:{'Content-Type':'application/json','Accept':'application/json'},
    body:JSON.stringify({
-    name,email,organization,category,message,plazo:deadline,etapa:stage,presupuesto:budget,
-    _subject:'FLUYNOVA | Nueva consulta: '+category,
-    _replyto:email,
-    _template:'table',
-    _honey:honey
+    name,email,organization,category,message,deadline,stage,budget,website:honey,consent:true
    })
   });
   const result=await response.json();
-  if(!response.ok||!(result.success===true||result.success==='true')){
-   throw new Error(result.message||'No se pudo confirmar el envío.');
+  if(!response.ok||result.ok!==true){
+   throw new Error(typeof result.detail==='string'?result.detail:'No se pudo confirmar el envío.');
   }
-  feedback('Consulta enviada correctamente. Te responderemos por correo.','success');
+  feedback('El formulario fue recibido por el servicio de envíos. Te responderemos por correo.','success');
   form.reset();
  }catch(error){
-  feedback('No pudimos confirmar el envío. Probá otra vez o escribinos directamente a '+CONTACT_EMAIL+'.','error');
+  feedback('No pudimos confirmar el envío. '+(error?.message||'')+' También podés escribirnos a '+CONTACT_EMAIL+'.','error');
  }finally{
   sendButton.disabled=false;
   sendButton.innerHTML='Enviar mi consulta <span aria-hidden="true">↗</span>';
