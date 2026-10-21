@@ -5,6 +5,26 @@ menu?.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{menu.clas
 document.getElementById('year').textContent=new Date().getFullYear();
 const form=document.getElementById('contact-form'),status=document.getElementById('form-status');
 const topicLinks=document.querySelectorAll('[data-topic]');
+
+const sendButton=form?.querySelector('button[type=submit]');
+async function loadContactAvailability(){
+ if(!form||!sendButton)return;
+ try {
+   const res=await fetch('/api/config',{cache:'no-store'});
+   if(!res.ok)throw Error();
+   const info=await res.json();
+   if(!info.contact_enabled){
+     sendButton.disabled=true;
+     sendButton.textContent='Recepción de consultas en preparación';
+     feedback('Estamos configurando el almacenamiento seguro de las consultas. Este formulario se habilitará próximamente.','error');
+   }
+ }catch(error){
+   sendButton.disabled=true;
+   sendButton.textContent='Recepción temporalmente no disponible';
+   feedback('No pudimos verificar si la recepción está habilitada. Probá más tarde.','error');
+ }
+}
+loadContactAvailability();
 topicLinks.forEach(link=>link.addEventListener('click',()=>{const category=form.elements.namedItem('category');category.value='Otro / no estoy seguro';const msg=form.elements.namedItem('message');if(!msg.value)msg.value='Me interesa: '+link.dataset.topic+'. Quisiera saber cómo se podría implementar. ';}));
 function feedback(msg,kind){status.textContent=msg;status.className='form-status '+kind;}
 form?.addEventListener('submit',async(event)=>{
