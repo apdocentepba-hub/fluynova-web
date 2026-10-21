@@ -1,0 +1,43 @@
+name: Avisar a buscadores con IndexNow
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'static/**'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  notificar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Confirmar que la web publicó el archivo de verificación
+        shell: bash
+        run: |
+          set -euo pipefail
+          PROOF='https://fluynova-web.onrender.com/d6b3a92e5c8470f19b3de06a61c472fb.txt'
+          for intento in $(seq 1 24); do
+            valor="$(curl -fsS --max-time 12 "$PROOF" || true)"
+            if [ "$valor" = 'd6b3a92e5c8470f19b3de06a61c472fb' ]; then
+              echo "Verificación del sitio publicada."
+              exit 0
+            fi
+            echo "El despliegue todavía no está disponible (intento $intento)"
+            sleep 8
+          done
+          echo "No se verificó el dominio. No enviamos el aviso." >&2
+          exit 1
+      - name: Notificar contenido público
+        shell: bash
+        run: |
+          set -euo pipefail
+          printf '%s' '{"host":"fluynova-web.onrender.com","key":"d6b3a92e5c8470f19b3de06a61c472fb","urlList":["https://fluynova-web.onrender.com/","https://fluynova-web.onrender.com/guia-automatizacion/","https://fluynova-web.onrender.com/automatizacion-de-planillas/","https://fluynova-web.onrender.com/software-a-medida/","https://fluynova-web.onrender.com/automatizar-consultas-y-presupuestos/"]}' > /tmp/indexnow.json
+          codigo="$(curl --max-time 35 --silent --show-error --output /tmp/respuesta --write-out '%{http_code}' -X POST 'https://api.indexnow.org/indexnow' -H 'Content-Type: application/json; charset=utf-8' --data-binary @/tmp/indexnow.json)"
+          if [ "$codigo" = "200" ] || [ "$codigo" = "202" ]; then
+            echo "IndexNow respondió HTTP $codigo (aceptado o pendiente de verificación; no garantiza indexación)."
+          else
+            echo "IndexNow no aceptó el aviso: HTTP $codigo" >&2
+            head -c 500 /tmp/respuesta
+            exit 1
+          fi
