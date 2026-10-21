@@ -62,6 +62,8 @@ _attempts: dict[str, list[float]] = {}
 
 
 def admin_login(credentials: HTTPBasicCredentials | None = Depends(security)):
+    if os.getenv("ADMIN_PANEL_ENABLED", "0") != "1":
+        raise HTTPException(404, detail="No encontrado")
     expected_user = os.getenv("ADMIN_USER", "admin")
     expected_pass = os.getenv("ADMIN_PASSWORD", "")
     if not expected_pass or len(expected_pass) < 12 or expected_pass.lower() in {"changeme", "cambiame", "password", "123456"} or expected_pass.upper().startswith("CAMBIAR-"):
@@ -78,8 +80,9 @@ async def secure_headers(request: Request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     response.headers["X-Frame-Options"] = "DENY"
-    if request.url.path.startswith("/admin"):
+    if request.url.path.startswith(("/admin", "/api")):
         response.headers["Cache-Control"] = "no-store"
         response.headers["X-Robots-Tag"] = "noindex, nofollow"
     return response
@@ -261,7 +264,8 @@ def privacidad():
 
 @app.get("/robots.txt")
 def robots():
-    return Response("User-agent: *\nDisallow: /admin\nDisallow: /api\n", media_type="text/plain")
+    rules = "User-agent: *\nDisallow: /admin\nDisallow: /api\nSitemap: https://fluynova-web.onrender.com/sitemap.xml\n"
+    return Response(rules, media_type="text/plain")
 
 
 app.mount("/", StaticFiles(directory=STATIC, html=True), name="static")
