@@ -43,6 +43,42 @@ async function loadContactAvailability(){
 }
 loadContactAvailability();
 
+// Calculadora informativa: estima el esfuerzo actual, sin prometer ahorros.
+const calcMinutes=document.getElementById('calc-minutes');
+const calcRepeats=document.getElementById('calc-repeats');
+const calcDays=document.getElementById('calc-days');
+const calcHours=document.getElementById('calc-hours');
+const calcContact=document.getElementById('calc-to-contact');
+const formatHours=new Intl.NumberFormat('es-AR',{maximumFractionDigits:1});
+function getEffortEstimate(){
+ const bounds=[[calcMinutes,1,240],[calcRepeats,1,100],[calcDays,1,31]];
+ if(bounds.some(([el,min,max])=>!el||!Number.isFinite(el.valueAsNumber)||el.valueAsNumber<min||el.valueAsNumber>max))return null;
+ const minutes=calcMinutes.valueAsNumber;
+ const repeats=calcRepeats.valueAsNumber;
+ const days=calcDays.valueAsNumber;
+ return {minutes,repeats,days,hours:(minutes*repeats*days)/60};
+}
+function renderEffortEstimate(){
+ if(!calcHours)return;
+ const e=getEffortEstimate();
+ calcHours.textContent=e?formatHours.format(e.hours)+' horas / mes':'Ingresá valores válidos';
+ if(calcContact)calcContact.disabled=!e;
+}
+[calcMinutes,calcRepeats,calcDays].forEach(el=>el?.addEventListener('input',renderEffortEstimate));
+calcContact?.addEventListener('click',()=>{
+ const e=getEffortEstimate();
+ if(!e||!form)return;
+ const msg=form.elements.namedItem('message');
+ if(!msg)return;
+ const summary='Quiero evaluar una tarea repetitiva que me lleva aproximadamente '+e.minutes+' minutos, '+e.repeats+' veces por día, '+e.days+' días al mes ('+formatHours.format(e.hours)+' horas mensuales de trabajo actual). ';
+ if(!msg.value.includes('Quiero evaluar una tarea repetitiva'))msg.value=summary+msg.value;
+ const category=form.elements.namedItem('category');
+ if(category)category.value='Automatizar tareas';
+ document.getElementById('contacto')?.scrollIntoView({behavior:'smooth',block:'start'});
+ msg.focus({preventScroll:true});
+});
+renderEffortEstimate();
+
 document.querySelectorAll('[data-topic]').forEach(link=>link.addEventListener('click',()=>{
  if(!form)return;
  form.elements.namedItem('category').value='Otro / no estoy seguro';
