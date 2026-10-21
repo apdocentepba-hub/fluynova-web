@@ -171,7 +171,7 @@ async def send_contact(request: Request, background: BackgroundTasks):
 
 @app.get("/api/config")
 def config():
-    return {"contact_enabled": os.getenv("CONTACT_STORAGE_READY", "0") == "1"}
+    return {"contact_enabled": os.getenv("FORMSUBMIT_ACTIVE", "0") == "1", "contact_method": "formsubmit"}
 
 
 @app.get("/api/health")
