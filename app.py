@@ -268,40 +268,4 @@ def robots():
     return Response(rules, media_type="text/plain")
 
 
-# TEMPORARY PRIVATE SMOKE CHECK — remove after the one test.
-# A one-time outgoing POST from the same Render environment as the live site.
-if os.getenv("FLUYNOVA_EMAIL_SMOKE_ONCE") == "1":
-    import json as _smoke_json
-    import threading as _smoke_threading
-    import urllib.request as _smoke_urllib
-    def _check_delivery_once():
-        try:
-            payload = {
-                "name": "FLUYNOVA QA - prueba automatica",
-                "email": "martin.nicolas.podubinio@gmail.com",
-                "organization": "FLUYNOVA",
-                "category": "Otro / no estoy seguro",
-                "deadline": "Sin definir",
-                "stage": "Es una idea",
-                "budget": "Necesito una estimación",
-                "message": "PRUEBA AUTOMATICA DE INTEGRACION. Formulario de FLUYNOVA. No es una consulta de cliente. No responder.",
-                "_subject": "FLUYNOVA | TEST AUTOMATICO - NO ES CLIENTE",
-                "_replyto": "martin.nicolas.podubinio@gmail.com",
-                "_template": "table",
-            }
-            req = _smoke_urllib.Request(
-                "https://formsubmit.co/ajax/martin.nicolas.podubinio@gmail.com",
-                data=_smoke_json.dumps(payload).encode("utf-8"),
-                headers={"Content-Type": "application/json",
-                         "Accept": "application/json",
-                         "Referer": "https://fluynova-web.onrender.com/",
-                         "User-Agent": "FLUYNOVA-QA/1.0"},
-                method="POST")
-            with _smoke_urllib.urlopen(req, timeout=18) as response:
-                content = response.read(500).decode("utf-8", errors="replace")
-                print("FLUYNOVA_SMOKE", response.status, content, flush=True)
-        except Exception as exc:
-            print("FLUYNOVA_SMOKE_FAIL", type(exc).__name__, str(exc)[:200], flush=True)
-    _smoke_threading.Thread(target=_check_delivery_once, daemon=True).start()
-
 app.mount("/", StaticFiles(directory=STATIC, html=True), name="static")
