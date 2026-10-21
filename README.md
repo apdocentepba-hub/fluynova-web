@@ -2,6 +2,10 @@
 
 Web pública para automatización de procesos, integraciones y desarrollo de software a medida.
 
+## Despliegue automático
+
+Render escucha los cambios de la rama `main` cuando el servicio está vinculado a GitHub como proveedor de origen. Esta actualización sirve para verificar el circuito GitHub → Render.
+
 ## Web pública
 
 https://fluynova-web.onrender.com
