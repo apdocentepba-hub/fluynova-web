@@ -98,10 +98,17 @@ function currentLead(){
   consent:form.elements.namedItem('consent').checked
  };
 }
-function validLead(v){
- return v.name.length>=2&&v.name.length<=100
-  &&/^[^\\s@<>]+@[^\\s@<>]+\\.[^\\s@<>]+$/.test(v.email)
-  &&v.category&&v.message.length>=15&&v.message.length<=5000&&v.consent;
+// Usamos la validación nativa del navegador para type="email" en vez de
+// una expresión regular duplicada, que rechazaba correos válidos.
+function leadValidationError(v){
+ if(v.name.length<2||v.name.length>100) return 'Ingresá un nombre de 2 a 100 caracteres.';
+ const emailInput=form?.elements.namedItem('email');
+ if(!v.email||v.email.length>180||!emailInput?.checkValidity()) return 'Ingresá un correo electrónico válido.';
+ const categories=['Automatizar tareas','Desarrollar software','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
+ if(!categories.includes(v.category)) return 'Elegí qué tipo de servicio necesitás.';
+ if(v.message.length<15||v.message.length>5000) return 'Contanos tu idea con al menos 15 caracteres (máximo 5.000).';
+ if(!v.consent) return 'Tenés que aceptar el tratamiento de los datos para enviar tu consulta.';
+ return '';
 }
 async function deliverDirect(v){
  const body={
@@ -129,8 +136,9 @@ form?.addEventListener('submit',async event=>{
  }
  const v=currentLead();
  if(v.website)return;
- if(!validLead(v)){
-  feedback('Completá nombre, correo válido, categoría, descripción (mínimo 15 caracteres) y consentimiento.','error');
+ const error=leadValidationError(v);
+ if(error){
+  feedback(error,'error');
   return;
  }
  pendingLead=null;
@@ -154,6 +162,7 @@ form?.addEventListener('submit',async event=>{
 // Respaldo sin AJAX: un POST HTML normal a FormSubmit, con confirmación de su página.
 alternateSend?.addEventListener('click',()=>{
  if(!pendingLead||!form||!contactEnabled)return;
- if(!validLead(currentLead()))return;
+ const error=leadValidationError(currentLead());
+ if(error){feedback(error,'error');return;}
  HTMLFormElement.prototype.submit.call(form);
 });
