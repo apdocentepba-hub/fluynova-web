@@ -48,3 +48,7 @@
 @media(max-width:1000px){.project-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.project-card:last-child{grid-column:1/-1}.project-card>p{min-height:0}.about-strip{align-items:start;flex-direction:column}.menu{gap:17px}}
 @media(max-width:680px){.project-grid,.faq-grid{grid-template-columns:1fr}.project-card:last-child{grid-column:auto}.project-visual{height:145px}.faq-item summary{font-size:13px}.about-strip{padding:21px}.about-strip h3{font-size:22px}.about-strip .btn{width:100%}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* Acceso desde tarjetas de servicios a soluciones detalladas */
+.service-card .service-deeplink{display:inline-block;margin-top:18px;font-size:12px;line-height:1.5;font-weight:700;color:var(--lime);text-decoration:none}
+.service-card .service-deeplink:hover,.service-card .service-deeplink:focus-visible{text-decoration:underline}
