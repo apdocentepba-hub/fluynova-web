@@ -52,3 +52,18 @@
 /* Acceso desde tarjetas de servicios a soluciones detalladas */
 .service-card .service-deeplink{display:inline-block;margin-top:18px;font-size:12px;line-height:1.5;font-weight:700;color:var(--lime);text-decoration:none}
 .service-card .service-deeplink:hover,.service-card .service-deeplink:focus-visible{text-decoration:underline}
+
+/* Calculadora orientativa de horas de trabajo repetitivo */
+.time-calc-card{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(285px,1fr);gap:0;border:1px solid #425750;border-radius:13px;overflow:hidden;background:#152329}
+.time-calc-fields{padding:32px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:center}
+.time-calc-fields label{font-size:12px;font-weight:700;color:#dbe8df;line-height:1.6}
+.time-calc-fields input{display:block;margin-top:9px;min-height:53px;width:100%;border:1px solid #516761;border-radius:7px;background:#0c1a20;color:#f3ffe8;padding:12px;font-family:inherit;font-size:22px;font-weight:700}
+.time-calc-fields input:focus{outline:2px solid #bafe7f;outline-offset:2px}
+.time-calc-result{padding:32px;background:linear-gradient(135deg,#233b31,#182e32);border-left:1px solid #405c51}
+.time-calc-result>span{display:block;color:#bfd2c4;font-size:12px;margin-bottom:13px}
+.time-calc-result strong{font:700 clamp(26px,3vw,38px) "Space Grotesk",sans-serif;color:#bdff84;letter-spacing:-1px;display:block}
+.time-calc-result p{font-size:12px;color:#bed0cb;line-height:1.7;margin:12px 0 20px}
+.calc-action{border:1px solid #adf78c;border-radius:7px;background:transparent;color:#c6ff98;padding:12px 14px;font-family:inherit;font-weight:700;font-size:12px;cursor:pointer}
+.calc-action:hover,.calc-action:focus-visible{background:#bcff85;color:#10261a}
+@media(max-width:920px){.time-calc-card{grid-template-columns:1fr}.time-calc-result{border-left:0;border-top:1px solid #405c51}}
+@media(max-width:580px){.time-calc-fields{grid-template-columns:1fr;padding:22px}.time-calc-result{padding:22px}}
