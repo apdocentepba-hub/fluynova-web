@@ -172,9 +172,119 @@ async def send_contact(request: Request, background: BackgroundTasks):
     return JSONResponse({"ok": True, "message": "Consulta recibida"}, status_code=201)
 
 
+@app.post("/api/lead")
+async def relay_lead(request: Request):
+    """Forward a validated lead to FormSubmit from the server; no ephemeral local storage."""
+    import asyncio
+    import json
+    import urllib.error
+    import urllib.request
+
+    if os.getenv("FORMSUBMIT_ACTIVE", "0") != "1":
+        raise HTTPException(503, detail="La recepción de consultas no está disponible.")
+
+    # Cross-origin browser posts are unnecessary: every visitor submits to this site.
+    origin = request.headers.get("origin", "").rstrip("/")
+    if origin and origin != "https://fluynova-web.onrender.com":
+        raise HTTPException(403, detail="Origen no autorizado.")
+
+    try:
+        if int(request.headers.get("content-length", "0") or "0") > 16384:
+            raise HTTPException(413, detail="La consulta es demasiado extensa.")
+    except ValueError:
+        raise HTTPException(400, detail="Solicitud inválida.")
+    body = await request.body()
+    if len(body) > 16384:
+        raise HTTPException(413, detail="La consulta es demasiado extensa.")
+    try:
+        data = json.loads(body)
+    except (ValueError, UnicodeDecodeError):
+        raise HTTPException(400, detail="Solicitud inválida.")
+    if not isinstance(data, dict):
+        raise HTTPException(400, detail="Solicitud inválida.")
+
+    def field(key: str) -> str:
+        value = data.get(key, "")
+        return value.strip() if isinstance(value, str) else ""
+
+    if field("website"):
+        # Don't reveal the spam detection to bots.
+        return {"ok": True}
+
+    name, email = field("name"), field("email")
+    organization, category = field("organization"), field("category")
+    message = field("message")
+    deadline, stage, budget = field("deadline"), field("stage"), field("budget")
+    if not (2 <= len(name) <= 100
+            and 5 <= len(email) <= 180 and EMAIL.fullmatch(email)
+            and len(organization) <= 120
+            and category in ALLOWED_CATEGORIES
+            and 15 <= len(message) <= 5000
+            and len(deadline) <= 80 and len(stage) <= 80 and len(budget) <= 80
+            and data.get("consent") is True):
+        raise HTTPException(422, detail="Revisá el nombre, el correo, el tipo de proyecto y la descripción.")
+
+    remote = request.client.host if request.client else "unknown"
+    now = time.monotonic()
+    recent = [t for t in _attempts.get("relay:" + remote, []) if now - t < 3600]
+    if len(recent) >= 5:
+        raise HTTPException(429, detail="Alcanzaste el límite de consultas por hora. Escribinos directamente por correo.")
+    recent.append(now)
+    _attempts["relay:" + remote] = recent
+    if len(_attempts) > 5000:
+        for key in list(_attempts):
+            if all(now - t >= 3600 for t in _attempts[key]):
+                del _attempts[key]
+
+    submission = {
+        "name": name,
+        "email": email,
+        "organization": organization,
+        "category": category,
+        "message": message,
+        "plazo": deadline,
+        "etapa": stage,
+        "presupuesto": budget,
+        "_subject": "FLUYNOVA | Nueva consulta: " + category,
+        "_replyto": email,
+        "_template": "table",
+    }
+
+    def forward():
+        payload = json.dumps(submission, ensure_ascii=False).encode("utf-8")
+        outgoing = urllib.request.Request(
+            "https://formsubmit.co/ajax/martin.nicolas.podubinio@gmail.com",
+            data=payload,
+            headers={
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+                "Referer": "https://fluynova-web.onrender.com/",
+                "User-Agent": "FLUYNOVA/1.0"
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(outgoing, timeout=18) as response:
+            if response.status != 200:
+                return False
+            result = json.loads(response.read(4096))
+            return result.get("success") is True or result.get("success") == "true"
+
+    try:
+        accepted = await asyncio.to_thread(forward)
+    except (OSError, TimeoutError, ValueError) as exc:
+        print("FLUYNOVA_LEAD_UPSTREAM_ERROR", type(exc).__name__, flush=True)
+        raise HTTPException(502, detail="No pudimos confirmar el envío. Volvé a intentar o escribinos por correo.")
+    if not accepted:
+        print("FLUYNOVA_LEAD_UPSTREAM_REJECTED", flush=True)
+        raise HTTPException(502, detail="El proveedor no confirmó la solicitud. Probá por correo.")
+
+    print("FLUYNOVA_LEAD_ACCEPTED", flush=True)
+    return {"ok": True}
+
+
 @app.get("/api/config")
 def config():
-    return {"contact_enabled": os.getenv("FORMSUBMIT_ACTIVE", "0") == "1", "contact_method": "formsubmit"}
+    return {"contact_enabled": os.getenv("FORMSUBMIT_ACTIVE", "0") == "1", "contact_method": "server_proxy"}
 
 
 @app.get("/api/health")
