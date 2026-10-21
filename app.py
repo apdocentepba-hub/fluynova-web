@@ -169,6 +169,11 @@ async def send_contact(request: Request, background: BackgroundTasks):
     return JSONResponse({"ok": True, "message": "Consulta recibida"}, status_code=201)
 
 
+@app.get("/api/config")
+def config():
+    return {"contact_enabled": os.getenv("CONTACT_STORAGE_READY", "0") == "1"}
+
+
 @app.get("/api/health")
 def health():
     return {"ok": True}
