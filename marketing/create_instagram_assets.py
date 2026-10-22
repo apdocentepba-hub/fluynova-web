@@ -50,3 +50,5 @@ for idx, (slug,title,desc,kicker) in enumerate(topics):
         d.ellipse((x-7,y-7,x+7,y+7),fill=LIME if m%2 else (52,93,69))
     img.save(OUT/(slug+".jpg"),"JPEG",quality=88,optimize=True,progressive=True)
     print(OUT/(slug+".jpg"))
+
+# Asset build version 1: Instagram organic campaign.
