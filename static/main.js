@@ -13,6 +13,18 @@ document.getElementById('year').textContent=new Date().getFullYear();
 const CONTACT_EMAIL='martin.nicolas.podubinio@gmail.com';
 const form=document.getElementById('contact-form'),status=document.getElementById('form-status');
 const sendButton=form?.querySelector('button[type=submit]');
+// Atribución voluntaria: solo se adjuntan parámetros UTM al mensaje si la persona envía
+// el formulario con consentimiento. No se crean cookies ni se guardan datos de navegación.
+const referral=new URLSearchParams(window.location.search);
+function cleanCampaignParam(key,fallback=''){
+ const value=String(referral.get(key)||fallback).slice(0,90);
+ return /^[a-zA-Z0-9_.-]{1,90}$/.test(value)?value:fallback;
+}
+if(form){
+ form.elements.namedItem('origen_fuente').value=cleanCampaignParam('utm_source','web_directo');
+ form.elements.namedItem('origen_canal').value=cleanCampaignParam('utm_medium');
+ form.elements.namedItem('origen_campania').value=cleanCampaignParam('utm_campaign');
+}
 let contactEnabled=false;
 
 function feedback(msg,kind){
@@ -95,6 +107,7 @@ function currentLead(){
   name:str('name'),email:str('email'),organization:str('organization'),
   category:str('category'),message:str('message'),deadline:str('deadline'),
   stage:str('stage'),budget:str('budget'),website:str('_honey'),
+  source:str('origen_fuente'),medium:str('origen_canal'),campaign:str('origen_campania'),
   consent:form.elements.namedItem('consent').checked
  };
 }
@@ -114,6 +127,7 @@ async function deliverDirect(v){
  const body={
   name:v.name,email:v.email,organization:v.organization,category:v.category,
   message:v.message,plazo:v.deadline,etapa:v.stage,presupuesto:v.budget,
+  origen_fuente:v.source,origen_canal:v.medium,origen_campania:v.campaign,
   _subject:'FLUYNOVA | Nueva consulta: '+v.category,
   _replyto:v.email,_template:'table',_honey:v.website
  };
