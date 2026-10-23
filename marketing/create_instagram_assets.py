@@ -23,7 +23,8 @@ topics = [
  ("presentacion", "AUTOMATIZAR\nES AVANZAR.", "Si lo hacés mil veces,\npodemos hacer que se haga solo.", "AUTOMATIZACIÓN · SOFTWARE A MEDIDA"),
  ("planillas", "MENOS COPIAR.\nMÁS CREAR.", "Planillas, registros y reportes.\nReducí tareas repetitivas.", "EXCEL · GOOGLE SHEETS · REPORTES"),
  ("gestion", "¿DÓNDE QUEDÓ\nESE PEDIDO?", "Organizá consultas, estados\ny presupuestos en un solo lugar.", "GESTIÓN · CONSULTAS · SEGUIMIENTO"),
- ("software", "TU PROCESO,\nTU SOFTWARE.", "Diseñamos herramientas a medida\npara desafíos concretos.", "SISTEMAS · INTEGRACIONES · AUTOMATIZACIÓN")
+ ("software", "TU PROCESO,\nTU SOFTWARE.", "Diseñamos herramientas a medida\npara desafíos concretos.", "SISTEMAS · INTEGRACIONES · AUTOMATIZACIÓN"),
+ ("emprendedores", "¿VENDÉS POR\nINSTAGRAM?", "Organizá pedidos y productos.\nMenos copiar. Más vender.", "EMPRENDEDORES · ZONA SUR")
 ]
 for idx, (slug,title,desc,kicker) in enumerate(topics):
     img=Image.new("RGB",(W,H), INK); d=ImageDraw.Draw(img)
