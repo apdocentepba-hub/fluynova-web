@@ -1,7 +1,7 @@
 # FLUYNOVA — prospección local responsable
 **Fecha de investigación:** 22 de octubre de 2026  
 **Objetivo:** generar conversaciones comerciales genuinas sobre automatización, planillas, pedidos y seguimiento.  
-**Estado:** investigación y mensajes borrador, **no se contactó a ninguna cuenta y no se dieron likes/comentarios**.
+**Estado:** investigación + **dos contactos institucionales por correo enviados el 22/10/2026**. No se contactaron perfiles particulares de Instagram ni se dieron likes/comentarios.
 
 ## Segmentos prioritarios
 
@@ -49,7 +49,7 @@ Fuentes: https://catalogo.mda.gob.ar/ y https://catalogo.mda.gob.ar/historias/.
 4. Si alguien responde con interés, pedir un ejemplo de flujo de trabajo (sin solicitar datos personales innecesarios) y ofrecer un diagnóstico inicial acotado.
 5. Registrar conversaciones reales en una hoja de oportunidades solo cuando haya una respuesta/interés auténtico. No fabricar prospectos ni testimonios.
 
-## Mensaje borrador para organizaciones de emprendedores (NO ENVIADO)
+## Mensaje modelo para organizaciones de emprendedores (plantilla; no reenviar automáticamente)
 
 **Asunto:** Recurso gratuito de automatización para emprendimientos de Avellaneda
 
@@ -89,3 +89,12 @@ Posts próximos: 26/10 planillas; 28/10 gestión; 30/10 software. Se ha creado u
 - No afirmar conocer los problemas internos de ningún negocio.
 - No utilizar nombres ni imágenes de negocios ajenos en piezas de FLUYNOVA sin permiso.
 - No contratar promociones pagas sin autorización.
+
+## Registro de avances comerciales — 22/10/2026
+
+- **Correo enviado** a Consejo Municipal de Economía Social y Popular: `economiasocial.av@gmail.com`, asunto «FLUYNOVA | Recurso gratuito sobre automatización para emprendedores de Avellaneda». Dirección confirmada en el sitio oficial `www.mda.gob.ar/tramites/rmesp/`. Pendiente respuesta; no reenviar en forma automática.
+- **Correo enviado** a Unión Industrial de Avellaneda: `info@uiavellaneda.org.ar`, asunto «FLUYNOVA | Guía práctica gratuita para automatización de tareas en PyMEs». Dirección confirmada en `www.uiavellaneda.org.ar/contacto`. Pendiente respuesta; no reenviar en forma automática.
+- **Landing publicada**: https://fluynova-web.onrender.com/diagnostico/ con evaluación orientativa inicial sin cargo, sin prometer implementación gratuita.
+- **Portada**: enlace a diagnóstico inicial; el formulario reutiliza entrega verificada por FormSubmit y adjunta únicamente fuente/medio/campaña UTM si el interesado lo envía con consentimiento (sin cookies ni seguimiento persistente).
+- **Metricool**: publicaciones aún pendientes del 24, 26, 28 y 30 de octubre tienen CTA directa a `fluynova-web.onrender.com/diagnostico/` para no depender de la presencia de un link en la biografía. No se alteró la publicación del 22/10 ya publicada.
+- **Resultado comercial**: cero nuevos contactos de clientes confirmados al momento de esta actualización. El próximo paso es esperar respuestas auténticas y medir consultas, no sumar envíos indiscriminados.
