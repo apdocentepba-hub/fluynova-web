@@ -1,107 +1,95 @@
-name: Compilar suite FLUYNOVA Windows 0.3.0 + respaldo integral
+name: Compilar FLUYNOVA Business Suite 0.4 Windows
 on:
   workflow_dispatch:
   push:
     branches: [main]
     paths:
-      - 'productos/source-payload.b64'
-      - 'productos/upgrade-v0.2.b64'
-      - 'productos/upgrade-v0.3.b64'
+      - 'productos/source-v0.4.b64'
       - '.github/workflows/build-installers.yml'
 permissions:
   contents: write
 jobs:
-  windows-installers:
+  build:
     runs-on: windows-latest
-    timeout-minutes: 60
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@v4
-      - name: Extraer código y recursos
+      - name: Extraer código 0.4 sin claves privadas
         shell: pwsh
         run: |
           New-Item -ItemType Directory -Force productos | Out-Null
-          $b64 = (Get-Content -Raw 'productos/source-payload.b64').Trim()
-          [IO.File]::WriteAllBytes('productos\source.tar.gz',[Convert]::FromBase64String($b64))
-          tar -xzf 'productos/source.tar.gz' -C productos
+          $encoded = (Get-Content -Raw 'productos/source-v0.4.b64').Trim()
+          [IO.File]::WriteAllBytes('productos\source-v0.4.tar.gz',[Convert]::FromBase64String($encoded))
+          tar -xzf 'productos/source-v0.4.tar.gz' -C productos
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $upgrade = (Get-Content -Raw 'productos/upgrade-v0.2.b64').Trim()
-          [IO.File]::WriteAllBytes('productos\\upgrade.tar.gz',[Convert]::FromBase64String($upgrade))
-          tar -xzf 'productos/upgrade.tar.gz' -C productos
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-          $upgrade3 = (Get-Content -Raw 'productos/upgrade-v0.3.b64').Trim()
-          [IO.File]::WriteAllBytes('productos\upgrade-v0.3.tar.gz',[Convert]::FromBase64String($upgrade3))
-          tar -xzf 'productos/upgrade-v0.3.tar.gz' -C productos
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ((Get-ChildItem productos -Recurse -Filter '*.pem').Count -gt 0) { throw 'Clave privada detectada en los fuentes: se aborta' }
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
           architecture: 'x64'
-      - name: Instalar herramientas de compilación
+      - name: Dependencias
         working-directory: productos
         shell: pwsh
         run: |
-          python -m pip install --upgrade pip
           python -m pip install -r requirements-build.txt
-      - name: Verificar lógica de negocio y licenciamiento
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Pruebas de regresión y nuevas funcionalidades
         working-directory: productos
         shell: pwsh
         run: |
           python -m pytest -q tests
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-      - name: Compilar cinco productos comerciales y emisor sin clave
+      - name: Compilar aplicaciones
         working-directory: productos
         shell: pwsh
         run: |
-          $names = @{
-            'Pedidos'='pedidos.py'; 'Turnos'='turnos.py'; 'Stock'='stock.py';
-            'Fabrica'='fabrica.py'; 'Evidencia'='evidencia.py';
+          $programs = @{
+            'Pedidos'='pedidos.py'; 'Turnos'='turnos.py'; 'Stock'='stock.py'
+            'Fabrica'='fabrica.py'; 'Evidencia'='evidencia.py'; 'Cotizador'='cotizador.py'
             'LicenciasOperador'='licencias_operador.py'
           }
-          foreach ($product in @('Pedidos','Turnos','Stock','Fabrica','Evidencia','LicenciasOperador')) {
-            $script=$names[$product]
-            python -m PyInstaller --noconfirm --clean --windowed --onedir --name "FLUYNOVA-$product" --icon assets/fluynova.ico "$script"
+          foreach ($name in @('Pedidos','Turnos','Stock','Fabrica','Evidencia','Cotizador','LicenciasOperador')) {
+            python -m PyInstaller --noconfirm --clean --windowed --onedir --name "FLUYNOVA-$name" --icon assets/fluynova.ico $programs[$name]
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
-      - name: Instalar Inno Setup si no está instalado
+      - name: Instalar Inno Setup
         shell: pwsh
         run: |
-          $iscc=Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
           if (!(Test-Path $iscc)) {
             choco install innosetup --no-progress -y --limit-output
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
-      - name: Crear seis instaladores Windows
+      - name: Generar siete instaladores de Windows
         working-directory: productos
         shell: pwsh
         run: |
-          $iscc=Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
-          if (!(Test-Path $iscc)) { throw 'No se encontró Inno Setup' }
-          foreach ($product in @('Pedidos','Turnos','Stock','Fabrica','Evidencia','LicenciasOperador')) {
-            & $iscc "/DProduct=$product" 'installer\product.iss'
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          foreach ($name in @('Pedidos','Turnos','Stock','Fabrica','Evidencia','Cotizador','LicenciasOperador')) {
+            & $iscc "/DProduct=$name" 'installer\product.iss'
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
-          $files=Get-ChildItem 'out\*.exe'
-          if ($files.Count -ne 6) { throw "Se esperaban seis instaladores, encontramos $($files.Count)" }
+          $files = @(Get-ChildItem out\*.exe)
+          if ($files.Count -ne 7) { throw "Se esperaban siete instaladores, llegaron $($files.Count)" }
           Get-FileHash out\*.exe -Algorithm SHA256 | Format-Table
       - uses: actions/upload-artifact@v4
         with:
-          name: FLUYNOVA-Windows-trial-14-dias-v0.3.0
+          name: FLUYNOVA-Windows-0.4.0-7-Instaladores
           path: productos/out/*.exe
           if-no-files-found: error
-          retention-days: 60
-      - name: Publicar release para pilotos de Windows
+          retention-days: 45
+      - name: Publicar prerelease 0.4.0 independiente (no pisar 0.3)
         if: github.ref == 'refs/heads/main'
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag='v0.3.0-trial'
+          $tag = 'v0.4.0-trial'
           gh release view $tag --repo "$env:GITHUB_REPOSITORY" *> $null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $tag productos/out/*.exe --clobber --repo "$env:GITHUB_REPOSITORY"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           } else {
-            gh release create $tag productos/out/*.exe --title 'FLUYNOVA Suite 0.3.0 · Prueba 14 días · Windows x64' --notes 'PILOTO 0.3.0: cinco aplicaciones independientes con 14 días de prueba y licencias Ed25519 por equipo. Incluye respaldos y restauración con validación SHA-256, documentos de Evidencia, indicadores comerciales y comparación de escenarios de Fábrica. Incluye emisor de licencias SIN clave privada. La clave privada NO se publica en GitHub ni viaja en instaladores. Sin firma Authenticode; probar en Windows 10/11 antes de comercializar. Los datos SQLite no se borran al vencer la prueba. El pago y la emisión de licencia son manuales.' --prerelease --latest=false --target "$env:GITHUB_SHA" --repo "$env:GITHUB_REPOSITORY"
+            gh release create $tag productos/out/*.exe --title 'FLUYNOVA Business Suite 0.4 · Cotizador 360 · 14 días de prueba' --notes 'Versión piloto para Windows x64. Seis productos (Pedidos, Turnos, Stock, Fábrica, Evidencia y Cotizador 360) más emisor privado de licencias SIN clave privada. Cotizador 360 con cálculos y revisiones, respaldo, lectura CSV de Stock. Comprobador opcional de actualizaciones firmadas sin ejecución automática; funciona cuando el operador publica el manifiesto. Licencias Ed25519 por equipo, trial 14 días. Sin facturación fiscal, sincronización multi-PC, activación remota ni firma Authenticode. Se requieren pruebas manuales de Windows antes de vender.' --prerelease --latest=false --target "$env:GITHUB_SHA" --repo "$env:GITHUB_REPOSITORY"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
-
