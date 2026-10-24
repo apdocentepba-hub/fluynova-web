@@ -34,8 +34,8 @@ jobs:
         shell: pwsh
         run: |
           # Debe rechazar un certificado inexistente y terminar sin generar archivos.
-          & pwsh -NoProfile -NonInteractive -File 'scripts/firmar-suite-windows.ps1' -Thumbprint '0000000000000000000000000000000000000000'
-          if ($LASTEXITCODE -eq 0) {
+          $proc = Start-Process -FilePath 'pwsh.exe' -ArgumentList @('-NoProfile','-NonInteractive','-File','scripts/firmar-suite-windows.ps1','-Thumbprint','0000000000000000000000000000000000000000') -Wait -PassThru -NoNewWindow
+          if ($proc.ExitCode -eq 0) {
             throw 'Fallo de seguridad: el firmador acepto ejecutarse sin certificado.'
           }
           if (Test-Path 'dist-firmados/0.4.0') {
