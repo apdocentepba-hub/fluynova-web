@@ -30,3 +30,15 @@ jobs:
             if (-not $text.Contains($piece)) { throw "Falta control: $piece" }
           }
           Write-Host 'Sintaxis correcta. NOTA: ninguna firma real se ejecuto sin certificado CA.'
+      - name: Probar rechazo si no hay certificado confiable
+        shell: pwsh
+        run: |
+          # Debe rechazar un certificado inexistente y terminar sin generar archivos.
+          & pwsh -NoProfile -NonInteractive -File 'scripts/firmar-suite-windows.ps1' -Thumbprint '0000000000000000000000000000000000000000'
+          if ($LASTEXITCODE -eq 0) {
+            throw 'Fallo de seguridad: el firmador acepto ejecutarse sin certificado.'
+          }
+          if (Test-Path 'dist-firmados/0.4.0') {
+            throw 'Fallo de seguridad: se genero salida firmada sin certificado.'
+          }
+          Write-Host 'Correcto: se rechazo la firma sin certificado.'
