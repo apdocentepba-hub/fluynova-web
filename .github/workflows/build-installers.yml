@@ -1,0 +1,86 @@
+name: Compilar instaladores Windows - FLUYNOVA
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'productos/source-payload.b64'
+      - '.github/workflows/build-installers.yml'
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extraer proyectos y recursos de compilación
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force productos | Out-Null
+          $b64 = (Get-Content -Raw 'productos/source-payload.b64').Trim()
+          [IO.File]::WriteAllBytes('productos\source.tar.gz', [Convert]::FromBase64String($b64))
+          tar -xzf 'productos/source.tar.gz' -C productos
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: 'x64'
+      - name: Instalar herramientas
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install pytest pyinstaller
+      - name: Ejecutar pruebas funcionales
+        working-directory: productos
+        shell: pwsh
+        run: |
+          python -m pytest -q tests
+      - name: Generar tres programas ejecutables
+        working-directory: productos
+        shell: pwsh
+        run: |
+          foreach ($product in @('Pedidos','Turnos','Stock')) {
+            $lower = $product.ToLowerInvariant()
+            python -m PyInstaller --noconfirm --clean --windowed --onedir --name "FLUYNOVA-$product" --icon assets/fluynova.ico "$lower.py"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Instalar Inno Setup 6 si hace falta
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (!(Test-Path $iscc)) {
+            choco install innosetup --no-progress -y --limit-output
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+      - name: Compilar los tres instaladores
+        working-directory: productos
+        shell: pwsh
+        run: |
+          $iscc = Join-Path ${env:ProgramFiles(x86)} 'Inno Setup 6\ISCC.exe'
+          if (!(Test-Path $iscc)) { throw 'No se encontró ISCC.exe' }
+          foreach ($product in @('Pedidos','Turnos','Stock')) {
+            & $iscc "/DProduct=$product" 'installer\product.iss'
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+          Get-FileHash out\*.exe -Algorithm SHA256 | Format-Table
+      - name: Guardar instaladores descargables
+        uses: actions/upload-artifact@v4
+        with:
+          name: FLUYNOVA-Windows-Instaladores-0.1.0
+          path: productos/out/*.exe
+          if-no-files-found: error
+          retention-days: 30
+      - name: Publicar versión de evaluación con instaladores
+        if: github.ref == 'refs/heads/main'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $tag = 'v0.1.0-evaluacion'
+          gh release view $tag --repo "$env:GITHUB_REPOSITORY" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            gh release upload $tag productos/out/*.exe --clobber --repo "$env:GITHUB_REPOSITORY"
+          } else {
+            gh release create $tag productos/out/*.exe --title 'FLUYNOVA · 3 instaladores Windows · Evaluación 0.1.0' --notes 'Versiones piloto sin firma digital para Windows x64. Tres instaladores independientes: Pedidos, Turnos y Stock. Uso en pruebas; las bases de datos quedan locales en %LOCALAPPDATA%. Antes de vender, probar la instalación y el desinstalador en Windows 10/11.' --prerelease --latest=false --target "$env:GITHUB_SHA" --repo "$env:GITHUB_REPOSITORY"
+          }
