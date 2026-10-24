@@ -1,0 +1,32 @@
+name: Verificar sintaxis del firmador Windows
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/firmar-suite-windows.ps1'
+      - '.github/workflows/verificar-firmador-windows.yml'
+permissions:
+  contents: read
+jobs:
+  comprobar-sintaxis:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Analizar PowerShell sin necesitar certificado
+        shell: pwsh
+        run: |
+          $tokens=$null
+          $errors=$null
+          $file='scripts/firmar-suite-windows.ps1'
+          $ast=[System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path $file).Path,[ref]$tokens,[ref]$errors)
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_.ToString() }
+            throw 'Sintaxis PowerShell invalida.'
+          }
+          $text=Get-Content -Raw $file
+          foreach ($piece in @('Code Signing','SignTool','/fd','SHA256','/td','Timestamp','Test-Firma')) {
+            if (-not $text.Contains($piece)) { throw "Falta control: $piece" }
+          }
+          Write-Host 'Sintaxis correcta. NOTA: ninguna firma real se ejecuto sin certificado CA.'
