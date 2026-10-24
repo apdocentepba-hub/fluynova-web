@@ -1,4 +1,4 @@
-name: Compilar suite FLUYNOVA Windows con licencias 0.2.0
+name: Compilar suite FLUYNOVA Windows 0.3.0 + respaldo integral
 on:
   workflow_dispatch:
   push:
@@ -6,6 +6,7 @@ on:
     paths:
       - 'productos/source-payload.b64'
       - 'productos/upgrade-v0.2.b64'
+      - 'productos/upgrade-v0.3.b64'
       - '.github/workflows/build-installers.yml'
 permissions:
   contents: write
@@ -26,6 +27,10 @@ jobs:
           $upgrade = (Get-Content -Raw 'productos/upgrade-v0.2.b64').Trim()
           [IO.File]::WriteAllBytes('productos\\upgrade.tar.gz',[Convert]::FromBase64String($upgrade))
           tar -xzf 'productos/upgrade.tar.gz' -C productos
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $upgrade3 = (Get-Content -Raw 'productos/upgrade-v0.3.b64').Trim()
+          [IO.File]::WriteAllBytes('productos\upgrade-v0.3.tar.gz',[Convert]::FromBase64String($upgrade3))
+          tar -xzf 'productos/upgrade-v0.3.tar.gz' -C productos
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
       - uses: actions/setup-python@v5
         with:
@@ -80,7 +85,7 @@ jobs:
           Get-FileHash out\*.exe -Algorithm SHA256 | Format-Table
       - uses: actions/upload-artifact@v4
         with:
-          name: FLUYNOVA-Windows-trial-14-dias-v0.2.0
+          name: FLUYNOVA-Windows-trial-14-dias-v0.3.0
           path: productos/out/*.exe
           if-no-files-found: error
           retention-days: 60
@@ -90,13 +95,13 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          $tag='v0.2.0-trial'
+          $tag='v0.3.0-trial'
           gh release view $tag --repo "$env:GITHUB_REPOSITORY" *> $null
           if ($LASTEXITCODE -eq 0) {
             gh release upload $tag productos/out/*.exe --clobber --repo "$env:GITHUB_REPOSITORY"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           } else {
-            gh release create $tag productos/out/*.exe --title 'FLUYNOVA Suite 0.2.0 · Prueba 14 días · Windows x64' --notes 'PILOTO: 5 aplicaciones independientes con pruebas de 14 días y licencia Ed25519 ligada al dispositivo. Incluye emisor de licencias SIN clave privada. La clave privada NO se publica en GitHub ni viaja en instaladores. Sin firma Authenticode; probar en Windows 10/11 antes de comercializar. Los datos SQLite no se borran al vencer la prueba. El pago y la emisión de licencia son manuales.' --prerelease --latest=false --target "$env:GITHUB_SHA" --repo "$env:GITHUB_REPOSITORY"
+            gh release create $tag productos/out/*.exe --title 'FLUYNOVA Suite 0.3.0 · Prueba 14 días · Windows x64' --notes 'PILOTO 0.3.0: cinco aplicaciones independientes con 14 días de prueba y licencias Ed25519 por equipo. Incluye respaldos y restauración con validación SHA-256, documentos de Evidencia, indicadores comerciales y comparación de escenarios de Fábrica. Incluye emisor de licencias SIN clave privada. La clave privada NO se publica en GitHub ni viaja en instaladores. Sin firma Authenticode; probar en Windows 10/11 antes de comercializar. Los datos SQLite no se borran al vencer la prueba. El pago y la emisión de licencia son manuales.' --prerelease --latest=false --target "$env:GITHUB_SHA" --repo "$env:GITHUB_REPOSITORY"
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           }
 
