@@ -33,7 +33,7 @@ El script:
 2. Extrae el código 0.4.0 y ejecuta las pruebas.
 3. Compila los siete ejecutables de las seis aplicaciones y de Licencias Operador.
 4. Firma cada ejecutable antes de incorporarlo al instalador.
-5. Compila siete instaladores con Inno Setup y firma los siete.
+5. Activa el firmador nativo de Inno Setup para firmar los siete instaladores, sus desinstaladores y las copias temporales de instalación. No se limita a firmar el EXE exterior: también comprueba las firmas con SignTool.
 6. Comprueba con SignTool y PowerShell cada firma, la confianza de la cadena y la presencia del sello de tiempo RFC3161/SHA-256. Si hay un fallo, termina sin dar el resultado por firmado.
 7. Genera los SHA-256 definitivos y deja los archivos en `dist-firmados/0.4.0`.
 
