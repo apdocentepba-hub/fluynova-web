@@ -107,8 +107,8 @@ try {
     $setupDirectives='[Setup]'+[Environment]::NewLine+'SignTool=FLUYNOVA_SIGNER'+[Environment]::NewLine+'SignedUninstaller=yes'
     $issText=$issText.Replace('[Setup]', $setupDirectives)
     [IO.File]::WriteAllText($issPath,$issText,(New-Object System.Text.UTF8Encoding($false)))
-    $innoSignCommand='"'+$signtool+'" sign /v /sha1 '+$thumb+' /s My /fd SHA256 /tr '+$TimestampUrl+' /td SHA256 /d "FLUYNOVA" $f'
-    if ($localMachine) { $innoSignCommand+='/sm' }
+    $innoStore=if ($localMachine) { ' /sm' } else { '' }
+    $innoSignCommand='"'+$signtool+'" sign /v /sha1 '+$thumb+' /s My'+$innoStore+' /fd SHA256 /tr '+$TimestampUrl+' /td SHA256 /d "FLUYNOVA" $f'
     foreach ($app in $apps) {
       & $iscc "/SFLUYNOVA_SIGNER=$innoSignCommand" "/DProduct=$app" 'installer\product.iss'
       if ($LASTEXITCODE -ne 0) { throw "Error empaquetando y firmando $app" }
