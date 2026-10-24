@@ -26,7 +26,7 @@ jobs:
             throw 'Sintaxis PowerShell invalida.'
           }
           $text=Get-Content -Raw $file
-          foreach ($piece in @('Code Signing','SignTool','/fd','SHA256','/td','Timestamp','Test-Firma')) {
+          foreach ($piece in @('Code Signing','SignTool','/fd','SHA256','/td','Timestamp','Test-Firma','SignedUninstaller=yes','SignTool=FLUYNOVA_SIGNER')) {
             if (-not $text.Contains($piece)) { throw "Falta control: $piece" }
           }
           Write-Host 'Sintaxis correcta. NOTA: ninguna firma real se ejecuto sin certificado CA.'
