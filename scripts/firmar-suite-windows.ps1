@@ -96,13 +96,26 @@ try {
       $exe=Join-Path $work "dist\$program\$program.exe"
       Firmar $exe "FLUYNOVA $app"
     }
-    foreach ($app in $apps) {
-      & $iscc "/DProduct=$app" 'installer\product.iss'
-      if ($LASTEXITCODE -ne 0) { throw "Error empaquetando $app" }
-      $setup=Join-Path $work "out\FLUYNOVA-$app-Instalador-0.4.0-Windows-x64.exe"
-      Firmar $setup "FLUYNOVA $app (instalador)"
+    # Firmar DESDE Inno Setup incluye instalador, desinstalador y copias
+    # temporales usadas durante la instalación. Firmar solo el instalador al
+    # final no alcanza (ver documentación oficial de Inno SignTool).
+    $issPath=Join-Path $work 'installer\product.iss'
+    $issText=Get-Content -Raw -LiteralPath $issPath
+    if (-not $issText.Contains('[Setup]') -or $issText.Contains('SignTool=')) {
+      throw 'No se puede configurar automaticamente el firmador de Inno.'
     }
-    $installers=@(Get-ChildItem (Join-Path $work 'out') -Filter '*.exe' -File)
+    $setupDirectives='[Setup]'+[Environment]::NewLine+'SignTool=FLUYNOVA_SIGNER'+[Environment]::NewLine+'SignedUninstaller=yes'
+    $issText=$issText.Replace('[Setup]', $setupDirectives)
+    [IO.File]::WriteAllText($issPath,$issText,(New-Object System.Text.UTF8Encoding($false)))
+    $innoSignCommand='"'+$signtool+'" sign /v /sha1 '+$thumb+' /s My /fd SHA256 /tr '+$TimestampUrl+' /td SHA256 /d "FLUYNOVA" $f'
+    if ($localMachine) { $innoSignCommand+='/sm' }
+    foreach ($app in $apps) {
+      & $iscc "/SFLUYNOVA_SIGNER=$innoSignCommand" "/DProduct=$app" 'installer\product.iss'
+      if ($LASTEXITCODE -ne 0) { throw "Error empaquetando y firmando $app" }
+      $setup=Join-Path $work "out\FLUYNOVA-$app-Instalador-0.4.0-Windows-x64.exe"
+      Test-Firma $setup
+    }
+    $installers=@(Get-ChildItem (Join-Path $work 'out') -Filter 'FLUYNOVA-*-Instalador-0.4.0-Windows-x64.exe' -File)
     if ($installers.Count -ne 7) { throw 'No se generaron los siete instaladores.' }
     $out=Join-Path $root 'dist-firmados\0.4.0'
     New-Item -ItemType Directory -Path $out -Force | Out-Null
