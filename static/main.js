@@ -24,6 +24,7 @@ if(form){
  form.elements.namedItem('origen_fuente').value=cleanCampaignParam('utm_source','web_directo');
  form.elements.namedItem('origen_canal').value=cleanCampaignParam('utm_medium');
  form.elements.namedItem('origen_campania').value=cleanCampaignParam('utm_campaign');
+ form.elements.namedItem('origen_mensaje').value=cleanCampaignParam('utm_content');
 }
 let contactEnabled=false;
 
@@ -107,7 +108,7 @@ function currentLead(){
   name:str('name'),email:str('email'),organization:str('organization'),
   category:str('category'),message:str('message'),deadline:str('deadline'),
   stage:str('stage'),budget:str('budget'),website:str('_honey'),
-  source:str('origen_fuente'),medium:str('origen_canal'),campaign:str('origen_campania'),
+  source:str('origen_fuente'),medium:str('origen_canal'),campaign:str('origen_campania'),creative:str('origen_mensaje'),
   consent:form.elements.namedItem('consent').checked
  };
 }
@@ -127,7 +128,7 @@ async function deliverDirect(v){
  const body={
   name:v.name,email:v.email,organization:v.organization,category:v.category,
   message:v.message,plazo:v.deadline,etapa:v.stage,presupuesto:v.budget,
-  origen_fuente:v.source,origen_canal:v.medium,origen_campania:v.campaign,
+  origen_fuente:v.source,origen_canal:v.medium,origen_campania:v.campaign,origen_mensaje:v.creative,
   _subject:'FLUYNOVA | Nueva consulta: '+v.category,
   _replyto:v.email,_template:'table',_honey:v.website
  };
