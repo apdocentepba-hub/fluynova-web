@@ -94,9 +94,11 @@ renderEffortEstimate();
 
 document.querySelectorAll('[data-topic]').forEach(link=>link.addEventListener('click',()=>{
  if(!form)return;
- form.elements.namedItem('category').value='Otro / no estoy seguro';
+ const categories=['Automatizar tareas','Desarrollar software','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
+ const selected=link.dataset.category;
+ form.elements.namedItem('category').value=categories.includes(selected)?selected:'Otro / no estoy seguro';
  const msg=form.elements.namedItem('message');
- if(!msg.value)msg.value='Me interesa: '+link.dataset.topic+'. Quisiera saber cómo se podría implementar. ';
+ if(msg&&!msg.value)msg.value='Me interesa: '+link.dataset.topic+'. Quisiera saber cómo se podría implementar. ';
 }));
 
 const alternateSend=document.getElementById('alternate-send');
