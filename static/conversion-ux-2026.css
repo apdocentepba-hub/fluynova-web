@@ -1,0 +1,106 @@
+/* FLUYNOVA · landing clarity, 2026-10-24.
+   Visual/interaction layer: no checkout, privacy, form delivery changes. */
+.flx-ux-2026{background:#0a1117}
+.flx-ux-2026 .site-header{background:rgba(8,17,23,.94);border-bottom:1px solid rgba(168,235,202,.15)}
+.flx-ux-2026 .brand{letter-spacing:-1.45px}
+.flx-ux-2026 .nav-cta{background:#beff70;color:#132013;border-radius:12px;font-weight:800;box-shadow:0 7px 27px #a9ec5b20}
+.flx-ux-2026 .nav-cta:hover{color:#132013;background:#daffa9}
+.flx-ux-2026 .hero{position:relative;isolation:isolate;min-height:630px;padding-top:clamp(48px,5.8vw,83px);padding-bottom:clamp(65px,6vw,100px);gap:clamp(24px,3vw,52px)}
+.flx-ux-2026 .hero:before{content:"";position:absolute;z-index:-1;inset:15px -18px -3px;border:1px solid #344941;border-radius:32px;background:radial-gradient(ellipse at 76% 39%,rgba(105,192,146,.15),transparent 39%),radial-gradient(ellipse at 0% 100%,rgba(247,176,116,.08),transparent 44%),linear-gradient(120deg,#0d1b1c 0%,#122328 57%,#102a2b 100%);pointer-events:none}
+.flx-ux-2026 .hero-copy{padding-left:clamp(0px,2vw,20px)}
+.flx-ux-2026 .eyebrow{background:#284035;border:1px solid #567d61;color:#d8ffb8;border-radius:999px;letter-spacing:.12em;padding:10px 15px;font-size:10px;font-weight:800}
+.flx-ux-2026 .hero h1{font-size:clamp(43px,4.7vw,72px);letter-spacing:-.061em;line-height:1.07;max-width:680px;margin:23px 0 23px;text-wrap:balance}
+.flx-ux-2026 .hero h1 .lime-text{background:linear-gradient(100deg,#caff8a,#77edd6);-webkit-background-clip:text;background-clip:text;color:transparent}
+.flx-ux-2026 .hero-description{color:#d4dfdc;font-size:clamp(15px,1.33vw,18px);line-height:1.7;max-width:590px;margin-bottom:30px}
+.flx-ux-2026 .hero-actions{gap:12px}
+.flx-ux-2026 .hero-actions .btn{min-height:58px;padding:16px 19px;font-size:13px;border-radius:12px;gap:14px}
+.flx-ux-2026 .hero-actions .btn-primary{background:#cbff8d;color:#182418;box-shadow:0 14px 32px rgba(146,234,91,.19)}
+.flx-ux-2026 .hero-actions .btn-primary:hover{background:#e0ffb8}
+.flx-ux-2026 .hero-actions .btn-ghost{background:#213238;color:#f3faf5;border-color:#7b9b99}
+.flx-ux-2026 .hero-actions .btn-ghost:hover{background:#324747}
+.flx-ux-2026 .hero-notes{margin-top:28px;color:#cfdfd8;gap:12px 18px;line-height:1.45;font-size:11px}
+.flx-ux-2026 .hero-notes svg{stroke:#b8f7b5}
+.flx-ux-2026 .workflow-card{transform:rotate(-1.2deg);border-radius:20px;border-color:#678f7b;box-shadow:0 35px 85px #0009,0 0 55px #98dcb323;background:#182a2b}
+.flx-ux-2026 .workflow-head{border-bottom-color:#425b57}
+.flx-ux-2026 .live-pill{background:#2b4b3d;color:#dbffc8;border:1px solid #4d7955;font-size:8px}
+.flx-ux-2026 .live-pill span{box-shadow:none}
+.flx-ux-2026 .flow-label{color:#b8ccca;letter-spacing:1.3px}
+.flx-ux-2026 .flow-step{background:#203132;border-color:#3f5553}
+.flx-ux-2026 .flow-step.active{background:linear-gradient(90deg,#294a3d,#29423b);border-color:#9bdb91}
+.flx-ux-2026 .flow-step small{color:#b1c3c4}
+.flx-ux-2026 .flow-step strong{color:#fff}
+.flx-ux-2026 .flow-step div span{color:#d1dadb}
+.flx-ux-2026 .workflow-foot{color:#bccfcb}
+.flx-ux-2026 .floating-note{bottom:2px;background:#fff4db;color:#243020;transform:rotate(3deg);border:1px solid #ffddb8}
+.flx-ux-2026 .floating-note>span{background:#ffe2af}
+.flx-problem-section{background:#f3f4ec;color:#1a2823;padding:67px 0 50px;border-top:1px solid #f8ffed;border-bottom:1px solid #d3e4d2}
+.flx-problem-heading{display:flex;justify-content:space-between;align-items:end;gap:35px;margin-bottom:29px}
+.flx-problem-heading>div{flex:1;min-width:0}
+.flx-problem-heading>p{max-width:348px;margin:0 0 4px;color:#46594d;font-size:14px;line-height:1.75}
+.flx-problem-eyebrow{display:block;color:#2b765a;letter-spacing:2px;font-size:11px;font-weight:800;margin-bottom:12px}
+.flx-problem-heading h2{color:#142b21;font-size:clamp(30px,3.3vw,46px);line-height:1.14;letter-spacing:-.055em;margin:0;max-width:560px}
+.flx-problem-heading h2 em{color:#27815a;font-style:normal}
+.flx-problem-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:17px}
+.flx-problem-card{display:flex;align-items:flex-start;gap:16px;min-height:193px;padding:25px 22px;background:#fff;border:1px solid #d4ded2;border-radius:18px;box-shadow:0 14px 25px rgba(39,82,65,.06);transition:transform .18s,box-shadow .18s,border-color .18s}
+.flx-problem-card:hover{transform:translateY(-5px);box-shadow:0 20px 34px rgba(34,88,58,.11);border-color:#80b89e}
+.flx-problem-card:focus-visible,.flx-ux-2026 .hero :is(a,button):focus-visible{outline:3px solid #ffb764;outline-offset:4px}
+.flx-card-icon{width:49px;height:49px;border-radius:13px;flex:none;display:grid;place-items:center;font-family:var(--font-head);font-size:25px;font-weight:700}
+.flx-green{background:#ddf2de;color:#1b7547}
+.flx-blue{background:#d8eef6;color:#196185}
+.flx-orange{background:#fce5c8;color:#995f23}
+.flx-card-copy{display:flex;flex-direction:column;align-items:start;gap:8px;flex:1;min-width:0}
+.flx-card-copy>strong{color:#172d24;font:700 19px/1.25 var(--font-head);letter-spacing:-.05em}
+.flx-card-copy>small{color:#4b5d54;font:400 13px/1.6 var(--font-body)}
+.flx-card-link{color:#1a6b4c;font:800 12px var(--font-body);padding-top:5px;margin-top:auto}
+.flx-card-link span{margin-left:5px}
+.flx-problem-honesty{color:#58675e;text-align:center;font-size:12px;margin:21px 0 0;line-height:1.5}
+.flx-ux-2026 .marquee{background:#192526}
+@media(max-width:1080px){
+ .flx-ux-2026 .hero{gap:19px}
+ .flx-ux-2026 .hero h1{font-size:clamp(40px,4.7vw,56px)}
+ .flx-ux-2026 .hero-actions .btn{font-size:12px;padding:14px 13px}
+ .flx-problem-card{padding:19px 16px;gap:11px}
+ .flx-card-copy>strong{font-size:17px}
+}
+@media(max-width:820px){
+ .flx-ux-2026 .hero{grid-template-columns:1fr;padding:56px 8px 70px;gap:32px}
+ .flx-ux-2026 .hero:before{inset:4px -12px 4px}
+ .flx-ux-2026 .hero-copy{padding-left:14px;padding-right:14px}
+ .flx-ux-2026 .hero h1{font-size:clamp(42px,7vw,64px)}
+ .flx-ux-2026 .hero-art{min-height:340px;padding:8px 30px 15px}
+ .flx-problem-heading{align-items:start;flex-direction:column;gap:12px}
+ .flx-problem-heading>p{max-width:640px}
+ .flx-problem-grid{grid-template-columns:1fr;gap:12px}
+ .flx-problem-card{min-height:unset;align-items:center;padding:20px}
+}
+@media(max-width:480px){
+ .flx-ux-2026 .hero{padding-top:45px;padding-bottom:42px}
+ .flx-ux-2026 .hero h1{font-size:clamp(37px,10.1vw,49px);margin:17px 0 18px}
+ .flx-ux-2026 .hero-description{font-size:14px}
+ .flx-ux-2026 .hero-actions{display:grid;grid-template-columns:1fr;gap:10px}
+ .flx-ux-2026 .hero-actions .btn{min-height:53px;width:100%;justify-content:space-between;text-align:left;padding:12px 15px;font-size:13px}
+ .flx-ux-2026 .hero-notes{font-size:10px;gap:7px}
+ .flx-ux-2026 .hero-art{padding:0 17px 14px}
+ .flx-ux-2026 .floating-note{position:relative;left:0;margin-top:12px;transform:none}
+ .flx-problem-section{padding:49px 0 39px}
+ .flx-problem-heading h2{font-size:34px}
+ .flx-problem-card{align-items:start}
+ .flx-card-icon{width:42px;height:42px}
+}
+@media(prefers-reduced-motion:reduce){
+ .flx-problem-card{transition:none}
+ .flx-ux-2026 .pulse{animation:none}
+}
+
+/* Progressive disclosure for optional lead qualification fields. */
+.flx-ux-2026 .flx-optional-details{border:1px solid #4c6762;background:#1a2a2d;border-radius:12px;margin:17px 0 21px;overflow:hidden}
+.flx-ux-2026 .flx-optional-details>summary{list-style:none;cursor:pointer;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:15px 16px;color:#effbed;font-size:13px;font-weight:700;line-height:1.5}
+.flx-ux-2026 .flx-optional-details>summary::-webkit-details-marker{display:none}
+.flx-ux-2026 .flx-optional-details>summary:before{content:"＋";display:grid;place-items:center;width:26px;height:26px;border:1px solid #72947b;border-radius:50%;font-size:18px;color:#c8ff9b;flex:none}
+.flx-ux-2026 .flx-optional-details[open]>summary:before{content:"−"}
+.flx-ux-2026 .flx-optional-details>summary span{margin-left:auto;font-size:10px;color:#bcd7c7;background:#28423e;border:1px solid #4a7161;padding:4px 9px;border-radius:50px;font-weight:800}
+.flx-ux-2026 .flx-optional-details>summary:focus-visible{outline:3px solid #ffcf97;outline-offset:-4px}
+.flx-ux-2026 .flx-optional-details[open]>summary{border-bottom:1px solid #4c6762}
+.flx-ux-2026 .flx-optional-inner{padding:16px}
+.flx-ux-2026 .flx-optional-inner .wide-label{display:block;margin-top:13px}
+@media(max-width:480px){.flx-ux-2026 .flx-optional-details>summary span{margin-left:0}}
