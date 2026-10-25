@@ -91,3 +91,16 @@
  .flx-problem-card{transition:none}
  .flx-ux-2026 .pulse{animation:none}
 }
+
+/* Progressive disclosure for optional lead qualification fields. */
+.flx-ux-2026 .flx-optional-details{border:1px solid #4c6762;background:#1a2a2d;border-radius:12px;margin:17px 0 21px;overflow:hidden}
+.flx-ux-2026 .flx-optional-details>summary{list-style:none;cursor:pointer;display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:15px 16px;color:#effbed;font-size:13px;font-weight:700;line-height:1.5}
+.flx-ux-2026 .flx-optional-details>summary::-webkit-details-marker{display:none}
+.flx-ux-2026 .flx-optional-details>summary:before{content:"＋";display:grid;place-items:center;width:26px;height:26px;border:1px solid #72947b;border-radius:50%;font-size:18px;color:#c8ff9b;flex:none}
+.flx-ux-2026 .flx-optional-details[open]>summary:before{content:"−"}
+.flx-ux-2026 .flx-optional-details>summary span{margin-left:auto;font-size:10px;color:#bcd7c7;background:#28423e;border:1px solid #4a7161;padding:4px 9px;border-radius:50px;font-weight:800}
+.flx-ux-2026 .flx-optional-details>summary:focus-visible{outline:3px solid #ffcf97;outline-offset:-4px}
+.flx-ux-2026 .flx-optional-details[open]>summary{border-bottom:1px solid #4c6762}
+.flx-ux-2026 .flx-optional-inner{padding:16px}
+.flx-ux-2026 .flx-optional-inner .wide-label{display:block;margin-top:13px}
+@media(max-width:480px){.flx-ux-2026 .flx-optional-details>summary span{margin-left:0}}
