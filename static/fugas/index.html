@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es-AR"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1118">
+<title>Fluynova FUGAS | Detectá cobros vencidos y presupuestos sin seguimiento</title>
+<meta name="description" content="Detectá cobros vencidos, presupuestos olvidados y renovaciones próximas desde un CSV, en tu propio navegador. Probá FUGAS gratis sin subir tu planilla a un servidor.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="https://fluynova-web.onrender.com/fugas/">
+<meta property="og:type" content="website"><meta property="og:locale" content="es_AR">
+<meta property="og:title" content="FUGAS · Encontrá lo que tu negocio dejó pendiente">
+<meta property="og:description" content="Probá una herramienta gratuita de Fluynova: detecta cobros vencidos y presupuestos para retomar. Tus datos se procesan en tu navegador.">
+<meta property="og:url" content="https://fluynova-web.onrender.com/fugas/">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/fugas/fugas.css?v=1">
+<script src="/fugas/fugas.js?v=1" defer></script>
+</head><body>
+<header class="top"><div class="wrap">
+<a class="brand" href="/">FLUY<span>NOVA</span>.</a>
+<nav class="topnav" aria-label="Navegación"><a href="/">Inicio</a><a href="/soluciones-express/">Servicios</a><a href="/diagnostico/">Contacto</a></nav>
+</div></header>
+<div class="hero"><div class="wrap">
+<div class="eyebrow">FUGAS · Laboratorio gratuito de Fluynova</div>
+<h1>¿Hay plata esperando una respuesta <em>en tu propia planilla?</em></h1>
+<p class="lead">Encontrá cobros vencidos, presupuestos sin seguimiento y renovaciones próximas. Pegá tus registros en un CSV o cargalos uno por uno y obtené una lista de acciones que podés revisar hoy.</p>
+<div class="chips"><span class="chip">✓ Sin registro</span><span class="chip">✓ Sin instalar nada</span><span class="chip">✓ Datos en tu navegador</span><span class="chip">✓ Pensado para pesos argentinos</span></div>
+<div class="actions"><button id="demo-button" class="button" type="button">Probar con datos de ejemplo</button><a class="button secondary" href="#herramienta">Cargar mi planilla ↓</a><a class="button ghost" href="#como-funciona">Cómo funciona</a></div>
+</div></div>
+<main class="wrap">
+<section id="herramienta" class="content-grid" aria-label="Carga de datos">
+<div class="box">
+<h2>1. Revisá tus registros</h2>
+<p class="muted">Usá un CSV con las columnas cliente, tipo, monto, fecha y estado. Podés incluir teléfono, referencia y último contacto para generar recordatorios mejor contextualizados.</p>
+<div class="upload"><label for="csv-file" style="font-weight:800">Importar archivo CSV</label>
+<input id="csv-file" type="file" accept=".csv,text/csv,text/plain" aria-describedby="csv-note">
+<span class="fine" id="csv-note">Admite CSV separado por punto y coma o coma, hasta 2 MB y 2000 filas. Fechas AAAA-MM-DD o DD/MM/AAAA. Tipos: cobro, presupuesto, renovación. Estados: pendiente, cobrado o cancelado. Para presupuestos, “fecha” indica envío; para cobros, vencimiento.</span></div>
+<div class="actions"><button id="template-button" class="button small secondary" type="button">↓ Descargar plantilla CSV</button><button id="clear-button" class="button small ghost" type="button" disabled>Borrar registros</button></div>
+<div class="notice"><strong>Privacidad por diseño.</strong> Los registros se leen y procesan en este dispositivo: no los enviamos a Fluynova ni los almacenamos en este sitio. Si actualizás o cerrás la página, se pierden. Al elegir abrir WhatsApp, el mensaje preparado se comparte con ese servicio por tu acción expresa.</div>
+<div id="import-alert" role="status" aria-live="polite" class="helper"></div>
+</div>
+<div class="box">
+<h2>2. ¿No tenés CSV? Agregá uno</h2>
+<form id="add-form" class="manual">
+<label class="field">Cliente *<input name="cliente" placeholder="Ej.: Taller del barrio" required maxlength="100" autocomplete="off"></label>
+<label class="field">Tipo *<select name="tipo" required><option value="cobro">Cobro / factura</option><option value="presupuesto">Presupuesto enviado</option><option value="renovacion">Renovación</option></select></label>
+<label class="field">Monto (ARS) *<input name="monto" placeholder="Ej.: 120000" inputmode="decimal" required></label>
+<label class="field">Fecha *<input id="field-date" name="fecha" type="date" required></label>
+<label class="field">Estado *<select name="estado"><option value="pendiente">Pendiente</option><option value="cobrado">Cobrado / aceptado</option><option value="cancelado">Cancelado / rechazado</option></select></label>
+<label class="field">Referencia<input name="referencia" maxlength="80" placeholder="Ej.: FAC-104"></label>
+<label class="field">Teléfono (opcional)<input name="telefono" maxlength="35" inputmode="tel" autocomplete="off" placeholder="Ej.: 54911..."></label>
+<label class="field">Último contacto (opcional)<input name="ultimo_contacto" type="date"></label>
+<div class="form-footer"><button class="button" type="submit">Agregar a la revisión</button></div>
+</form>
+<p class="helper">La herramienta no realiza envíos automáticos, pagos ni reclamos de deudas. Antes de contactar, verificá los datos y que el mensaje corresponda.</p>
+</div>
+</section>
+<section aria-labelledby="report-title">
+<div class="metrics" aria-live="polite">
+<div class="metric"><span>Acciones a revisar</span><strong id="count">0</strong><small>Cobros, ventas y renovaciones</small></div>
+<div class="metric"><span>Cobros vencidos registrados</span><strong id="late">$0</strong><small>No significa dinero recuperado</small></div>
+<div class="metric"><span>Presupuestos sin seguimiento</span><strong id="budgets">$0</strong><small>Oportunidades, no deuda</small></div>
+<div class="metric"><span>Renovaciones para revisar</span><strong id="renewals">0</strong><small>Próximas o recién vencidas</small></div>
+</div>
+<div class="report-header"><div><h2 id="report-title">3. Lista de acciones</h2><p id="result-hint" class="muted" style="margin:6px 0">Sin datos cargados.</p></div><button class="button small secondary" id="export-button" type="button" disabled>↓ Descargar acciones CSV</button></div>
+<div id="filters" class="filters" aria-label="Filtrar acciones"><button type="button" class="filter active" data-filter="todos" aria-pressed="true">Todas</button><button type="button" class="filter" data-filter="cobros" aria-pressed="false">Cobros</button><button type="button" class="filter" data-filter="presupuesto" aria-pressed="false">Presupuestos</button><button type="button" class="filter" data-filter="renovacion" aria-pressed="false">Renovaciones</button></div>
+<p id="summary" class="note">Esta herramienta no accede a cuentas bancarias ni verifica si un pago ya se realizó.</p>
+<div id="records" class="records"><div class="empty">Probá el ejemplo para ver cómo funciona.</div></div>
+</section>
+<section id="como-funciona" class="disclosure">
+<h2 style="color:#f4faf4">Qué detecta y qué no</h2>
+<p><strong>Cobros:</strong> señala vencimientos pasados y aquellos que ocurren en los próximos siete días, siempre que figuren pendientes. <strong>Presupuestos:</strong> identifica los que siguen pendientes y llevan siete días o más sin contacto. <strong>Renovaciones:</strong> muestra las próximas diez jornadas y las vencidas en los últimos tres días.</p>
+<p>Ignora registros cerrados y duplicados exactos; ordena por urgencia y monto. Es una revisión basada exclusivamente en los datos que cargás, no un servicio bancario ni un análisis contable. Un presupuesto antiguo no significa que la venta se hubiera concretado.</p>
+<p><strong>Formato CSV:</strong> columnas obligatorias <code>cliente;tipo;monto;fecha;estado</code>; opcionales <code>telefono;referencia;ultimo_contacto</code>. Usá la plantilla para evitar errores y no compartas datos personales ni cobranzas con terceros sin autorización.</p>
+</section>
+<section class="cta" aria-label="Servicio comercial">
+<div class="eyebrow">¿Querés que funcione con tu negocio?</div><h2>Del archivo desordenado a un sistema útil.</h2>
+<p>FUGAS es una prueba gratuita. Si te sirve, Fluynova puede evaluar cómo organizar tus datos, incorporar controles periódicos y adaptar la solución a tus procesos. No prometemos que todos los saldos se cobren ni que todos los presupuestos se conviertan.</p>
+<a class="button" href="/?utm_source=fugas&amp;utm_medium=producto&amp;utm_campaign=validacion_fugas&amp;utm_content=solicitar_adaptacion#contacto">Pedir una evaluación sin cargo ↗</a>
+<a class="button ghost" href="/soluciones-express/">Ver servicios y precios orientativos</a>
+</section>
+</main>
+<footer><div class="wrap"><span>© 2026 FLUYNOVA · FUGAS v0.1 · Herramienta experimental gratuita</span><span><a href="/privacidad">Privacidad</a> · <a href="/">Volver a Fluynova</a></span></div></footer>
+<div id="toast" role="status" aria-live="polite" class="toast" hidden></div>
+</body></html>
