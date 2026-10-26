@@ -58,8 +58,8 @@ const SCHOOL_PROJECTS=[
   "Libro matriz: se prepara una vista o borrador conforme al modelo y plan realmente aplicables, con materias, notas, años y observaciones para control de Secretaría.",
   "Emisión oficial: el personal competente revisa y autoriza cualquier registro, analítico o constancia. Las firmas, decisiones y sistemas oficiales no se reemplazan por generación automática."
  ],
- constraint:"Esto sería un gestor de legajos y trayectoria académica, no una modificación automática del libro matriz oficial. Para usar datos reales de menores deben existir autorización institucional, perfiles de acceso, respaldo, auditoría y protección de datos. ENSPA y Motor Académico no están conectados; la importación o exportación solo se haría si hay un mecanismo permitido.",
- question:"¿Hoy los datos del alumnado y las calificaciones están en planillas, libros matriz, ENSPA, Motor Académico u otro sistema?"
+ constraint:"Esto sería un gestor de legajos y trayectoria académica, no una modificación automática del libro matriz oficial. Para usar datos reales de menores deben existir autorización institucional, perfiles de acceso, respaldo, auditoría y protección de datos. No hay conexiones a sistemas académicos externos; cualquier importación o exportación requiere verificar previamente permisos y formatos compatibles.",
+ question:"¿Actualmente registran la información en papel, planillas o algún sistema de gestión escolar?"
  },
  {id:"analiticos",re:/\banaliticos?\b|\bcertificado analitico\b|\btitulos? secundarios?\b/,
  name:"analíticos",
@@ -71,8 +71,8 @@ const SCHOOL_PROJECTS=[
  "Secretaría revisa el borrador y las equivalencias aplicables; la emisión y las firmas oficiales siguen a cargo del personal competente.",
  "Se informa el estado o forma de retiro por un canal autorizado, sin publicar datos académicos."
  ],
- constraint:"No emitiría ni firmaría analíticos automáticamente. Hay que verificar normas DGCyE, protección de datos y la posibilidad real de obtener datos de ENSPA o Motor Académico: no tenemos una integración confirmada.",
- question:"¿Los datos ya están en ENSPA, Motor Académico o planillas, o hay que revisar libros matriz?"
+ constraint:"No emitiría ni firmaría certificados académicos oficiales automáticamente. Hay que comprobar normativa aplicable, permisos, protección de datos y acceso autorizado a los registros de la institución.",
+ question:"¿La información se consulta desde papel, planillas o un sistema institucional con acceso autorizado?"
  },
  {id:"equivalencias",re:/\bequivalencias?\b|\bdictamen(es)?\b/,name:"equivalencias",
  steps:["Se recibe la solicitud y la documentación por un canal autorizado.","Se identifican plan de origen y destino y espacios curriculares acreditados.","Una tabla de reglas validada permite contrastar materias y señalar diferencias.","Se prepara un borrador de dictamen para revisión y decisión del personal competente.","Se registra el estado y se avisa al solicitante sin divulgar datos sensibles."],
@@ -108,7 +108,7 @@ function schoolReply(p,mode){
  if(p.id==="legajos"){
   const chips=["Cómo se carga cada año","Cómo funciona el libro matriz","Empezar piloto","Pedir evaluación"];
   if(mode==="fuentes")return {
-   text:"Para el legajo académico, primero inventariaría qué fuentes están autorizadas: planillas, libros matriz, ENSPA o Motor Académico. De cada fuente habría que definir campos, plan de estudios y responsable de verificación. Si existe un CSV/Excel autorizado, se puede estudiar importar información al borrador del sistema; no afirmo que ENSPA tenga API ni permiso de escritura. ¿Qué datos podés exportar legalmente hoy y qué parte sigue en papel?",
+   text:"Para el legajo académico, primero inventariaría las fuentes autorizadas: planillas, archivos en papel o plataformas institucionales. De cada fuente habría que definir campos, plan de estudios y responsable de verificación. Si existe un CSV/Excel autorizado, se puede estudiar una importación revisable; nunca se presume que una plataforma externa tenga API ni permiso de escritura. ¿Qué datos podés exportar legalmente hoy y qué parte sigue en papel?",
    chips:["Ver circuito completo","Cómo se carga cada año","Empezar piloto"]};
   if(mode==="piloto")return {
    text:"Haría un piloto con alumnos ficticios y un curso de prueba: alta inicial, asignación de materias según plan, carga de calificaciones de un ciclo, consolidación anual y vista previa de un borrador de matriz. Validaríamos permisos, auditoría y autorización institucional antes de evaluar datos reales. ¿Qué plan de estudios y año conviene usar para el ejemplo?",
@@ -126,9 +126,9 @@ function schoolReply(p,mode){
    text:"Sí, lo que describís sería un sistema integral de gestión académica: cargás al alumno una vez, sus materias y notas quedan asociadas a cada ciclo y se prepara progresivamente un borrador del libro matriz.\n\n"+p.steps.map((step,i)=>(i+1)+". "+step).join("\n")+"\n\n"+p.constraint+"\n\n"+p.question,
    chips};
  }
- let chips=p.id==="analiticos"?["Fuentes ENSPA y planillas","Empezar piloto","Cuánto cuesta","Pedir evaluación"]:["Empezar piloto","Cuánto cuesta","Pedir evaluación"];
+ let chips=p.id==="analiticos"?["Fuentes autorizadas y planillas","Empezar piloto","Cuánto cuesta","Pedir evaluación"]:["Empezar piloto","Cuánto cuesta","Pedir evaluación"];
  if(mode==="fuentes"&&p.id==="analiticos")return {
-  text:"Si los registros están en ENSPA, Motor Académico, planillas o libros matriz, primero habría que comprobar qué información puede consultarse o exportarse legalmente. Podríamos normalizar materias, cursos y planes para detectar faltantes y preparar borradores. No hay integración confirmada con esos sistemas y no modificaríamos registros oficiales automáticamente. ¿Podés exportar un listado autorizado en CSV o Excel, o solo consultar los datos pantalla por pantalla? Para el piloto usaríamos datos ficticios, no registros reales de estudiantes.",
+  text:"Primero habría que determinar qué datos académicos puede consultar o exportar legalmente la institución, ya estén en papel, planillas o plataformas propias. Con información autorizada podríamos normalizar materias, cursos y planes para detectar faltantes y preparar borradores revisables. No existe una integración confirmada con sistemas externos y no se modificarían registros oficiales automáticamente. ¿Podés exportar datos autorizados en CSV o Excel, o solamente consultarlos desde una pantalla? Para el piloto usaríamos datos ficticios.",
   chips:["Ver circuito completo","Empezar piloto","Pedir evaluación"]};
  if(mode==="piloto")return {
   text:"Empezaría con un piloto de "+p.name+" sobre datos ficticios: formulario simple, bandeja de seguimiento, verificación de registros y borrador revisable. Solo después de probar roles, procedimientos, privacidad y autorización institucional se evaluaría usar datos reales. "+p.question,
@@ -169,7 +169,7 @@ function guided(message,state){
  let sector=selectedSector(q);
  if(sector&&st.sector&&sector.id!==st.sector)st.project=null;
  if(sector)st.sector=sector.id;
- const explicitProject=projectFor(q,st.project);
+ const explicitProject=projectFor(q,st.project) || (/\b(inscripciones y legajos|calificaciones y cursadas)\b/.test(q)?SCHOOL_PROJECTS.find(x=>x.id==="legajos"):null) || (/\b(solicitudes escolares|reportes escolares|reportes)\b/.test(q)&&st.sector==="educacion"?SCHOOL_PROJECTS.find(x=>x.id==="solicitudes"):null);
  if(explicitProject){st.project=explicitProject.id;st.sector="educacion";}
  const knownProject=SCHOOL_PROJECTS.find(x=>x.id===st.project)||null;
  const selected=SECTORS.find(s=>s.id===st.sector)||null;
@@ -191,15 +191,15 @@ function guided(message,state){
   out="Podés enviar tu consulta en el formulario de Fluynova. Es sin cargo para una primera evaluación orientativa y la revisará una persona. Si me contás el proceso y la prioridad, puedo ayudarte a preparar una descripción para pedir presupuesto, sin enviarla automáticamente.";
   tag="contacto";chips=["Qué datos preparar","Precio orientativo"];
  }else if(knownProject&&(explicitProject||
- /\b(analitico|paso a paso|etapas?|borrador|formulario|web|enspa|motor academico|libros? matriz|registro academico|digitalizar|automatizar|solicitudes?|exportar|datos|materias|firmas?|empezar|piloto|implementacion|como funcionaria|como se haria|fuentes|ver circuito|calificaciones?|notas?|ciclo|curso|division|alumnos?|matriculacion|legajo|matriz|exportacion|cada ano|complet\w*|carga|cargar)\b/.test(q)||
+ /\b(analitico|paso a paso|etapas?|borrador|formulario|web|plataforma escolar|sistema academico|libros? matriz|registro academico|digitalizar|automatizar|solicitudes?|exportar|datos|materias|firmas?|empezar|piloto|implementacion|como funcionaria|como se haria|fuentes|ver circuito|calificaciones?|notas?|ciclo|curso|division|alumnos?|matriculacion|legajo|matriz|exportacion|cada ano|complet\w*|carga|cargar)\b/.test(q)||
  (st.lastAnswerType==="proyecto_educativo"&&/\b(si|dale|quiero|hacerlo|avanzar|continuar)\b/.test(q)))) {
   const mode=knownProject.id==="legajos"?
-   (/\b(enspa|motor academico|planillas|fuentes|exportar|importar|csv|excel)\b/.test(q)?"fuentes":
+   (/\b(planillas|fuentes|exportar|importar|csv|excel|sistema academico|plataforma escolar)\b/.test(q)?"fuentes":
     /\b(empezar|piloto|arrancar|implementacion)\b/.test(q)?"piloto":
     /\b(cada ano|cada ciclo|ciclo lectivo|ciclo anual|cargar cada ano|carga cada ano|curso por ano)\b/.test(q)&&!explicitProject?"anual":
     /\b(matriz|libro matriz)\b/.test(q)&&!explicitProject?"matriz":
     /\b(calificaciones|notas|materias|periodos|evaluacion)\b/.test(q)&&!explicitProject?"notas":"pasos"):
-   (/\b(enspa|motor academico|libros? matriz|planillas|fuentes|exportar|registros? academicos?)\b/.test(q)?"fuentes":
+   (/\b(libros? matriz|planillas|fuentes|exportar|registros? academicos?|sistema escolar)\b/.test(q)?"fuentes":
     /\b(empezar|piloto|arrancar|implementacion|como se haria)\b/.test(q)?"piloto":"pasos");
   const result=schoolReply(knownProject,mode);out=result.text;chips=result.chips;tag="proyecto_educativo";st.topic="sistema";
  }else if(price){
@@ -220,7 +220,7 @@ function guided(message,state){
   out="Para "+(selected.id==="educacion"?"una ":"un ")+selected.name+" se me ocurren estas automatizaciones:\n\n"+
     selected.items.map((x,i)=>(i+1)+". "+x.charAt(0).toUpperCase()+x.slice(1)+".").join("\n")+
     "\n\n"+selected.starter+"\n\n"+selected.ask;
-  st.topic="sistema";tag=selected.id;chips=selected.id==="taller"?["Turnos y presupuestos","Control de repuestos","Avisos a clientes","Cuánto cuesta"]:selected.id==="educacion"?["Legajos y libro matriz","Analíticos por solicitud web","Pases escolares","Equivalencias"]:["Turnos","Stock","Presupuestos","Cuánto cuesta"];
+  st.topic="sistema";tag=selected.id;chips=selected.id==="taller"?["Turnos y presupuestos","Control de repuestos","Avisos a clientes","Cuánto cuesta"]:selected.id==="educacion"?["Inscripciones y legajos","Calificaciones y cursadas","Solicitudes escolares","Reportes"]:["Turnos","Stock","Presupuestos","Cuánto cuesta"];
  }else if(hasExamples && (!selected||!ff.length)){
   out=EXAMPLES;tag="ejemplos";chips=["Taller mecánico","Peluquería","Comercio","Inmobiliaria"];
  }else if(ff.length){
@@ -252,14 +252,14 @@ function guided(message,state){
    tag="propuesta";chips=["Dame ejemplos","Cuánto cuesta","Pedir evaluación"];
   }else{
    out="Ya sé que hablamos de tu "+selected.name+". "+selected.starter+" "+selected.ask;
-   tag=selected.id;chips=selected.id==="educacion"?["Legajos y libro matriz","Analíticos por solicitud web","Pases escolares","Equivalencias"]:["Dame ejemplos","Turnos y presupuestos","Cuánto cuesta"];
+   tag=selected.id;chips=selected.id==="educacion"?["Inscripciones y legajos","Calificaciones y cursadas","Solicitudes escolares","Reportes"]:["Dame ejemplos","Turnos y presupuestos","Cuánto cuesta"];
   }
  }else if(/planillas?|excel|google sheets|reportes|formularios|copiar datos/.test(q)){
   st.topic="planillas";tag="planillas";
   out="Podríamos reducir copias de datos, aplicar validaciones, organizar reportes y conectar formularios con una planilla, siempre que las herramientas lo permitan. ¿Qué información copiás o controlás a mano?";
   chips=["Dame ejemplos","Cuánto cuesta","Pedir evaluación"];
- }else if(/apdocente|alertasapd|actos publicos|docentes pba|\bpid\b/.test(q)){
-  tag="apdocente";out="AlertasAPD ayuda a organizar búsquedas docentes bonaerenses. Es independiente de ABC/DGCyE: la publicación y postulación oficiales se verifican allí. Podés ver la plataforma en alertasapd.com.ar.";
+ }else if(/sistemas externos escolares|plataformas oficiales|integrar gestion academica/.test(q)){
+  tag="externos";out="Podemos estudiar una integración con plataformas externas, pero primero hay que verificar que permitan acceso autorizado, cuáles son sus condiciones y cómo proteger los datos. No tenemos conexiones automáticas con los sistemas de cada institución.";
   chips=["Consultar Fluynova","Pedir evaluación"];
  }else if(thanks){
   out="Perfecto. Ya tenemos una idea de por dónde empezar. Si querés, definimos una primera función pequeña para probar antes de contratar algo más grande. ¿Qué tarea te gustaría resolver primero?";
