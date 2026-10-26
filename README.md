@@ -53,3 +53,24 @@ Visitar `http://127.0.0.1:8000`. Configurar credenciales y opciones desde variab
 5. Si se requiere uptime permanente, evaluar plan de alojamiento con disponibilidad apropiada y backups.
 
 Estas mejoras **no requieren contratar un servicio de pago** para mantenerse en su estado actual.
+
+## Guardián v0.1 (26/10/2026)
+
+- /guardian/: landing de producto en piloto, con asistente de atención a clientes.
+- Widget flotante en la portada: respuestas guiadas por temas e historial únicamente en memoria de la pestaña. Deriva al formulario existente con etiquetas UTM.
+- /api/guardian/status y /api/guardian/capabilities: estados no sensibles.
+- /api/guardian/chat: IA generativa opcional y deshabilitada sin credenciales. Integración de servidor con Groq API HTTPS fija; configurar exclusivamente mediante variables de entorno GUARDIAN_AI_KEY y GUARDIAN_AI_MODEL. Nunca insertar una clave en código cliente o GitHub. Requiere consentimiento específico por conversación. Historial limitado y sin persistencia intencional. Puede generar cargos o límites según la cuenta del proveedor; no activarla sin revisar costos, privacidad y términos.
+- No están conectados al chatbot por sí solos Gmail, Instagram, bancos ni las bases APD. Las alertas operativas se producen mediante tareas separadas autorizadas, no usando un chatbot abierto al público como panel administrativo.
+- Para atención automatizada en WhatsApp Business, Mercado Pago o CRM se requieren integraciones independientes autorizadas.
+- Contacto comercial público sigue usando FormSubmit. No activar el SQLite del panel privado como base durable en Render gratuito.
+
+## Guardián v0.1 — asistente y vigilancia (26/10/2026)
+
+- `/guardian/`: página de demostración de Guardián; chatbot conversacional también en la portada.
+- Modo base de **guía contextual** sin API de pago: clasifica solicitudes comerciales, mantiene contexto durante la visita, orienta sobre los precios públicos y deriva al formulario de Fluynova. No almacena las conversaciones ni inventa un diagnóstico técnico.
+- `/api/guardian/status` y `/api/guardian/capabilities`: endpoints públicos de estado, sin credenciales ni datos personales.
+- `/api/guardian/chat`: conexión **opcional** con un modelo generativo externo mediante HTTPS. Solo se habilita si el operador configura `GUARDIAN_AI_KEY` y `GUARDIAN_AI_MODEL` en el entorno del servidor; el visitante debe dar consentimiento antes de que se transfiera cualquier mensaje. Hay límites por longitud, historial y uso. Si no se configura, el chat contextual sigue funcionando sin costo de API.
+- El modo IA usa el endpoint de Groq fijo en el servidor; no se aceptan URLs arbitrarias ni se publican claves en el navegador. El proveedor puede tener cuotas o cargos; comprobar condiciones antes de activarlo.
+- La vigilancia de Gmail, GitHub, Render, Instagram o APDocente **no está conectada automáticamente al chatbot público**: debe operar a través de tareas autorizadas separadas. No se puede vigilar una fuente sin conexión y permiso.
+- Sin integración automática con WhatsApp Business, Mercado Pago, medios de pago, datos privados de terceros ni acciones destructivas.
+- El formulario de contacto existente se conserva sin cambios. No activar almacenamiento efímero de leads en Render gratuito.

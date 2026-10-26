@@ -1,0 +1,44 @@
+name: Guardian smoke tests
+on:
+  pull_request:
+    paths:
+      - "guardian_ai.py"
+      - "app.py"
+      - "static/guardian/**"
+      - "static/index.html"
+      - ".github/workflows/guardian-smoke.yml"
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar dependencias para test
+        run: |
+          python -m pip install -r requirements.txt "httpx>=0.28,<1"
+      - name: Verificar sintaxis y API de Guardián
+        run: |
+          python -m py_compile app.py guardian_ai.py
+          python - <<'PY'
+          from fastapi.testclient import TestClient
+          from app import app
+          with TestClient(app) as c:
+              a=c.get('/api/guardian/status')
+              assert a.status_code==200, a.text
+              assert a.json()['guardian']=='online'
+              cap=c.get('/api/guardian/capabilities')
+              assert cap.status_code==200
+              assert cap.json()['guided'] is True
+              assert cap.json()['external_ai_enabled'] is False
+              assert c.post('/api/guardian/chat',json={'messages':[{'role':'user','content':'Hola'}], 'consent':False}).status_code==503
+              for path in ['/','/guardian/','/guardian/guardian.css','/guardian/guardian.js','/api/health']:
+                  response=c.get(path)
+                  assert response.status_code==200, (path,response.status_code)
+              assert b'guardian/guardian.js' in c.get('/').content
+          print('Guardián API + assets + landing: OK')
+          PY
+      - name: Comprobar JavaScript si Node está disponible
+        run: node --check static/guardian/guardian.js
