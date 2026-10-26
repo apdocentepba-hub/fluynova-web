@@ -78,7 +78,7 @@ function projectFor(q){return SCHOOL_PROJECTS.find(x=>x.re.test(q))||null}
 function schoolReply(p,mode){
  let chips=p.id==="analiticos"?["Fuentes ENSPA y planillas","Empezar piloto","Cuánto cuesta","Pedir evaluación"]:["Empezar piloto","Cuánto cuesta","Pedir evaluación"];
  if(mode==="fuentes"&&p.id==="analiticos")return {
-  text:"Si los registros están en ENSPA, Motor Académico, planillas o libros matriz, primero habría que comprobar qué información puede consultarse o exportarse legalmente. Podríamos normalizar materias, cursos y planes para detectar faltantes y preparar borradores. No hay integración confirmada con esos sistemas y no modificaríamos registros oficiales automáticamente. "+p.question,
+  text:"Si los registros están en ENSPA, Motor Académico, planillas o libros matriz, primero habría que comprobar qué información puede consultarse o exportarse legalmente. Podríamos normalizar materias, cursos y planes para detectar faltantes y preparar borradores. No hay integración confirmada con esos sistemas y no modificaríamos registros oficiales automáticamente. ¿Podés exportar un listado autorizado en CSV o Excel, o solo consultar los datos pantalla por pantalla? Para el piloto usaríamos datos ficticios, no registros reales de estudiantes.",
   chips:["Ver circuito completo","Empezar piloto","Pedir evaluación"]};
  if(mode==="piloto")return {
   text:"Empezaría con un piloto de "+p.name+" sobre datos ficticios: formulario simple, bandeja de seguimiento, verificación de registros y borrador revisable. Solo después de probar roles, procedimientos, privacidad y autorización institucional se evaluaría usar datos reales. "+p.question,
