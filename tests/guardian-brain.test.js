@@ -93,11 +93,11 @@ test('Un analítico pedido directamente sin decir rubro es reconocido',()=>{
  assert.match(r.reply,/bandeja privada/);
  assert.match(r.reply,/Secretaría revisa el borrador/);
 });
-test('Seguimiento ENSPA específico, sin inventar API ni permisos',()=>{
- const [,,r]=conversation('trabajo en una escuela','diseño de analiticos segun solicitud web','uso ENSPA y Motor Academico y planillas');
+test('Seguimiento con fuentes institucionales sin inventar API ni permisos',()=>{
+ const [,,r]=conversation('trabajo en una escuela','diseño de analiticos segun solicitud web','uso un sistema institucional y planillas');
  assert.equal(r.context.project,'analiticos');
- assert.match(r.reply,/No hay integración confirmada/);
- assert.match(r.reply,/ENSPA/);
+ assert.match(r.reply,/No existe una integración confirmada|No hay conexiones a sistemas académicos externos|No hay integración confirmada/);
+ assert.match(r.reply,/fuentes externas|sistemas externos|plataformas propias|datos académicos/);
 });
 test('Ruta de primer piloto para analíticos',()=>{
  const [,,r]=conversation('institución educativa','analíticos desde la web','Empezar piloto');
@@ -106,7 +106,7 @@ test('Ruta de primer piloto para analíticos',()=>{
 });
 test('El chat educativo ofrece chips relacionados, no turnos de taller',()=>{
  const [r]=conversation('tengo una institucion educativa');
- assert.deepEqual(r.choices.slice(0,4),['Legajos y libro matriz','Analíticos por solicitud web','Pases escolares','Equivalencias']);
+ assert.deepEqual(r.choices.slice(0,4),['Inscripciones y legajos','Calificaciones y cursadas','Solicitudes escolares','Reportes']);
 });
 test('Opciones educativas seleccionadas se convierten en proyecto',()=>{
  const [a,b]=conversation('tengo una institucion educativa','Analíticos por solicitud web');
@@ -138,10 +138,10 @@ test('La consulta por precio sigue contextualizada a la gestión escolar',()=>{
  assert.match(r.reply,/una institución educativa/);
 });
 
-test('Tras informar ENSPA y planillas, pregunta por exportación y no vuelve a pedir fuentes',()=>{
- const [,,r]=conversation('institución educativa','analíticos por solicitud web','uso ENSPA y planillas');
- assert.match(r.reply,/¿Podés exportar un listado autorizado en CSV o Excel/);
- assert.doesNotMatch(r.reply,/¿Los datos ya están en ENSPA/);
+test('Tras informar fuentes y planillas, pregunta por exportación y no vuelve a pedir fuentes',()=>{
+ const [,,r]=conversation('institución educativa','analíticos por solicitud web','uso un sistema institucional y planillas');
+ assert.match(r.reply,/¿Podés exportar datos autorizados en CSV o Excel/);
+ assert.doesNotMatch(r.reply,/¿La información se consulta desde papel, planillas/);
 });
 
 
@@ -188,10 +188,10 @@ test('Seguimiento de calificaciones indica roles y rectificaciones',()=>{
  assert.match(r.reply,/docente habilitado/);
  assert.match(r.reply,/Secretaría revisa rectificaciones/);
 });
-test('Fuentes educativas no se convierten en promesas de integración con ENSPA',()=>{
- const [,,r]=conversation('institucion educativa','Legajos y libro matriz','uso ENSPA y planillas');
+test('Fuentes educativas no se convierten en promesas de integración',()=>{
+ const [,,r]=conversation('institucion educativa','Legajos y libro matriz','uso un sistema institucional y planillas');
  assert.equal(r.context.project,'legajos');
- assert.match(r.reply,/no afirmo que ENSPA tenga API/i);
+ assert.match(r.reply,/nunca se presume que una plataforma externa tenga API/i);
  assert.match(r.reply,/autorizada/);
 });
 test('El piloto escolar usa registros ficticios, no datos de menores reales',()=>{
@@ -205,8 +205,8 @@ test('Intención corta: digitalizar legajo escolar',()=>{
 });
 test('Botones del rubro escolar incluyen legajos',()=>{
  const [r]=conversation('tengo una institucion educativa');
- assert.equal(r.choices[0],'Legajos y libro matriz');
- assert.ok(r.choices.includes('Analíticos por solicitud web'));
+ assert.equal(r.choices[0],'Inscripciones y legajos');
+ assert.ok(r.choices.includes('Calificaciones y cursadas'));
 });
 test('Un proyecto no reconocido pero detallado obtiene una propuesta, no repetición genérica',()=>{
  const [first,r]=conversation('institucion educativa','necesito un sistema que revise mis tareas y me permita generar constancias');
@@ -221,13 +221,32 @@ test('Pedir evaluación funciona como instrucción de contacto',()=>{
  assert.match(r.reply,/formulario de Fluynova/);
 });
 test('Un analítico desde libros matriz conserva el proyecto analítico, no legajos',()=>{
- const [,,r]=conversation('institucion educativa','analíticos por solicitud web','uso ENSPA y libros matriz');
+ const [,,r]=conversation('institucion educativa','analíticos por solicitud web','uso planillas y libros matriz');
  assert.equal(r.context.project,'analiticos');
- assert.match(r.reply,/No hay integración confirmada/);
+ assert.match(r.reply,/No existe una integración confirmada|No hay conexiones a sistemas académicos externos|No hay integración confirmada/);
 });
 test('Consultas de taller conservan funcionalidad anterior',()=>{
  const [a,b]=conversation('automatizar mi taller mecanico','quiero turnos y presupuestos');
  assert.equal(a.context.sector,'taller');
  assert.equal(b.context.project,null);
  assert.match(b.reply,/orden de trabajo/);
+});
+
+test('Chat público no usa nombres de sistemas académicos personales al sugerir opciones',()=>{
+ const seq=conversation('tengo una institucion educativa','quiero procesar certificados academicos desde la web','uso planillas');
+ const answers=seq.map(x=>x.reply+' '+x.choices.join(' ')).join('\n');
+ const secretPattern=/ENSPA|Motor Acad[eé]mico|DGCyE|AlertasAPD|apdocente|alertasapd\.com\.ar/i;
+ assert.doesNotMatch(answers,secretPattern);
+ assert.deepEqual(seq[0].choices,['Inscripciones y legajos','Calificaciones y cursadas','Solicitudes escolares','Reportes']);
+});
+test('Chat público no sugiere que conoce el trabajo ni cuentas privadas del propietario',()=>{
+ const result=conversation('Hola','soy de una escuela','quiero organizar inscripción y calificaciones');
+ for(const r of result){
+  assert.doesNotMatch(r.reply,/ya conozco tu escuela|sé dónde trabajás|tus alumnos personales|tu cuenta de Drive|tu Gmail/i);
+ }
+});
+test('El código del motor público no tiene nombres de sistemas o escuelas particulares',()=>{
+ const source=require('node:fs').readFileSync(require.resolve('../static/guardian/guardian_brain.js'),'utf8');
+ const blocked=['ENSPA','Motor Académico','DGCyE','AlertasAPD','apdocente','Próspero Alemandri','Podubinio'];
+ for(const term of blocked)assert.equal(source.toLowerCase().includes(term.toLowerCase()),false,'Se encontró término no permitido: '+term);
 });
