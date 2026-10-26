@@ -45,7 +45,7 @@ test('Control de stock en una ferretería',()=>{
 test('Seguridad y datos personales',()=>{
  const [r]=conversation('¿Es seguro pasar contraseñas y DNI?');
  assert.match(r.reply,/No compartas claves/);
- assert.match(r.reply,/sin enviarlas ni guardarlas/);
+ assert.match(r.reply,/no se guardan en Fluynova/);
 });
 test('La integración externa no se promete como disponible',()=>{
  const [,r]=conversation('tengo un taller mecanico','¿Podés integrar Mercado Pago y WhatsApp automáticamente?');
