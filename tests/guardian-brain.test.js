@@ -106,7 +106,7 @@ test('Ruta de primer piloto para analíticos',()=>{
 });
 test('El chat educativo ofrece chips relacionados, no turnos de taller',()=>{
  const [r]=conversation('tengo una institucion educativa');
- assert.deepEqual(r.choices.slice(0,3),['Analíticos por solicitud web','Pases escolares','Equivalencias']);
+ assert.deepEqual(r.choices.slice(0,4),['Legajos y libro matriz','Analíticos por solicitud web','Pases escolares','Equivalencias']);
 });
 test('Opciones educativas seleccionadas se convierten en proyecto',()=>{
  const [a,b]=conversation('tengo una institucion educativa','Analíticos por solicitud web');
