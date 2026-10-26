@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#0b1219">
+<title>Soluciones Express para negocios | FLUYNOVA</title>
+<meta name="description" content="Automatizamos planillas, consultas y registros para pequeños negocios de Argentina. Tres alcances iniciales y precios orientativos en pesos. Evaluación inicial sin cargo.">
+<meta name="robots" content="index,follow,max-image-preview:large">
+<link rel="canonical" href="https://fluynova-web.onrender.com/soluciones-express/">
+<meta property="og:title" content="FLUYNOVA · Soluciones Express para tu negocio">
+<meta property="og:description" content="Tres problemas reales, tres propuestas acotadas. Sin contratar un sistema enorme.">
+<meta property="og:type" content="website"><meta property="og:locale" content="es_AR">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b1017;--surface:#131e25;--stroke:#314349;--text:#f5f8f2;--muted:#b8c8c7;--lime:#beff70;--teal:#8ddacb;font-family:"DM Sans",system-ui,sans-serif;color-scheme:dark}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);line-height:1.6}a{color:inherit}a:focus-visible{outline:3px solid var(--lime);outline-offset:4px}
+.wrap{max-width:1150px;margin:auto;padding:0 22px}
+header{background:#111c22;border-bottom:1px solid var(--stroke)}
+header .wrap{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-top:17px;padding-bottom:17px}
+.brand{font:800 24px "Space Grotesk",sans-serif;text-decoration:none;letter-spacing:-1px}
+.brand b{color:var(--lime)}
+header nav{display:flex;gap:23px;flex-wrap:wrap}
+header nav a{font-size:13px;text-decoration:none;color:#d6ebe4;font-weight:700}
+.hero{padding-top:64px;padding-bottom:46px;background:radial-gradient(ellipse at 90% 0%,#1b4138,transparent 55%)}
+.tag{font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--lime)}
+h1,h2,h3{font-family:"Space Grotesk",sans-serif;line-height:1.14}
+h1{font-size:clamp(36px,6.4vw,69px);letter-spacing:-2.7px;max-width:890px;margin:17px 0}
+h1 em{font-style:normal;color:var(--lime)}
+.lead{font-size:18px;color:var(--muted);max-width:790px}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:49px;padding:13px 21px;border-radius:9px;text-decoration:none;font-weight:800;font-size:14px;background:var(--lime);color:#15231a;transition:transform .15s;margin:8px 12px 8px 0}
+.btn:hover{transform:translateY(-2px)}.btn-outline{border:1px solid #6d9988;background:transparent;color:#e4faec}
+.disclaimer{font-size:12px;color:#9bb7b2;max-width:800px;margin-top:14px}
+section{padding:44px 0}section h2{font-size:clamp(27px,4vw,38px);letter-spacing:-1px;margin:0 0 12px}.sec-intro{margin:0 0 23px;color:var(--muted);max-width:820px}
+.products{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:15px}
+.product{background:linear-gradient(160deg,#14282a,#121e27);border:1px solid #416053;border-radius:17px;padding:24px;display:flex;flex-direction:column}
+.product:nth-child(2){border-color:#5a8176}.product:nth-child(3){border-color:#597b89}
+.product .tag{font-size:10px;letter-spacing:1.4px}
+.product h3{font-size:24px;margin:12px 0}.product p{font-size:14px;color:#c7d4cf;margin:0 0 18px}
+.price{font:800 34px "Space Grotesk",sans-serif;color:var(--lime);line-height:1.2;margin-bottom:11px}
+.price small{display:block;font:400 12px "DM Sans",sans-serif;color:#c3d3c5;letter-spacing:0;margin-bottom:2px}
+ul{margin:2px 0 24px;padding:0;list-style:none}li{position:relative;padding-left:22px;margin:8px 0;font-size:13px;color:#e6f1ec}li::before{content:"✓";position:absolute;left:0;color:var(--lime);font-weight:900}
+.product .cta{margin-top:auto}.product .btn{width:100%;margin:0}.small{font-size:11px;color:#b6cfc3;margin-top:12px}
+.process{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+.process div{background:#152126;border:1px solid var(--stroke);border-radius:12px;padding:20px}
+.process strong{display:block;color:var(--lime);font:700 21px "Space Grotesk",sans-serif;margin-bottom:7px}
+.process p{font-size:14px;color:var(--muted);margin:0}
+.limits{background:#17252b;border:1px solid #3d635d;border-radius:16px;padding:25px}
+.limits h2{margin-top:0}.limits p{color:#c1d1cc;max-width:940px;margin:10px 0}
+.faq details{border-bottom:1px solid var(--stroke);padding:16px 0}.faq summary{font-weight:700;cursor:pointer}.faq p{color:var(--muted);max-width:900px}
+.last{margin:14px 0 40px;padding:34px;border-radius:17px;border:1px solid #5b836f;background:linear-gradient(115deg,#18382b,#1a2a30)}
+.last p{color:#d2e1d9;max-width:760px}footer{border-top:1px solid var(--stroke);padding:26px 0;font-size:12px;color:#a5bbb7}
+footer .wrap{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:15px}
+footer a{color:var(--lime)}
+@media(max-width:830px){.products{grid-template-columns:1fr}.process{grid-template-columns:1fr}.hero{padding-top:43px}}
+@media(max-width:500px){header .wrap{align-items:flex-start;flex-direction:column}h1{letter-spacing:-1px}.product{padding:21px}.wrap{padding-inline:16px}.last{padding:22px}}
+@media(prefers-reduced-motion:reduce){.btn{transition:none}}
+</style>
+</head>
+<body>
+<header><div class="wrap"><a class="brand" href="/">FLUY<b>NOVA</b>.</a><nav aria-label="Secciones"><a href="/">Inicio</a><a href="/diagnostico/">Diagnóstico sin cargo</a><a href="/productos/">Software instalable</a></nav></div></header>
+<main>
+<div class="hero"><div class="wrap">
+<div class="tag">Soluciones Express · Octubre–Diciembre 2026</div>
+<h1>¿Tu negocio pierde tiempo con tareas que se repiten? <em>Podemos simplificarlas.</em></h1>
+<p class="lead">No necesitás comprar un sistema enorme para empezar. Te proponemos tres servicios concretos: mejorar planillas, ordenar consultas o construir un panel sencillo.</p>
+<a class="btn" href="/?utm_source=soluciones_express&amp;utm_medium=web&amp;utm_campaign=venta_noviembre&amp;utm_content=diagnostico#contacto">Contanos qué tarea querés mejorar ↗</a>
+<a class="btn btn-outline" href="#paquetes">Ver opciones y precios ↓</a>
+<p class="disclaimer">La evaluación inicial es orientativa y sin cargo. Los importes son precios de referencia para un alcance inicial; el presupuesto final se confirma por escrito después de revisar los requisitos. Sin promesas de ahorro ni resultados garantizados.</p>
+</div></div>
+<section id="paquetes"><div class="wrap">
+<h2>Elegí un punto de partida</h2>
+<p class="sec-intro">Trabajos acotados, con entregables claros. Si necesitás algo distinto, lo evaluamos y cotizamos aparte.</p>
+<div class="products">
+<article class="product">
+<div class="tag">01 / Para negocios que viven en Excel</div>
+<h3>Planillas sin caos</h3>
+<p>Ordenar un archivo que todos usan, corregir controles manuales y hacer más fácil su mantenimiento.</p>
+<div class="price"><small>Referencia desde</small>$ 120.000 ARS</div>
+<ul><li>Hasta 2 planillas del mismo proceso</li><li>Validaciones, fórmulas y organización de datos</li><li>Resumen operativo sencillo</li><li>Guía corta de uso y una ronda de correcciones</li></ul>
+<div class="cta"><a class="btn" href="/?utm_source=soluciones_express&amp;utm_medium=web&amp;utm_campaign=venta_noviembre&amp;utm_content=planillas#contacto">Consultar por mis planillas ↗</a><div class="small">No incluye integraciones externas, macros complejas ni migraciones masivas.</div></div>
+</article>
+<article class="product">
+<div class="tag">02 / Para clientes y presupuestos</div>
+<h3>Consultas ordenadas</h3>
+<p>Centralizar solicitudes y dejar de perder de vista qué se respondió y qué quedó pendiente.</p>
+<div class="price"><small>Referencia desde</small>$ 240.000 ARS</div>
+<ul><li>Un formulario de entrada de consultas</li><li>Registro ordenado en planilla o herramienta acordada</li><li>Estados básicos de seguimiento</li><li>Instrucciones de uso y una ronda de correcciones</li></ul>
+<div class="cta"><a class="btn" href="/?utm_source=soluciones_express&amp;utm_medium=web&amp;utm_campaign=venta_noviembre&amp;utm_content=consultas#contacto">Organizar mis consultas ↗</a><div class="small">No incluye automatizar WhatsApp sin API oficial ni campañas publicitarias.</div></div>
+</article>
+<article class="product">
+<div class="tag">03 / Para organizar el trabajo</div>
+<h3>Mini sistema interno</h3>
+<p>Registrar un proceso concreto y ver la información importante sin saltar entre varios archivos.</p>
+<div class="price"><small>Referencia desde</small>$ 420.000 ARS</div>
+<ul><li>Un flujo operativo principal bien definido</li><li>Altas, consultas y cambios de estado básicos</li><li>Resumen o reporte simple</li><li>Pruebas funcionales y documentación básica</li></ul>
+<div class="cta"><a class="btn" href="/?utm_source=soluciones_express&amp;utm_medium=web&amp;utm_campaign=venta_noviembre&amp;utm_content=mini_sistema#contacto">Evaluar un mini sistema ↗</a><div class="small">Alojamiento, dominios, licencias de terceros e integraciones se cotizan aparte.</div></div>
+</article>
+</div></div></section>
+<section><div class="wrap">
+<h2>Cómo trabajamos</h2>
+<div class="process">
+<div><strong>01 · Contame</strong><p>Nos explicás qué hacés hoy y, sin compartir información confidencial, qué parte te consume tiempo.</p></div>
+<div><strong>02 · Definimos</strong><p>Acordamos alcance, precio, entregables, calendario de trabajo y condiciones antes de comenzar.</p></div>
+<div><strong>03 · Probamos</strong><p>Revisamos juntos el resultado y lo ajustamos según lo que quedó incluido en el presupuesto.</p></div>
+</div></div></section>
+<section><div class="wrap"><div class="limits">
+<h2>Sin sorpresas en el presupuesto</h2>
+<p><strong>Los valores son orientativos, no ofertas cerradas.</strong> El precio depende del estado de tus archivos, cantidad de datos, permisos, integraciones y complejidad real. Antes de aceptar una propuesta confirmamos por escrito entregables, fechas, forma de pago, impuestos aplicables y criterios de aceptación.</p>
+<p>Los trabajos que involucren información personal requieren revisar privacidad y permisos. No solicitamos contraseñas en el formulario. Si una tarea depende de sistemas externos que no permiten integración segura, lo aclaramos antes de presupuestar.</p>
+</div></div></section>
+<section class="faq"><div class="wrap">
+<h2>Preguntas frecuentes</h2>
+<details><summary>¿La primera consulta tiene costo?</summary><p>No. La conversación inicial para entender el problema y decirte si podemos ayudarte es orientativa y sin cargo. Un diagnóstico técnico profundo, si hiciera falta, se cotiza aparte.</p></details>
+<details><summary>¿Necesito contratar mantenimiento mensual?</summary><p>No necesariamente. Si el alcance incluye un archivo o sistema local que podés usar por tu cuenta, el mantenimiento posterior es opcional. Si requiere servidores u otras plataformas, se detallan los costos recurrentes antes de contratar.</p></details>
+<details><summary>¿Se paga todo por adelantado?</summary><p>La forma de pago se define en el presupuesto. Para proyectos acotados podemos acordar un anticipo y un saldo contra entrega validada.</p></details>
+<details><summary>¿En cuánto tiempo se entrega?</summary><p>Depende de la complejidad y de la disponibilidad para iniciar el trabajo. El plazo concreto se informa antes de que aceptes la propuesta. No prometemos entregas sin ver los requisitos.</p></details>
+</div></section>
+<div class="wrap"><div class="last">
+<div class="tag">¿Querés resolver una tarea este año?</div>
+<h2>Empezá por contarme cuál es.</h2>
+<p>Si todavía trabajás con planillas sueltas, consultas por varios canales o procesos repetitivos, podemos revisar por dónde conviene empezar.</p>
+<a class="btn" href="/?utm_source=soluciones_express&amp;utm_medium=web&amp;utm_campaign=venta_noviembre&amp;utm_content=cierre#contacto">Pedir evaluación sin cargo ↗</a>
+</div></div>
+</main>
+<footer><div class="wrap"><span>© 2026 FLUYNOVA · Automatización y software a medida desde Argentina.</span><span><a href="/privacidad">Privacidad</a> · <a href="/">Volver al inicio</a></span></div></footer>
+</body>
+</html>
