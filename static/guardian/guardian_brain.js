@@ -191,7 +191,7 @@ function guided(message,state){
   out="Podés enviar tu consulta en el formulario de Fluynova. Es sin cargo para una primera evaluación orientativa y la revisará una persona. Si me contás el proceso y la prioridad, puedo ayudarte a preparar una descripción para pedir presupuesto, sin enviarla automáticamente.";
   tag="contacto";chips=["Qué datos preparar","Precio orientativo"];
  }else if(knownProject&&(explicitProject||
- /\b(analitico|paso a paso|etapas?|borrador|formulario|web|enspa|motor academico|libros? matriz|registro academico|digitalizar|automatizar|solicitudes?|exportar|datos|materias|firmas?|empezar|piloto|implementacion|como funcionaria|como se haria|fuentes|ver circuito|calificaciones?|notas?|ciclo|curso|division|alumnos?|matriculacion|legajo|exportacion|cada ano|completar|carga|cargar)\b/.test(q)||
+ /\b(analitico|paso a paso|etapas?|borrador|formulario|web|enspa|motor academico|libros? matriz|registro academico|digitalizar|automatizar|solicitudes?|exportar|datos|materias|firmas?|empezar|piloto|implementacion|como funcionaria|como se haria|fuentes|ver circuito|calificaciones?|notas?|ciclo|curso|division|alumnos?|matriculacion|legajo|matriz|exportacion|cada ano|complet\w*|carga|cargar)\b/.test(q)||
  (st.lastAnswerType==="proyecto_educativo"&&/\b(si|dale|quiero|hacerlo|avanzar|continuar)\b/.test(q)))) {
   const mode=knownProject.id==="legajos"?
    (/\b(enspa|motor academico|planillas|fuentes|exportar|importar|csv|excel)\b/.test(q)?"fuentes":
@@ -242,8 +242,18 @@ function guided(message,state){
   }
   chips=["Cuánto cuesta","Empezar con algo simple","Pedir evaluación"];
  }else if(selected){
-  out="Ya sé que hablamos de tu "+selected.name+". "+selected.starter+" "+selected.ask;
-  tag=selected.id;chips=selected.id==="educacion"?["Legajos y libro matriz","Analíticos por solicitud web","Pases escolares","Equivalencias"]:["Dame ejemplos","Turnos y presupuestos","Cuánto cuesta"];
+  // Una descripción operativa concreta merece una ruta útil, no reiterar "¿qué trámite?"
+  const meaningful=q.split(" ").length>=8 && /\b(necesit\w*|quier\w*|sistema|automatiz\w*|volcar|cargar|registrar|ingresar|conectar|completar)\b/.test(q);
+  if(meaningful && selected.id==="educacion"){
+   out="Entiendo que querés conectar varias etapas de trabajo escolar en un mismo sistema, evitando cargar la misma información más de una vez. Primero habría que definir qué datos entran, qué personal puede modificarlos, qué validaciones se realizan y qué documentos o informes se generan, con revisión autorizada y un registro de cambios. Podríamos probar una sola etapa con datos ficticios. ¿Cuál sería el primer dato o trámite que ingresa al sistema?";
+   tag="propuesta_escolar";chips=["Legajos y libro matriz","Analíticos por solicitud web","Empezar piloto","Pedir evaluación"];
+  }else if(meaningful){
+   out="Para tu "+selected.name+" propondría un circuito simple: registrar una vez la información de entrada, asignar estados y responsables, validar los cambios y generar un reporte o aviso según el resultado. Antes de prometer integraciones hay que revisar las herramientas actuales. ¿En qué programa o planilla registrás hoy esos datos?";
+   tag="propuesta";chips=["Dame ejemplos","Cuánto cuesta","Pedir evaluación"];
+  }else{
+   out="Ya sé que hablamos de tu "+selected.name+". "+selected.starter+" "+selected.ask;
+   tag=selected.id;chips=selected.id==="educacion"?["Legajos y libro matriz","Analíticos por solicitud web","Pases escolares","Equivalencias"]:["Dame ejemplos","Turnos y presupuestos","Cuánto cuesta"];
+  }
  }else if(/planillas?|excel|google sheets|reportes|formularios|copiar datos/.test(q)){
   st.topic="planillas";tag="planillas";
   out="Podríamos reducir copias de datos, aplicar validaciones, organizar reportes y conectar formularios con una planilla, siempre que las herramientas lo permitan. ¿Qué información copiás o controlás a mano?";
