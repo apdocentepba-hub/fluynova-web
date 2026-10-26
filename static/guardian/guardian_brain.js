@@ -48,7 +48,7 @@ const SECTORS=[
 ];
 
 const SCHOOL_PROJECTS=[
- {id:"legajos",re:/\b(legajos? (digital(es)?|estudiantil(es)?|de alumnos?)|matricula escolar|matriculacion|sistema de alumnos?|gestion academica|registro academico integral|historial academico|trayectoria escolar|carga(r|do)? (de )?(notas|calificaciones)|volcar (las )?(notas|calificaciones)|completar (el |los )?libros? matriz)\b/,
+ {id:"legajos",re:/\b(legajos?( y libros? matriz| digital(es)?| estudiantil(es)?| de alumnos?)|matricula escolar|matriculacion|sistema de alumnos?|gestion academica|registro academico integral|historial academico|trayectoria escolar|carga(r|do)? (de )?(notas|calificaciones)|volcar (las )?(notas|calificaciones)|completar (el |los )?libros? matriz)\b/,
  name:"legajos, calificaciones y matriz escolar",
  steps:[
   "Inscripción: Secretaría da de alta al estudiante una sola vez con un identificador interno, datos de contacto mínimos y documentación necesaria. El sistema controla duplicados y cambios posteriores.",
@@ -94,7 +94,9 @@ function projectFor(q,previous){
    /\b(ingres\w*|inscrib\w*|calificaci\w*|notas?|matriz|materias?|anos?|cursad\w*)\b/.test(q);
  const academicCycle=/\b(matriz|legajos?|matricula|calificaci\w*|notas?|materias?)\b/.test(q)&&
    /\b(anos?|ciclo lectivo|cada ano|todos sus datos|ingres\w*|se vaya completando|registro|sistema|alumn\w*)\b/.test(q);
- const registryStrong=registry.re.test(q)||detailed||academicCycle;
+ const registryStrong=registry.re.test(q)||detailed||academicCycle||
+   (/\blegajos?\b/.test(q)&&/\b(cargar|carga|cargamos|notas|materias|alumnos|registro|sistema)\b/.test(q))||
+   (/\b(libros? matriz|matriz escolar)\b/.test(q)&&/\b(legajos?|completar|armar|cargar|sistema)\b/.test(q));
  const explicitAnalytic=/\banaliticos?\b|\bcertificado analitico\b|\btitulos? secundarios?\b/.test(q);
  if(registryStrong && (!explicitAnalytic || /\b(sistema integral|legajo digital|matricula escolar|todos los alumnos|cargar las notas)\b/.test(q)))return registry;
  if(explicitAnalytic)return SCHOOL_PROJECTS.find(x=>x.id==="analiticos");
@@ -111,7 +113,10 @@ function schoolReply(p,mode){
   if(mode==="piloto")return {
    text:"Haría un piloto con alumnos ficticios y un curso de prueba: alta inicial, asignación de materias según plan, carga de calificaciones de un ciclo, consolidación anual y vista previa de un borrador de matriz. Validaríamos permisos y auditoría antes de evaluar datos reales. ¿Qué plan de estudios y año conviene usar para el ejemplo?",
    chips:["Ver circuito completo","Cómo funciona el libro matriz","Pedir evaluación"]};
-  if(mode==="notas")return {
+  if(mode==="anual")return {
+   text:"Cada ciclo lectivo se crea una ficha anual vinculada al mismo legajo: año, curso, división, modalidad, plan vigente y materias. Los docentes cargan y validan calificaciones por período; Secretaría supervisa rectificaciones, pendientes y acreditaciones. Al cierre, se consolida un resumen anual y se actualiza la vista del borrador del libro matriz sin transcribir dos veces. ¿La escuela trabaja con distintas modalidades y planes de estudio, o todos los cursos comparten el mismo?",
+   chips:["Cómo funciona el libro matriz","Cómo se cargan las notas","Empezar piloto"]};
+ if(mode==="notas")return {
    text:"Las notas no deberían ir directamente al libro matriz sin control: un docente habilitado carga calificaciones por materia y período; Secretaría revisa rectificaciones y pendientes; al cierre del ciclo se consolida la trayectoria anual. El sistema permitiría advertir materias faltantes y modificaciones, conservando quién cambió qué y cuándo. ¿La escuela usa calificaciones por trimestre, cuatrimestre u otro régimen?",
    chips:["Cómo funciona el libro matriz","Ver circuito completo","Empezar piloto"]};
   if(mode==="matriz")return {
@@ -171,7 +176,7 @@ function guided(message,state){
  const ff=listFeatures(q),hasExamples=/\b(ejemplos?|ideas?|casos practicos|mostrame|que podria|que puedo automatizar|automatiza|automatizar|se puede hacer)\b/.test(q);
  const price=/\b(cuanto (sale|cuesta|cobran|cobras|vale)|que (precio|costo|tarifa|valor)|precio|tarifa|costos?|costo aproximado|cotizar mi proyecto)\b/.test(q);
  const greeting=/^(hola|buenas|buen dia|que tal|buenas tardes|buenas noches)$/.test(q);
- const human=/\b(quiero contratar|hablar con (una persona|alguien|un humano)|necesito un asesor|como contacto|correo de contacto|quiero una evaluacion)\b/.test(q);
+ const human=/\b(quiero contratar|hablar con (una persona|alguien|un humano)|necesito un asesor|como contacto|correo de contacto|quiero una evaluacion|pedir evaluacion|solicitar evaluacion)\b/.test(q);
  const times=/\b(cuanto tarda|plazos?|demora|cuando lo tendria|tiempo de entrega)\b/.test(q);
  const privacy=/\b(contrase\w*|tarjetas?|datos sensibles|privacidad|seguridad de datos|donde guardan)\b/.test(q);
  const integrations=/\b(integrar|conectar|api|mercado pago|afip|arca|factura electronica|whatsapp automaticamente)\b/.test(q);
@@ -186,11 +191,12 @@ function guided(message,state){
   out="Podés enviar tu consulta en el formulario de Fluynova. Es sin cargo para una primera evaluación orientativa y la revisará una persona. Si me contás el proceso y la prioridad, puedo ayudarte a preparar una descripción para pedir presupuesto, sin enviarla automáticamente.";
   tag="contacto";chips=["Qué datos preparar","Precio orientativo"];
  }else if(knownProject&&(explicitProject||
- /\b(analitico|paso a paso|etapas?|borrador|formulario|web|enspa|motor academico|libros? matriz|registro academico|digitalizar|automatizar|solicitudes?|exportar|datos|materias|firmas?|empezar|piloto|implementacion|como funcionaria|como se haria|fuentes|ver circuito|calificaciones?|notas?|ciclo|curso|division|alumnos?|matriculacion|legajo|exportacion|cada ano|completar)\b/.test(q)||
+ /\b(analitico|paso a paso|etapas?|borrador|formulario|web|enspa|motor academico|libros? matriz|registro academico|digitalizar|automatizar|solicitudes?|exportar|datos|materias|firmas?|empezar|piloto|implementacion|como funcionaria|como se haria|fuentes|ver circuito|calificaciones?|notas?|ciclo|curso|division|alumnos?|matriculacion|legajo|exportacion|cada ano|completar|carga|cargar)\b/.test(q)||
  (st.lastAnswerType==="proyecto_educativo"&&/\b(si|dale|quiero|hacerlo|avanzar|continuar)\b/.test(q)))) {
   const mode=knownProject.id==="legajos"?
    (/\b(enspa|motor academico|planillas|fuentes|exportar|importar|csv|excel)\b/.test(q)?"fuentes":
     /\b(empezar|piloto|arrancar|implementacion)\b/.test(q)?"piloto":
+    /\b(cada ano|cada ciclo|ciclo lectivo|ciclo anual|cargar cada ano|carga cada ano|curso por ano)\b/.test(q)&&!explicitProject?"anual":
     /\b(matriz|libro matriz)\b/.test(q)&&!explicitProject?"matriz":
     /\b(calificaciones|notas|materias|periodos|evaluacion)\b/.test(q)&&!explicitProject?"notas":"pasos"):
    (/\b(enspa|motor academico|libros? matriz|planillas|fuentes|exportar|registros? academicos?)\b/.test(q)?"fuentes":
