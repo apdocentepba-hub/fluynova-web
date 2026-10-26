@@ -1,4 +1,4 @@
-/* GUARDIÁN · Motor conversacional guiado 0.2
+/* GUARDIÁN · Motor conversacional guiado 0.4
    Reglas transparentes, sin llamadas a servidores ni seguimiento del usuario.
    Funciona en el navegador y también en Node para pruebas.
 */
@@ -48,6 +48,19 @@ const SECTORS=[
 ];
 
 const SCHOOL_PROJECTS=[
+ {id:"legajos",re:/\b(legajos? (digital(es)?|estudiantil(es)?|de alumnos?)|matricula escolar|matriculacion|sistema de alumnos?|gestion academica|registro academico integral|historial academico|trayectoria escolar|carga(r|do)? (de )?(notas|calificaciones)|volcar (las )?(notas|calificaciones)|completar (el |los )?libros? matriz)\b/,
+ name:"legajos, calificaciones y matriz escolar",
+ steps:[
+  "Inscripción: Secretaría da de alta al estudiante una sola vez con un identificador interno, datos de contacto mínimos y documentación necesaria. El sistema controla duplicados y cambios posteriores.",
+  "Trayectoria anual: se crea cada ciclo lectivo con establecimiento, curso, división, modalidad, plan de estudios y materias correspondientes. Los cambios de escuela o plan quedan registrados.",
+  "Calificaciones: docentes autorizados cargan notas en períodos definidos; se valida materia, alumno, curso y usuario. Las rectificaciones requieren permisos, registro de cambios y revisión.",
+  "Consolidación: al cerrar cada ciclo, el sistema calcula un resumen académico por alumno y año desde los registros verificados, sin volver a transcribir datos.",
+  "Libro matriz: se prepara una vista o borrador conforme al modelo y plan realmente aplicables, con materias, notas, años y observaciones para control de Secretaría.",
+  "Emisión oficial: el personal competente revisa y autoriza cualquier registro, analítico o constancia. Las firmas, decisiones y sistemas oficiales no se reemplazan por generación automática."
+ ],
+ constraint:"Esto sería un gestor de legajos y trayectoria académica, no una modificación automática del libro matriz oficial. Para usar datos reales de menores deben existir autorización institucional, perfiles de acceso, respaldo, auditoría y protección de datos. ENSPA y Motor Académico no están conectados; la importación o exportación solo se haría si hay un mecanismo permitido.",
+ question:"¿Hoy los datos del alumnado y las calificaciones están en planillas, libros matriz, ENSPA, Motor Académico u otro sistema?"
+ },
  {id:"analiticos",re:/\banaliticos?\b|\bcertificado analitico\b|\btitulos? secundarios?\b/,
  name:"analíticos",
  steps:[
@@ -74,8 +87,40 @@ const SCHOOL_PROJECTS=[
  constraint:"Antes de recibir documentación de estudiantes, familias o terceros hay que definir permisos, seguridad, respaldo, plazo de conservación y autorización institucional.",
  question:"¿La primera solicitud sería de analíticos, pases, certificados u otro trámite?"}
 ];
-function projectFor(q){return SCHOOL_PROJECTS.find(x=>x.re.test(q))||null}
+function projectFor(q,previous){
+ // "Libro matriz" como fuente de un analítico no debe cambiar el tema por sí solo.
+ const registry=SCHOOL_PROJECTS.find(x=>x.id==="legajos");
+ const detailed=/\b(alumn\w*|estudiant\w*)\b/.test(q)&&
+   /\b(ingres\w*|inscrib\w*|calificaci\w*|notas?|matriz|materias?|anos?|cursad\w*)\b/.test(q);
+ const academicCycle=/\b(matriz|legajos?|matricula|calificaci\w*|notas?|materias?)\b/.test(q)&&
+   /\b(anos?|ciclo lectivo|cada ano|todos sus datos|ingres\w*|se vaya completando|registro|sistema|alumn\w*)\b/.test(q);
+ const registryStrong=registry.re.test(q)||detailed||academicCycle;
+ const explicitAnalytic=/\banaliticos?\b|\bcertificado analitico\b|\btitulos? secundarios?\b/.test(q);
+ if(registryStrong && (!explicitAnalytic || /\b(sistema integral|legajo digital|matricula escolar|todos los alumnos|cargar las notas)\b/.test(q)))return registry;
+ if(explicitAnalytic)return SCHOOL_PROJECTS.find(x=>x.id==="analiticos");
+ // Una mención aislada a libros matriz como fuente no redefine el proyecto previo.
+ if(previous==="analiticos"&&/\blibros? matriz\b/.test(q)&&!registryStrong)return null;
+ return SCHOOL_PROJECTS.find(x=>x.id!=="legajos"&&x.re.test(q))||null;
+}
 function schoolReply(p,mode){
+ if(p.id==="legajos"){
+  const chips=["Cómo se carga cada año","Cómo funciona el libro matriz","Empezar piloto","Pedir evaluación"];
+  if(mode==="fuentes")return {
+   text:"Para el legajo académico, primero inventariaría qué fuentes están autorizadas: planillas, libros matriz, ENSPA o Motor Académico. De cada fuente habría que definir campos, plan de estudios y responsable de verificación. Si existe un CSV/Excel autorizado, se puede estudiar importar información al borrador del sistema; no afirmo que ENSPA tenga API ni permiso de escritura. ¿Qué datos podés exportar legalmente hoy y qué parte sigue en papel?",
+   chips:["Ver circuito completo","Cómo se carga cada año","Empezar piloto"]};
+  if(mode==="piloto")return {
+   text:"Haría un piloto con alumnos ficticios y un curso de prueba: alta inicial, asignación de materias según plan, carga de calificaciones de un ciclo, consolidación anual y vista previa de un borrador de matriz. Validaríamos permisos y auditoría antes de evaluar datos reales. ¿Qué plan de estudios y año conviene usar para el ejemplo?",
+   chips:["Ver circuito completo","Cómo funciona el libro matriz","Pedir evaluación"]};
+  if(mode==="notas")return {
+   text:"Las notas no deberían ir directamente al libro matriz sin control: un docente habilitado carga calificaciones por materia y período; Secretaría revisa rectificaciones y pendientes; al cierre del ciclo se consolida la trayectoria anual. El sistema permitiría advertir materias faltantes y modificaciones, conservando quién cambió qué y cuándo. ¿La escuela usa calificaciones por trimestre, cuatrimestre u otro régimen?",
+   chips:["Cómo funciona el libro matriz","Ver circuito completo","Empezar piloto"]};
+  if(mode==="matriz")return {
+   text:"La matriz se iría armando desde las cursadas cerradas y verificadas, por año y plan de estudios; el sistema mostraría materias, calificaciones finales, pendientes y observaciones para revisión. Podría generar un borrador o exportación si el formato oficial lo permite, pero no completar ni firmar automáticamente el libro matriz oficial. ¿La escuela maneja libros matriz en papel, digitales o ambos?",
+   chips:["Cómo se carga cada año","Ver circuito completo","Empezar piloto"]};
+  return {
+   text:"Sí, lo que describís sería un sistema integral de gestión académica: cargás al alumno una vez, sus materias y notas quedan asociadas a cada ciclo y se prepara progresivamente un borrador del libro matriz.\n\n"+p.steps.map((step,i)=>(i+1)+". "+step).join("\n")+"\n\n"+p.constraint+"\n\n"+p.question,
+   chips};
+ }
  let chips=p.id==="analiticos"?["Fuentes ENSPA y planillas","Empezar piloto","Cuánto cuesta","Pedir evaluación"]:["Empezar piloto","Cuánto cuesta","Pedir evaluación"];
  if(mode==="fuentes"&&p.id==="analiticos")return {
   text:"Si los registros están en ENSPA, Motor Académico, planillas o libros matriz, primero habría que comprobar qué información puede consultarse o exportarse legalmente. Podríamos normalizar materias, cursos y planes para detectar faltantes y preparar borradores. No hay integración confirmada con esos sistemas y no modificaríamos registros oficiales automáticamente. ¿Podés exportar un listado autorizado en CSV o Excel, o solo consultar los datos pantalla por pantalla? Para el piloto usaríamos datos ficticios, no registros reales de estudiantes.",
@@ -119,7 +164,7 @@ function guided(message,state){
  let sector=selectedSector(q);
  if(sector&&st.sector&&sector.id!==st.sector)st.project=null;
  if(sector)st.sector=sector.id;
- const explicitProject=projectFor(q);
+ const explicitProject=projectFor(q,st.project);
  if(explicitProject){st.project=explicitProject.id;st.sector="educacion";}
  const knownProject=SCHOOL_PROJECTS.find(x=>x.id===st.project)||null;
  const selected=SECTORS.find(s=>s.id===st.sector)||null;
@@ -141,9 +186,15 @@ function guided(message,state){
   out="Podés enviar tu consulta en el formulario de Fluynova. Es sin cargo para una primera evaluación orientativa y la revisará una persona. Si me contás el proceso y la prioridad, puedo ayudarte a preparar una descripción para pedir presupuesto, sin enviarla automáticamente.";
   tag="contacto";chips=["Qué datos preparar","Precio orientativo"];
  }else if(knownProject&&(explicitProject||
- /\b(analitico|paso a paso|etapas?|borrador|formulario|web|enspa|motor academico|libros? matriz|registro academico|digitalizar|automatizar|solicitudes?|exportar|datos|materias|firmas?|empezar|piloto|implementacion|como funcionaria|como se haria|fuentes|ver circuito)\b/.test(q)||
+ /\b(analitico|paso a paso|etapas?|borrador|formulario|web|enspa|motor academico|libros? matriz|registro academico|digitalizar|automatizar|solicitudes?|exportar|datos|materias|firmas?|empezar|piloto|implementacion|como funcionaria|como se haria|fuentes|ver circuito|calificaciones?|notas?|ciclo|curso|division|alumnos?|matriculacion|legajo|exportacion|cada ano|completar)\b/.test(q)||
  (st.lastAnswerType==="proyecto_educativo"&&/\b(si|dale|quiero|hacerlo|avanzar|continuar)\b/.test(q)))) {
-  const mode=/\b(enspa|motor academico|libros? matriz|planillas|fuentes|exportar|registros? academicos?)\b/.test(q)?"fuentes":/\b(empezar|piloto|arrancar|implementacion|como se haria)\b/.test(q)?"piloto":"pasos";
+  const mode=knownProject.id==="legajos"?
+   (/\b(enspa|motor academico|planillas|fuentes|exportar|importar|csv|excel)\b/.test(q)?"fuentes":
+    /\b(empezar|piloto|arrancar|implementacion)\b/.test(q)?"piloto":
+    /\b(matriz|libro matriz)\b/.test(q)&&!explicitProject?"matriz":
+    /\b(calificaciones|notas|materias|periodos|evaluacion)\b/.test(q)&&!explicitProject?"notas":"pasos"):
+   (/\b(enspa|motor academico|libros? matriz|planillas|fuentes|exportar|registros? academicos?)\b/.test(q)?"fuentes":
+    /\b(empezar|piloto|arrancar|implementacion|como se haria)\b/.test(q)?"piloto":"pasos");
   const result=schoolReply(knownProject,mode);out=result.text;chips=result.chips;tag="proyecto_educativo";st.topic="sistema";
  }else if(price){
   let topic=st.topic|| (st.features.length>1?"sistema":"seguimiento");
@@ -163,7 +214,7 @@ function guided(message,state){
   out="Para "+(selected.id==="educacion"?"una ":"un ")+selected.name+" se me ocurren estas automatizaciones:\n\n"+
     selected.items.map((x,i)=>(i+1)+". "+x.charAt(0).toUpperCase()+x.slice(1)+".").join("\n")+
     "\n\n"+selected.starter+"\n\n"+selected.ask;
-  st.topic="sistema";tag=selected.id;chips=selected.id==="taller"?["Turnos y presupuestos","Control de repuestos","Avisos a clientes","Cuánto cuesta"]:selected.id==="educacion"?["Analíticos por solicitud web","Pases escolares","Equivalencias","Cuánto cuesta"]:["Turnos","Stock","Presupuestos","Cuánto cuesta"];
+  st.topic="sistema";tag=selected.id;chips=selected.id==="taller"?["Turnos y presupuestos","Control de repuestos","Avisos a clientes","Cuánto cuesta"]:selected.id==="educacion"?["Legajos y libro matriz","Analíticos por solicitud web","Pases escolares","Equivalencias"]:["Turnos","Stock","Presupuestos","Cuánto cuesta"];
  }else if(hasExamples && (!selected||!ff.length)){
   out=EXAMPLES;tag="ejemplos";chips=["Taller mecánico","Peluquería","Comercio","Inmobiliaria"];
  }else if(ff.length){
@@ -186,7 +237,7 @@ function guided(message,state){
   chips=["Cuánto cuesta","Empezar con algo simple","Pedir evaluación"];
  }else if(selected){
   out="Ya sé que hablamos de tu "+selected.name+". "+selected.starter+" "+selected.ask;
-  tag=selected.id;chips=selected.id==="educacion"?["Analíticos por solicitud web","Pases escolares","Equivalencias","Cuánto cuesta"]:["Dame ejemplos","Turnos y presupuestos","Cuánto cuesta"];
+  tag=selected.id;chips=selected.id==="educacion"?["Legajos y libro matriz","Analíticos por solicitud web","Pases escolares","Equivalencias"]:["Dame ejemplos","Turnos y presupuestos","Cuánto cuesta"];
  }else if(/planillas?|excel|google sheets|reportes|formularios|copiar datos/.test(q)){
   st.topic="planillas";tag="planillas";
   out="Podríamos reducir copias de datos, aplicar validaciones, organizar reportes y conectar formularios con una planilla, siempre que las herramientas lo permitan. ¿Qué información copiás o controlás a mano?";
