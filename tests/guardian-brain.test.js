@@ -140,7 +140,7 @@ test('La consulta por precio sigue contextualizada a la gestión escolar',()=>{
 
 test('Tras informar fuentes y planillas, pregunta por exportación y no vuelve a pedir fuentes',()=>{
  const [,,r]=conversation('institución educativa','analíticos por solicitud web','uso un sistema institucional y planillas');
- assert.match(r.reply,/¿Podés exportar un listado autorizado en CSV o Excel/);
+ assert.match(r.reply,/¿Podés exportar datos autorizados en CSV o Excel/);
  assert.doesNotMatch(r.reply,/¿La información se consulta desde papel, planillas/);
 });
 
@@ -205,8 +205,8 @@ test('Intención corta: digitalizar legajo escolar',()=>{
 });
 test('Botones del rubro escolar incluyen legajos',()=>{
  const [r]=conversation('tengo una institucion educativa');
- assert.equal(r.choices[0],'Legajos y libro matriz');
- assert.ok(r.choices.includes('Analíticos por solicitud web'));
+ assert.equal(r.choices[0],'Inscripciones y legajos');
+ assert.ok(r.choices.includes('Calificaciones y cursadas'));
 });
 test('Un proyecto no reconocido pero detallado obtiene una propuesta, no repetición genérica',()=>{
  const [first,r]=conversation('institucion educativa','necesito un sistema que revise mis tareas y me permita generar constancias');
