@@ -137,3 +137,9 @@ test('La consulta por precio sigue contextualizada a la gestión escolar',()=>{
  assert.match(r.reply,/420\.000/);
  assert.match(r.reply,/una institución educativa/);
 });
+
+test('Tras informar ENSPA y planillas, pregunta por exportación y no vuelve a pedir fuentes',()=>{
+ const [,,r]=conversation('institución educativa','analíticos por solicitud web','uso ENSPA y planillas');
+ assert.match(r.reply,/¿Podés exportar un listado autorizado en CSV o Excel/);
+ assert.doesNotMatch(r.reply,/¿Los datos ya están en ENSPA/);
+});
