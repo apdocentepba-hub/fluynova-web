@@ -65,9 +65,9 @@ function add(role,message){
  var p=document.createElement('div');p.className='fg-message '+(role==='user'?'fg-user':'fg-assistant');p.textContent=String(message||'');log.appendChild(p);log.scrollTop=log.scrollHeight;
 }
 function localReply(question){
- var topic=decide(question),answer=topic.answer;
- if(topic.id!=='general'&&topic.id!=='hola'&&topic.id!=='gracias')lastIntent=topic.id;
- if(topic.id==='precios'&&lastIntent&&lastIntent!=='precios'){var p=TOPICS.find(function(x){return x.id===lastIntent});if(p&&['planillas','consultas','sistema'].includes(p.id))answer=p.answer}
+ var topic=decide(question),answer=topic.answer,previousIntent=lastIntent;
+ if(topic.id!=='general'&&topic.id!=='hola'&&topic.id!=='gracias'&&topic.id!=='precios')lastIntent=topic.id;
+ if(topic.id==='precios'&&previousIntent&&previousIntent!=='precios'){var p=TOPICS.find(function(x){return x.id===previousIntent});if(p&&['planillas','consultas','sistema'].includes(p.id))answer=p.answer}
  return answer;
 }
 function linkToContact(topic){
