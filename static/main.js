@@ -25,6 +25,19 @@ if(form){
  form.elements.namedItem('origen_canal').value=cleanCampaignParam('utm_medium');
  form.elements.namedItem('origen_campania').value=cleanCampaignParam('utm_campaign');
  form.elements.namedItem('origen_mensaje').value=cleanCampaignParam('utm_content');
+
+ // Guía a consulta comercial: solo se transfieren categorías predefinidas, no el chat.
+ if(referral.get('utm_source')==='guardian'){
+  const sectores={taller:'taller mecánico',peluqueria:'peluquería o centro de estética',comercio:'comercio',gastronomia:'local gastronómico',inmobiliaria:'inmobiliaria',salud:'consultorio',educacion:'institución educativa',servicios:'servicio técnico u oficio'};
+  const funciones={turnos:'turnos',presupuestos:'presupuestos',stock:'stock',avisos:'avisos',cobros:'cobros',ordenes:'seguimiento de trabajos',clientes:'consultas de clientes'};
+  const rubro=sectores[referral.get('guardian_sector')]||'negocio';
+  const claves=String(referral.get('guardian_funciones')||'').split(',').slice(0,5);
+  const interes=[...new Set(claves.map(k=>funciones[k]).filter(Boolean))];
+  const texto='Hola, estuve hablando con Guardián. Tengo un '+rubro+(interes.length?' y me interesa automatizar '+interes.join(', '):' y quiero evaluar automatizaciones')+'. Me gustaría conocer una propuesta y qué información necesitan para presupuestar.';
+  const input=form.elements.namedItem('message'),category=form.elements.namedItem('category');
+  if(input&&!input.value)input.value=texto;
+  if(category)category.value=interes.length>1?'Desarrollar software':'Automatizar tareas';
+ }
 }
 let contactEnabled=false;
 
