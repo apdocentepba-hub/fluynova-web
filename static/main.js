@@ -33,7 +33,7 @@ if(form){
   const rubro=sectores[referral.get('guardian_sector')]||'negocio';
   const claves=String(referral.get('guardian_funciones')||'').split(',').slice(0,5);
   const interes=[...new Set(claves.map(k=>funciones[k]).filter(Boolean))];
-  const proyectos={analiticos:'la gestión de solicitudes de analíticos',pases:'las solicitudes de pases escolares',equivalencias:'los dictámenes de equivalencias',solicitudes:'las solicitudes web'};
+  const proyectos={legajos:'la gestión de legajos digitales, calificaciones anuales y preparación del libro matriz',analiticos:'la gestión de solicitudes de analíticos',pases:'las solicitudes de pases escolares',equivalencias:'los dictámenes de equivalencias',solicitudes:'las solicitudes web'};
   const proyecto=proyectos[referral.get('guardian_proyecto')]||'';
   const objetivo=proyecto?'Quiero automatizar '+proyecto+'.':interes.length?'Me interesa automatizar '+interes.join(', ')+'.':'Quiero evaluar automatizaciones.';
   const texto='Hola, estuve hablando con Guardián. Mi rubro o actividad es: '+rubro+'. '+objetivo+' Me gustaría conocer una propuesta y qué información necesitan para presupuestar.';
