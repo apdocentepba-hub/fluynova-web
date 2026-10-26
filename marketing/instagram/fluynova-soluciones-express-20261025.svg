@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1080" height="1080" viewBox="0 0 1080 1080">
+<defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#0B1017"/><stop offset="1" stop-color="#153A37"/></linearGradient></defs>
+<rect width="1080" height="1080" fill="url(#bg)"/>
+<circle cx="1070" cy="130" r="390" fill="#BEFF70" opacity=".055"/><circle cx="-150" cy="980" r="480" fill="#83D9C1" opacity=".06"/>
+<g opacity=".2" stroke="#BEFF70" fill="none" stroke-width="2"><circle cx="925" cy="910" r="220"/><circle cx="925" cy="910" r="155"/><circle cx="925" cy="910" r="85"/></g>
+<text x="67" y="114" font-family="DejaVu Sans,Arial,sans-serif" font-weight="800" font-size="51" fill="#FFFFFF">FLUY<tspan fill="#BEFF70">NOVA</tspan><tspan fill="#FFFFFF">.</tspan></text>
+<rect x="68" y="166" width="445" height="51" rx="25" fill="#243D2A" stroke="#6EAC6F"/>
+<text x="92" y="201" font-family="DejaVu Sans,Arial,sans-serif" font-size="22" font-weight="800" letter-spacing="1" fill="#BEFF70">SOLUCIONES EXPRESS</text>
+<text x="66" y="329" font-family="DejaVu Sans,Arial,sans-serif" font-weight="800" font-size="64" fill="#FFFFFF">Menos tareas</text>
+<text x="66" y="409" font-family="DejaVu Sans,Arial,sans-serif" font-weight="800" font-size="64" fill="#BEFF70">repetidas.</text>
+<text x="66" y="486" font-family="DejaVu Sans,Arial,sans-serif" font-size="30" fill="#D6E7DF">Servicios concretos para tu negocio.</text>
+<rect x="64" y="550" width="952" height="327" rx="28" fill="#F5F9F3"/>
+<g font-family="DejaVu Sans,Arial,sans-serif" fill="#112B25">
+<text x="98" y="610" font-size="26" font-weight="800">PLANILLAS Y CONTROLES</text>
+<text x="99" y="647" font-size="23" fill="#4F675A">Desde $120.000*</text>
+<rect x="97" y="673" width="883" height="1" fill="#CFDED4"/>
+<text x="98" y="719" font-size="26" font-weight="800">CONSULTAS Y SEGUIMIENTO</text>
+<text x="99" y="756" font-size="23" fill="#4F675A">Desde $240.000*</text>
+<rect x="97" y="781" width="883" height="1" fill="#CFDED4"/>
+<text x="98" y="827" font-size="26" font-weight="800">MINI SISTEMAS INTERNOS</text>
+<text x="554" y="827" font-size="23" fill="#4F675A">Desde $420.000*</text>
+</g>
+<text x="70" y="933" font-family="DejaVu Sans,Arial,sans-serif" font-size="33" font-weight="800" fill="#BEFF70">Evaluación inicial sin cargo</text>
+<text x="70" y="983" font-family="DejaVu Sans,Arial,sans-serif" font-size="31" fill="#F7FBF5">fluynova-web.onrender.com/soluciones-express/</text>
+<text x="70" y="1030" font-family="DejaVu Sans,Arial,sans-serif" font-size="19" fill="#BCCEC2">*Precios orientativos en ARS sujetos a presupuesto y alcance.</text>
+</svg>
