@@ -148,7 +148,7 @@ function guided(message,state){
  }else if(price){
   let topic=st.topic|| (st.features.length>1?"sistema":"seguimiento");
   if(!st.sector&&!st.features.length)topic=null;
-  out=quote(topic)+" Es un precio orientativo, no una cotización cerrada. Para "+(selected?"un "+selected.name:"tu negocio")+", el costo cambia según módulos, cantidad de usuarios, datos e integraciones. ¿Querés empezar por una sola función o conectar varias?";
+  out=quote(topic)+" Es un precio orientativo, no una cotización cerrada. Para "+(selected?(selected.id==="educacion"?"una ":"un ")+selected.name:"tu negocio")+", el costo cambia según módulos, cantidad de usuarios, datos e integraciones. ¿Querés empezar por una sola función o conectar varias?";
   tag="precios";chips=["Empezar con algo simple","Pedir evaluación"];
  }else if(times){
   out="El plazo depende del alcance, las integraciones y las pruebas. No sería serio prometer una fecha sin ver tu proceso. Para empezar, conviene elegir un módulo pequeño y definir el resultado esperado. ¿Qué necesitás resolver primero?";
@@ -160,7 +160,7 @@ function guided(message,state){
   out="¡Hola! Soy Guardián de Fluynova. Puedo mostrarte soluciones concretas por rubro y ayudarte a definir qué conviene automatizar. ¿Tenés un comercio, un taller, una oficina u otro tipo de negocio?";
   tag="saludo";chips=["Dame ejemplos","Taller mecánico","Comercio","Peluquería"];
  }else if(selected && (sector && (hasExamples||!ff.length) || hasExamples&&!ff.length)){
-  out="Para un "+selected.name+" se me ocurren estas automatizaciones:\n\n"+
+  out="Para "+(selected.id==="educacion"?"una ":"un ")+selected.name+" se me ocurren estas automatizaciones:\n\n"+
     selected.items.map((x,i)=>(i+1)+". "+x.charAt(0).toUpperCase()+x.slice(1)+".").join("\n")+
     "\n\n"+selected.starter+"\n\n"+selected.ask;
   st.topic="sistema";tag=selected.id;chips=selected.id==="taller"?["Turnos y presupuestos","Control de repuestos","Avisos a clientes","Cuánto cuesta"]:selected.id==="educacion"?["Analíticos por solicitud web","Pases escolares","Equivalencias","Cuánto cuesta"]:["Turnos","Stock","Presupuestos","Cuánto cuesta"];
