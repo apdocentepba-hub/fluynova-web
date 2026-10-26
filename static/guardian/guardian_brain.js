@@ -191,15 +191,15 @@ function guided(message,state){
   out="Podés enviar tu consulta en el formulario de Fluynova. Es sin cargo para una primera evaluación orientativa y la revisará una persona. Si me contás el proceso y la prioridad, puedo ayudarte a preparar una descripción para pedir presupuesto, sin enviarla automáticamente.";
   tag="contacto";chips=["Qué datos preparar","Precio orientativo"];
  }else if(knownProject&&(explicitProject||
- /\b(analitico|paso a paso|etapas?|borrador|formulario|web|plataforma escolar|sistema academico|libros? matriz|registro academico|digitalizar|automatizar|solicitudes?|exportar|datos|materias|firmas?|empezar|piloto|implementacion|como funcionaria|como se haria|fuentes|ver circuito|calificaciones?|notas?|ciclo|curso|division|alumnos?|matriculacion|legajo|matriz|exportacion|cada ano|complet\w*|carga|cargar)\b/.test(q)||
+ /\b(analitico|paso a paso|etapas?|borrador|formulario|web|plataforma escolar|sistema academico|libros? matriz|registro academico|digitalizar|automatizar|solicitudes?|exportar|datos|materias|firmas?|empezar|piloto|implementacion|como funcionaria|como se haria|fuentes|ver circuito|calificaciones?|notas?|ciclo|curso|division|alumnos?|matriculacion|legajo|matriz|exportacion|cada ano|complet\w*|carga|cargar|planillas|sistema institucional|sistema de la escuela|plataforma propia|registros)\b/.test(q)||
  (st.lastAnswerType==="proyecto_educativo"&&/\b(si|dale|quiero|hacerlo|avanzar|continuar)\b/.test(q)))) {
   const mode=knownProject.id==="legajos"?
-   (/\b(planillas|fuentes|exportar|importar|csv|excel|sistema academico|plataforma escolar)\b/.test(q)?"fuentes":
+   (/\b(planillas|fuentes|exportar|importar|csv|excel|sistema academico|sistema institucional|plataforma escolar|sistema de la escuela)\b/.test(q)?"fuentes":
     /\b(empezar|piloto|arrancar|implementacion)\b/.test(q)?"piloto":
     /\b(cada ano|cada ciclo|ciclo lectivo|ciclo anual|cargar cada ano|carga cada ano|curso por ano)\b/.test(q)&&!explicitProject?"anual":
     /\b(matriz|libro matriz)\b/.test(q)&&!explicitProject?"matriz":
     /\b(calificaciones|notas|materias|periodos|evaluacion)\b/.test(q)&&!explicitProject?"notas":"pasos"):
-   (/\b(libros? matriz|planillas|fuentes|exportar|registros? academicos?|sistema escolar)\b/.test(q)?"fuentes":
+   (/\b(libros? matriz|planillas|fuentes|exportar|registros? academicos?|sistema escolar|sistema institucional|sistema de la escuela)\b/.test(q)?"fuentes":
     /\b(empezar|piloto|arrancar|implementacion|como se haria)\b/.test(q)?"piloto":"pasos");
   const result=schoolReply(knownProject,mode);out=result.text;chips=result.chips;tag="proyecto_educativo";st.topic="sistema";
  }else if(price){
