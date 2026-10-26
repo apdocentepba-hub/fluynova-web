@@ -5,47 +5,11 @@
 (function(){
 'use strict';
 if(document.getElementById('fg-launcher'))return;
-var ICON='✳', history=[], lastIntent='', waitingFor='', aiEnabled=false, inFlight=false;
-var TOPICS=[
- {id:'planillas',score:['excel','sheets','planilla','hoja','formula','duplicado','datos','copiar','reportes','informe'],label:'Planillas',
-   answer:'Si tenés planillas repetidas o desordenadas, podemos evaluar validaciones, fórmulas, reportes y automatización de tareas. Nuestro paquete inicial de planillas tiene una referencia desde $120.000 ARS, sujeto a revisar los archivos y el alcance. ¿Qué tarea repetís hoy con esas planillas?'},
- {id:'consultas',score:['cliente','consulta','pedido','mensaje','presupuesto enviado','ventas','seguimiento','responder','contactos','whatsapp'],label:'Consultas',
-   answer:'Podemos diseñar un formulario y un seguimiento simple de consultas, pendientes y estados para que no pierdas pedidos. Nuestro punto de partida orientativo es desde $240.000 ARS; integrar WhatsApp automáticamente requiere una integración oficial que se cotiza y verifica aparte. ¿Hoy recibís consultas por correo, formularios o WhatsApp?'},
- {id:'sistema',score:['software','sistema','programa','aplicacion','app','desarrollo','panel','a medida','control de stock','inventario','crm'],label:'Software',
-   answer:'Podemos evaluar un sistema para un proceso específico: registrar datos, buscar, controlar estados y obtener reportes. Un mini sistema interno comienza orientativamente desde $420.000 ARS, pero primero necesitamos definir qué debe hacer. ¿Qué información querés registrar y quién usaría el sistema?'},
- {id:'guardian',score:['guardian','alerta','vigilar','avisar','monitorear','monitor','problema','revision automatica','notificar','detectar','auditoria'],label:'Guardián',
-   answer:'Guardián está en piloto. Este asistente te guía y prepara el contacto con Fluynova. La supervisión técnica sobre correos, sitio y servicios conectados se configura por separado; no puede vigilar cualquier cuenta ni enviar mensajes por su cuenta. ¿Qué proceso o problema te gustaría que detectara?'},
- {id:'integracion',score:['integrar','conectar','integracion','mercado pago','tiendanube','api','sincronizar','facturacion','erp'],label:'Integración',
-   answer:'Antes de integrar dos plataformas revisamos si ofrecen acceso autorizado y una API adecuada. No prometemos conexiones a bancos, cobros o mensajería sin verificar permisos y costos. ¿Qué dos herramientas querés conectar?'},
- {id:'precios',score:['precio','cuanto sale','cuanto cuesta','cobran','costos','pagar','tarifa','presupuesto','valor','planes'],label:'Precios',
-   answer:'Tenemos referencias iniciales en pesos argentinos: planillas desde $120.000, seguimiento de consultas desde $240.000 y mini sistema desde $420.000. Son importes orientativos: el presupuesto final depende de la complejidad y se confirma por escrito. ¿Cuál de estas tres soluciones te interesa?'},
- {id:'gratis',score:['gratis','gratuita','sin cargo','consulta gratis','primera charla'],label:'Evaluación',
-   answer:'La primera evaluación orientativa es sin cargo. Nos contás qué tarea te quita tiempo y verificamos si podemos ayudarte. Un diagnóstico técnico detallado o una implementación se cotizan por separado. ¿Querés describir tu problema para preparar la consulta?'},
- {id:'tiempo',score:['cuanto tarda','cuanto tiempo','demora','plazo','entrega','urgente','cuando'],label:'Plazos',
-   answer:'El plazo depende de lo que hay que construir, los datos disponibles y las pruebas necesarias. Preferimos acordarlo por escrito después de revisar el alcance, en vez de prometer una fecha sin evaluar el trabajo. ¿Qué necesitás resolver primero?'},
- {id:'privacidad',score:['privacidad','datos personales','contraseña','seguridad','informacion sensible','comparte datos','seguro'],label:'Privacidad',
-   answer:'No compartas contraseñas, tarjetas, DNI ni datos sensibles por el chat. Este modo guiado opera en tu navegador y no almacena conversaciones en nuestros servidores. Un proveedor de IA externo solo se usaría si se habilita y lo autorizás expresamente. Podés leer la política de privacidad de Fluynova.'},
- {id:'contacto',score:['humano','asesor','persona','hablar con alguien','contactar','contacto','mail','email','cotizar','quiero contratar','contratar'],label:'Contacto',
-   answer:'Podés enviar tu consulta en el formulario de Fluynova. Una persona revisará el pedido y responderá por correo; no prometemos un plazo específico. ¿Querés contar primero qué necesitás, o preferís abrir directamente el formulario?'},
- {id:'apd',score:['apdocente','alertasapd','docente','apd','pid','actos publicos','listado oficial'],label:'APDocente',
-   answer:'AlertasAPD es un proyecto independiente para ayudar a docentes de la Provincia de Buenos Aires a organizar sus búsquedas. Su sitio es alertasapd.com.ar. Las postulaciones y la información oficial deben verificarse en ABC/DGCyE.'}
-];
-function normalize(text){return String(text||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[!?.,;:()]/g,' ')}
-function decide(text){
- var q=normalize(text),best=null,score=0;
- TOPICS.forEach(function(topic){var s=0;topic.score.forEach(function(term){
- var needle=normalize(term);if(q.includes(needle))s+=needle.indexOf(' ')>=0?5:needle.length>=7?3:2
- });if(s>score){score=s;best=topic}});
- if(best&&score>=2)return best;
- if(/^(hola|buenas|buen dia|que tal|hello)\b/.test(q))return {id:'hola',answer:'¡Hola! Soy Guardián, el asistente de Fluynova. Contame qué tarea repetitiva te complica el trabajo o elegí una opción: planillas, seguimiento de clientes, sistema interno o evaluación de precios.'};
- if(/gracias|perfecto|joya/.test(q))return {id:'gracias',answer:'¡De nada! Si querés avanzar con una solución concreta, podés contarme qué querés resolver o abrir una consulta con el equipo.'};
- if(lastIntent&&(/^(y|pero|eso|tambien|cuanto|como|cuando|cual|si|dale|ok)\b/.test(q)||q.length<22)){
-  var prev=TOPICS.find(function(x){return x.id===lastIntent});
-  if(prev)return prev;
- }
- return {id:'general',answer:'Puedo orientarte sobre automatizaciones, planillas, consultas, software e integraciones. Para no darte una respuesta inventada: ¿qué tarea hacés manualmente y qué te gustaría que ocurriera automáticamente?'};
-}
-var css=document.createElement('link');css.rel='stylesheet';css.href='/guardian/guardian.css?v=1';document.head.appendChild(css);
+var ICON='✳', history=[], lastIntent='', aiEnabled=false, inFlight=false;
+var engine=window.FluynovaGuardianBrain;
+var conversation=engine?engine.create():null;
+var lastResult=null;
+var css=document.createElement('link');css.rel='stylesheet';css.href='/guardian/guardian.css?v=2';document.head.appendChild(css);
 var root=document.createElement('div');root.id='fg-root';
 root.innerHTML='<button id="fg-launcher" type="button" aria-expanded="false" aria-controls="fg-panel"><span aria-hidden="true">'+ICON+'</span><span>Hablar con Guardián</span></button>'+
 '<section id="fg-panel" role="dialog" aria-label="Asistente Guardián de Fluynova" aria-modal="false" hidden>'+
@@ -64,17 +28,32 @@ root.querySelector('.fg-close').addEventListener('click',close);
 function add(role,message){
  var p=document.createElement('div');p.className='fg-message '+(role==='user'?'fg-user':'fg-assistant');p.textContent=String(message||'');log.appendChild(p);log.scrollTop=log.scrollHeight;
 }
+function updateChoices(choices){
+ var box=root.querySelector('#fg-prompts');
+ if(!box||!Array.isArray(choices)||!choices.length)return;
+ box.replaceChildren();
+ choices.slice(0,4).forEach(function(label){
+  var button=document.createElement('button');
+  button.type='button';button.setAttribute('data-q',label);button.textContent=label;
+  box.appendChild(button);
+ });
+}
 function localReply(question){
- var topic=decide(question),answer=topic.answer,previousIntent=lastIntent;
- if(topic.id!=='general'&&topic.id!=='hola'&&topic.id!=='gracias'&&topic.id!=='precios')lastIntent=topic.id;
- if(topic.id==='precios'&&previousIntent&&previousIntent!=='precios'){var p=TOPICS.find(function(x){return x.id===previousIntent});if(p&&['planillas','consultas','sistema'].includes(p.id))answer=p.answer}
- return answer;
+ if(!engine||!conversation){return 'Este asistente no pudo cargar su guía. Podés enviarnos tu consulta desde el formulario.'}
+ lastResult=engine.guided(question,conversation);
+ lastIntent=lastResult.tag;
+ updateChoices(lastResult.choices);
+ return lastResult.reply;
 }
 function linkToContact(topic){
- var link=document.getElementById('fg-lead');
- if(!link)return;
+ var link=document.getElementById('fg-lead');if(!link)return;
  var tag=encodeURIComponent(String(topic||'general').slice(0,32));
- link.href='/?utm_source=guardian&utm_medium=asistente&utm_campaign=consulta_guiada&utm_content='+tag+'#contacto';
+ var url='/?utm_source=guardian&utm_medium=asistente&utm_campaign=consulta_guiada&utm_content='+tag;
+ if(conversation){
+  if(conversation.sector)url+='&guardian_sector='+encodeURIComponent(conversation.sector);
+  if(conversation.features.length)url+='&guardian_funciones='+encodeURIComponent(conversation.features.slice(0,5).join(','));
+ }
+ link.href=url+'#contacto';
 }
 async function send(question){
  question=String(question||'').trim().slice(0,650);if(!question||inFlight)return;
@@ -95,7 +74,7 @@ async function send(question){
  }finally{submit.disabled=false;inFlight=false;input.focus()}
 }
 form.addEventListener('submit',function(event){event.preventDefault();send(input.value)});
-root.querySelectorAll('[data-q]').forEach(function(button){button.addEventListener('click',function(){if(panel.hidden)open();send(button.getAttribute('data-q'))})});
+root.querySelector('#fg-prompts').addEventListener('click',function(event){var button=event.target.closest('[data-q]');if(!button)return;if(panel.hidden)open();send(button.getAttribute('data-q'))});
 fetch('/api/guardian/capabilities',{cache:'no-store'}).then(function(response){return response.ok?response.json():null}).then(function(info){if(info&&info.external_ai_enabled===true){aiEnabled=true;option.hidden=false}}).catch(function(){/* La guía local sigue disponible */});
 if(document.body.dataset.guardianOpen==='true')open();
 })();

@@ -5,6 +5,7 @@ on:
       - "guardian_ai.py"
       - "app.py"
       - "static/guardian/**"
+      - "tests/guardian-brain.test.js"
       - "static/index.html"
       - ".github/workflows/guardian-smoke.yml"
   workflow_dispatch:
@@ -41,4 +42,8 @@ jobs:
           print('Guardián API + assets + landing: OK')
           PY
       - name: Comprobar JavaScript si Node está disponible
-        run: node --check static/guardian/guardian.js
+        run: |
+          node --check static/guardian/guardian.js
+          node --check static/guardian/guardian_brain.js
+          node --check static/main.js
+          node --test tests/guardian-brain.test.js

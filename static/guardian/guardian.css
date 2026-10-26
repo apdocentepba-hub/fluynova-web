@@ -1,8 +1,9 @@
 #fg-root{font-family:system-ui,-apple-system,"Segoe UI",sans-serif;color:#e6f5ee;--fg-accent:#c0ff80;--fg-muted:#b8ccc4;--fg-bg:#101b22}
 #fg-launcher{position:fixed;bottom:21px;right:21px;z-index:10000;display:flex;align-items:center;gap:9px;padding:12px 17px;min-height:47px;border:1px solid #a5e99e;border-radius:30px;background:#c0ff80;color:#14241b;box-shadow:0 8px 35px #07121ebb;cursor:pointer;font:800 14px system-ui,sans-serif}
 #fg-launcher span:first-child{font-size:21px}
+#fg-launcher[aria-expanded="true"]{display:none}
 #fg-panel[hidden],#fg-ai-option[hidden]{display:none!important}
-#fg-panel{position:fixed;z-index:10001;right:20px;bottom:80px;width:min(405px,calc(100vw - 24px));height:min(630px,calc(100dvh - 95px));display:flex;flex-direction:column;overflow:hidden;border-radius:17px;background:#101b22;border:1px solid #436457;box-shadow:0 28px 90px #000b}
+#fg-panel{position:fixed;z-index:10001;right:18px;bottom:18px;width:min(460px,calc(100vw - 22px));height:min(700px,calc(100dvh - 34px));display:flex;flex-direction:column;overflow:hidden;border-radius:17px;background:#101b22;border:1px solid #436457;box-shadow:0 28px 90px #000b}
 .fg-head{background:linear-gradient(120deg,#183b35,#162730);padding:13px;display:flex;align-items:center;gap:11px;border-bottom:1px solid #41544d}
 .fg-avatar{display:grid;place-items:center;width:42px;height:42px;border-radius:13px;background:var(--fg-accent);color:#1e3224;font-size:27px;font-weight:800}
 .fg-head strong{display:block;font-size:15px;color:#fff}.fg-head small{display:block;color:#afd2c7;font-size:11px;margin-top:2px}
@@ -24,5 +25,5 @@
 .fg-footer a{color:var(--fg-accent);font-weight:800;text-decoration:none;white-space:nowrap}
 .fg-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 #fg-root :focus-visible{outline:3px solid #d2ffb5;outline-offset:2px}
-@media(max-width:500px){#fg-launcher{bottom:11px;right:11px;font-size:13px}#fg-panel{inset:6px 6px 70px 6px;width:auto;height:auto;border-radius:13px}#fg-prompts button{font-size:10px}}
+@media(max-width:500px){#fg-launcher{bottom:11px;right:11px;font-size:13px}#fg-panel{inset:5px 5px 5px 5px;width:auto;height:auto;border-radius:13px}#fg-prompts button{font-size:10px}}
 @media(prefers-reduced-motion:reduce){#fg-root *{scroll-behavior:auto!important}}
