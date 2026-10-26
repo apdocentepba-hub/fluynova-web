@@ -19,6 +19,7 @@ from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, Response
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.staticfiles import StaticFiles
+from guardian_ai import router as guardian_router
 
 BASE = Path(__file__).resolve().parent
 STATIC = BASE / "static"
@@ -33,6 +34,7 @@ ALLOWED_CATEGORIES = {
 EMAIL = re.compile(r"^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$")
 security = HTTPBasic(auto_error=False)
 app = FastAPI(title="Fluynova — Solicitudes", docs_url=None, redoc_url=None, openapi_url=None)
+app.include_router(guardian_router)
 
 
 def db_connection():
