@@ -35,7 +35,7 @@ const SECTORS=[
   items:["turnos y recordatorios administrativos","solicitudes de contacto","control de cobros sin detalles clínicos","lista de espera","reportes administrativos"],
   starter:"Se puede empezar por turnos y consultas administrativas, sin procesar historias clínicas ni información sensible.",
   ask:"¿Querés ordenar turnos o tareas administrativas?"},
- {id:"educacion",patterns:[/\bescuela\b/,/\binstituto\b/,/\bdocentes?\b/,/\bacademia\b/,/\beducacion\b/,/\bsecretaria escolar\b/],
+ {id:"educacion",patterns:[/\bescuela\b/,/\binstitucion educativa\b/,/\bcolegio\b/,/\bescuela secundaria\b/,/\binstituto\b/,/\bdocentes?\b/,/\bacademia\b/,/\beducacion\b/,/\bsecretaria escolar\b/],
   name:"institución educativa",
   items:["solicitudes y documentación con permisos","seguimiento del estado de trámites","formularios y constancias","avisos de tareas pendientes","reportes administrativos"],
   starter:"Probaría con un solo trámite administrativo, sin almacenar datos de estudiantes hasta revisar seguridad y autorizaciones.",
@@ -163,7 +163,7 @@ function guided(message,state){
   out="Para un "+selected.name+" se me ocurren estas automatizaciones:\n\n"+
     selected.items.map((x,i)=>(i+1)+". "+x.charAt(0).toUpperCase()+x.slice(1)+".").join("\n")+
     "\n\n"+selected.starter+"\n\n"+selected.ask;
-  st.topic="sistema";tag=selected.id;chips=selected.id==="taller"?["Turnos y presupuestos","Control de repuestos","Avisos a clientes","Cuánto cuesta"]:["Turnos","Stock","Presupuestos","Cuánto cuesta"];
+  st.topic="sistema";tag=selected.id;chips=selected.id==="taller"?["Turnos y presupuestos","Control de repuestos","Avisos a clientes","Cuánto cuesta"]:selected.id==="educacion"?["Analíticos por solicitud web","Pases escolares","Equivalencias","Cuánto cuesta"]:["Turnos","Stock","Presupuestos","Cuánto cuesta"];
  }else if(hasExamples && (!selected||!ff.length)){
   out=EXAMPLES;tag="ejemplos";chips=["Taller mecánico","Peluquería","Comercio","Inmobiliaria"];
  }else if(ff.length){
@@ -186,7 +186,7 @@ function guided(message,state){
   chips=["Cuánto cuesta","Empezar con algo simple","Pedir evaluación"];
  }else if(selected){
   out="Ya sé que hablamos de tu "+selected.name+". "+selected.starter+" "+selected.ask;
-  tag=selected.id;chips=["Dame ejemplos","Turnos y presupuestos","Cuánto cuesta"];
+  tag=selected.id;chips=selected.id==="educacion"?["Analíticos por solicitud web","Pases escolares","Equivalencias","Cuánto cuesta"]:["Dame ejemplos","Turnos y presupuestos","Cuánto cuesta"];
  }else if(/planillas?|excel|google sheets|reportes|formularios|copiar datos/.test(q)){
   st.topic="planillas";tag="planillas";
   out="Podríamos reducir copias de datos, aplicar validaciones, organizar reportes y conectar formularios con una planilla, siempre que las herramientas lo permitan. ¿Qué información copiás o controlás a mano?";
