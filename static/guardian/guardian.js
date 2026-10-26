@@ -51,6 +51,7 @@ function linkToContact(topic){
  var url='/?utm_source=guardian&utm_medium=asistente&utm_campaign=consulta_guiada&utm_content='+tag;
  if(conversation){
   if(conversation.sector)url+='&guardian_sector='+encodeURIComponent(conversation.sector);
+  if(conversation.project)url+='&guardian_proyecto='+encodeURIComponent(conversation.project);
   if(conversation.features.length)url+='&guardian_funciones='+encodeURIComponent(conversation.features.slice(0,5).join(','));
  }
  link.href=url+'#contacto';
