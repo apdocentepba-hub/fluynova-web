@@ -91,7 +91,7 @@ test('Un analítico pedido directamente sin decir rubro es reconocido',()=>{
  const [r]=conversation('quisiera un sistema de analíticos automáticos por solicitudes web');
  assert.equal(r.context.project,'analiticos');
  assert.match(r.reply,/bandeja privada/);
- assert.match(r.reply,/revisión/);
+ assert.match(r.reply,/Secretaría revisa el borrador/);
 });
 test('Seguimiento ENSPA específico, sin inventar API ni permisos',()=>{
  const [,,r]=conversation('trabajo en una escuela','diseño de analiticos segun solicitud web','uso ENSPA y Motor Academico y planillas');
