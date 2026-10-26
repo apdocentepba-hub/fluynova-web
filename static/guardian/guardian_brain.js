@@ -48,7 +48,7 @@ const SECTORS=[
 ];
 
 const SCHOOL_PROJECTS=[
- {id:"legajos",re:/\b(legajos?( y libros? matriz| digital(es)?| estudiantil(es)?| de alumnos?)|matricula escolar|matriculacion|sistema de alumnos?|gestion academica|registro academico integral|historial academico|trayectoria escolar|carga(r|do)? (de )?(notas|calificaciones)|volcar (las )?(notas|calificaciones)|completar (el |los )?libros? matriz)\b/,
+ {id:"legajos",re:/\b(legajos?( y libros? matriz| digital(es)?| escolar(es)?| estudiantil(es)?| de alumnos?)|matricula escolar|matriculacion|sistema de alumnos?|gestion academica|registro academico integral|historial academico|trayectoria escolar|carga(r|do)? (de )?(notas|calificaciones)|volcar (las )?(notas|calificaciones)|completar (el |los )?libros? matriz)\b/,
  name:"legajos, calificaciones y matriz escolar",
  steps:[
   "Inscripción: Secretaría da de alta al estudiante una sola vez con un identificador interno, datos de contacto mínimos y documentación necesaria. El sistema controla duplicados y cambios posteriores.",
