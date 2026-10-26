@@ -75,3 +75,65 @@ test('La conversación no guarda datos globales y estados separados no contamina
  assert.match(response.reply,/Taller mecánico:/);
  assert.equal(a.sector,'taller');
 });
+
+test('Captura 26/10: el pedido concreto de analíticos recibe un circuito en lugar de repetir una pregunta',()=>{
+ const [first,next]=conversation('tengo una institucion educativa','diseño automatico de analiticos segun solicitud web');
+ assert.equal(next.context.sector,'educacion');
+ assert.equal(next.context.project,'analiticos');
+ assert.match(next.reply,/formulario web/);
+ assert.match(next.reply,/borrador/);
+ assert.match(next.reply,/Secretaría/);
+ assert.match(next.reply,/las firmas oficiales/);
+ assert.doesNotMatch(next.reply,/¿Qué trámite te ocupa más tiempo\?/);
+ assert.notEqual(next.reply,first.reply);
+});
+test('Un analítico pedido directamente sin decir rubro es reconocido',()=>{
+ const [r]=conversation('quisiera un sistema de analíticos automáticos por solicitudes web');
+ assert.equal(r.context.project,'analiticos');
+ assert.match(r.reply,/bandeja privada/);
+ assert.match(r.reply,/Secretaría revisa el borrador/);
+});
+test('Seguimiento ENSPA específico, sin inventar API ni permisos',()=>{
+ const [,,r]=conversation('trabajo en una escuela','diseño de analiticos segun solicitud web','uso ENSPA y Motor Academico y planillas');
+ assert.equal(r.context.project,'analiticos');
+ assert.match(r.reply,/No hay integración confirmada/);
+ assert.match(r.reply,/ENSPA/);
+});
+test('Ruta de primer piloto para analíticos',()=>{
+ const [,,r]=conversation('institución educativa','analíticos desde la web','Empezar piloto');
+ assert.match(r.reply,/datos ficticios/);
+ assert.match(r.reply,/autorización institucional/);
+});
+test('El chat educativo ofrece chips relacionados, no turnos de taller',()=>{
+ const [r]=conversation('tengo una institucion educativa');
+ assert.deepEqual(r.choices.slice(0,3),['Analíticos por solicitud web','Pases escolares','Equivalencias']);
+});
+test('Opciones educativas seleccionadas se convierten en proyecto',()=>{
+ const [a,b]=conversation('tengo una institucion educativa','Analíticos por solicitud web');
+ assert.equal(b.context.project,'analiticos');
+ assert.match(b.reply,/Secretaría/);
+});
+test('Equivalencias no se convierten en decisiones automáticas',()=>{
+ const [r]=conversation('quiero hacer dictamen de equivalencias');
+ assert.equal(r.context.project,'equivalencias');
+ assert.match(r.reply,/tabla de reglas/);
+ assert.match(r.reply,/resolución administrativa/);
+});
+test('Pases escolares con estado y revisión autorizada',()=>{
+ const [r]=conversation('solicitudes de pases escolares');
+ assert.equal(r.context.project,'pases');
+ assert.match(r.reply,/Secretaría/);
+});
+test('Proyectos distintos no contaminan una nueva conversación',()=>{
+ const a=brain.create(),b=brain.create();
+ brain.guided('analiticos escolares',a);
+ const other=brain.guided('mi taller mecanico',b);
+ assert.equal(a.project,'analiticos');
+ assert.equal(b.project,null);
+ assert.equal(other.context.sector,'taller');
+});
+test('La consulta por precio sigue contextualizada a la gestión escolar',()=>{
+ const [,,r]=conversation('institucion educativa','analiticos web','cuanto cuesta?');
+ assert.match(r.reply,/420\.000/);
+ assert.match(r.reply,/una institución educativa/);
+});

@@ -35,7 +35,7 @@ const SECTORS=[
   items:["turnos y recordatorios administrativos","solicitudes de contacto","control de cobros sin detalles clínicos","lista de espera","reportes administrativos"],
   starter:"Se puede empezar por turnos y consultas administrativas, sin procesar historias clínicas ni información sensible.",
   ask:"¿Querés ordenar turnos o tareas administrativas?"},
- {id:"educacion",patterns:[/\bescuela\b/,/\binstituto\b/,/\bdocentes?\b/,/\bacademia\b/,/\beducacion\b/,/\bsecretaria escolar\b/],
+ {id:"educacion",patterns:[/\bescuela\b/,/\binstitucion educativa\b/,/\bcolegio\b/,/\bescuela secundaria\b/,/\binstituto\b/,/\bdocentes?\b/,/\bacademia\b/,/\beducacion\b/,/\bsecretaria escolar\b/],
   name:"institución educativa",
   items:["solicitudes y documentación con permisos","seguimiento del estado de trámites","formularios y constancias","avisos de tareas pendientes","reportes administrativos"],
   starter:"Probaría con un solo trámite administrativo, sin almacenar datos de estudiantes hasta revisar seguridad y autorizaciones.",
@@ -46,6 +46,45 @@ const SECTORS=[
   starter:"Una agenda vinculada a trabajos y presupuestos suele ser un buen punto de partida.",
   ask:"¿Te cuesta más agendar visitas, presupuestar o seguir trabajos abiertos?"}
 ];
+
+const SCHOOL_PROJECTS=[
+ {id:"analiticos",re:/\banaliticos?\b|\bcertificado analitico\b|\btitulos? secundarios?\b/,
+ name:"analíticos",
+ steps:[
+ "La persona envía una solicitud por un formulario web y recibe un número de seguimiento.",
+ "El pedido ingresa a una bandeja privada de Secretaría, con estados y documentación pendiente.",
+ "Personal autorizado verifica identidad, trayectoria, materias y plan de estudios en las fuentes oficiales.",
+ "El sistema prepara un borrador a partir de datos verificados, con controles de materias faltantes y duplicados.",
+ "Secretaría revisa el borrador y las equivalencias aplicables; la emisión y las firmas oficiales siguen a cargo del personal competente.",
+ "Se informa el estado o forma de retiro por un canal autorizado, sin publicar datos académicos."
+ ],
+ constraint:"No emitiría ni firmaría analíticos automáticamente. Hay que verificar normas DGCyE, protección de datos y la posibilidad real de obtener datos de ENSPA o Motor Académico: no tenemos una integración confirmada.",
+ question:"¿Los datos ya están en ENSPA, Motor Académico o planillas, o hay que revisar libros matriz?"
+ },
+ {id:"equivalencias",re:/\bequivalencias?\b|\bdictamen(es)?\b/,name:"equivalencias",
+ steps:["Se recibe la solicitud y la documentación por un canal autorizado.","Se identifican plan de origen y destino y espacios curriculares acreditados.","Una tabla de reglas validada permite contrastar materias y señalar diferencias.","Se prepara un borrador de dictamen para revisión y decisión del personal competente.","Se registra el estado y se avisa al solicitante sin divulgar datos sensibles."],
+ constraint:"Las correspondencias deben venir de fuentes normativas verificadas; la resolución administrativa no puede decidirse ni firmarse automáticamente.",
+ question:"¿Ya cuentan con tablas oficiales de equivalencias y diseños curriculares digitalizados?"},
+ {id:"pases",re:/\bpases? escolares?\b|\bsolicitudes? de pases?\b|\bpases? de alumn\w*\b|\btramite de pases?\b/,name:"pases escolares",
+ steps:["Se recibe la solicitud web mediante acceso autorizado y se genera un número de trámite.","Secretaría verifica documentación, situación académica y datos pendientes.","El equipo consulta estados y responsables desde una bandeja privada.","Se preparan constancias o borradores para revisión antes de cualquier trámite oficial.","Se comunica el avance al solicitante sin revelar información académica de terceros."],
+ constraint:"El procedimiento oficial y los requisitos vigentes deben verificarse antes de automatizar etapas administrativas.",
+ question:"¿Querés organizar las solicitudes de pase, su seguimiento o la documentación?"},
+ {id:"solicitudes",re:/\bsolicitudes? (desde|por|en) (la )?web\b|\bformularios? web\b|\btramites? escolares? online\b/,name:"solicitudes web",
+ steps:["Se diseña un formulario con los datos estrictamente necesarios y aviso de privacidad.","Cada ingreso recibe un número de caso y entra a una bandeja para personal autorizado.","Se asignan estados, responsables y pendientes con historial de cambios.","La persona consulta el estado con un mecanismo de acceso seguro.","La revisión y resolución administrativa quedan bajo control humano."],
+ constraint:"Antes de recibir documentación de estudiantes, familias o terceros hay que definir permisos, seguridad, respaldo, plazo de conservación y autorización institucional.",
+ question:"¿La primera solicitud sería de analíticos, pases, certificados u otro trámite?"}
+];
+function projectFor(q){return SCHOOL_PROJECTS.find(x=>x.re.test(q))||null}
+function schoolReply(p,mode){
+ let chips=p.id==="analiticos"?["Fuentes ENSPA y planillas","Empezar piloto","Cuánto cuesta","Pedir evaluación"]:["Empezar piloto","Cuánto cuesta","Pedir evaluación"];
+ if(mode==="fuentes"&&p.id==="analiticos")return {
+  text:"Si los registros están en ENSPA, Motor Académico, planillas o libros matriz, primero habría que comprobar qué información puede consultarse o exportarse legalmente. Podríamos normalizar materias, cursos y planes para detectar faltantes y preparar borradores. No hay integración confirmada con esos sistemas y no modificaríamos registros oficiales automáticamente. "+p.question,
+  chips:["Ver circuito completo","Empezar piloto","Pedir evaluación"]};
+ if(mode==="piloto")return {
+  text:"Empezaría con un piloto de "+p.name+" sobre datos ficticios: formulario simple, bandeja de seguimiento, verificación de registros y borrador revisable. Solo después de probar roles, procedimientos, privacidad y autorización institucional se evaluaría usar datos reales. "+p.question,
+  chips:["Ver circuito completo","Cuánto cuesta","Pedir evaluación"]};
+ return {text:"Para automatizar "+p.name+" en una institución educativa propondría este circuito:\n\n"+p.steps.map((step,i)=>(i+1)+". "+step).join("\n")+"\n\n"+p.constraint+"\n\n"+p.question,chips};
+}
 const EXAMPLES="Te doy ejemplos concretos de tareas que podríamos simplificar:\n\n"+
 "• Taller mecánico: turnos, órdenes de reparación y presupuestos de repuestos.\n"+
 "• Peluquería: reservas y recordatorios de turnos.\n"+
@@ -63,7 +102,7 @@ const FEATURES=[
  {id:"clientes",rx:/\b(clientes?|contactos?|consultas?|whatsapp|instagram|formularios?)\b/,title:"consultas"}
 ];
 function clean(s){return String(s||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9\s]/g," ").replace(/\s+/g," ").trim()}
-function create(){return {sector:null,features:[],topic:null,turn:0,asked:"",lastAnswerType:"",other:""}}
+function create(){return {sector:null,features:[],topic:null,project:null,turn:0,asked:"",lastAnswerType:"",other:""}}
 function selectedSector(q){
  for(const s of SECTORS)if(s.patterns.some(rx=>rx.test(q)))return s;
  return null;
@@ -77,7 +116,12 @@ function quote(topic){
 }
 function guided(message,state){
  const st=state||create(),q=clean(message);st.turn++;
- let sector=selectedSector(q);if(sector)st.sector=sector.id;
+ let sector=selectedSector(q);
+ if(sector&&st.sector&&sector.id!==st.sector)st.project=null;
+ if(sector)st.sector=sector.id;
+ const explicitProject=projectFor(q);
+ if(explicitProject){st.project=explicitProject.id;st.sector="educacion";}
+ const knownProject=SCHOOL_PROJECTS.find(x=>x.id===st.project)||null;
  const selected=SECTORS.find(s=>s.id===st.sector)||null;
  const ff=listFeatures(q),hasExamples=/\b(ejemplos?|ideas?|casos practicos|mostrame|que podria|que puedo automatizar|automatiza|automatizar|se puede hacer)\b/.test(q);
  const price=/\b(cuanto (sale|cuesta|cobran|cobras|vale)|que (precio|costo|tarifa|valor)|precio|tarifa|costos?|costo aproximado|cotizar mi proyecto)\b/.test(q);
@@ -96,10 +140,15 @@ function guided(message,state){
  }else if(human){
   out="Podés enviar tu consulta en el formulario de Fluynova. Es sin cargo para una primera evaluación orientativa y la revisará una persona. Si me contás el proceso y la prioridad, puedo ayudarte a preparar una descripción para pedir presupuesto, sin enviarla automáticamente.";
   tag="contacto";chips=["Qué datos preparar","Precio orientativo"];
+ }else if(knownProject&&(explicitProject||
+ /\b(analitico|paso a paso|etapas?|borrador|formulario|web|enspa|motor academico|libros? matriz|registro academico|digitalizar|automatizar|solicitudes?|exportar|datos|materias|firmas?|empezar|piloto|implementacion|como funcionaria|como se haria|fuentes|ver circuito)\b/.test(q)||
+ (st.lastAnswerType==="proyecto_educativo"&&/\b(si|dale|quiero|hacerlo|avanzar|continuar)\b/.test(q)))) {
+  const mode=/\b(enspa|motor academico|libros? matriz|planillas|fuentes|exportar|registros? academicos?)\b/.test(q)?"fuentes":/\b(empezar|piloto|arrancar|implementacion|como se haria)\b/.test(q)?"piloto":"pasos";
+  const result=schoolReply(knownProject,mode);out=result.text;chips=result.chips;tag="proyecto_educativo";st.topic="sistema";
  }else if(price){
   let topic=st.topic|| (st.features.length>1?"sistema":"seguimiento");
   if(!st.sector&&!st.features.length)topic=null;
-  out=quote(topic)+" Es un precio orientativo, no una cotización cerrada. Para "+(selected?"un "+selected.name:"tu negocio")+", el costo cambia según módulos, cantidad de usuarios, datos e integraciones. ¿Querés empezar por una sola función o conectar varias?";
+  out=quote(topic)+" Es un precio orientativo, no una cotización cerrada. Para "+(selected?(selected.id==="educacion"?"una ":"un ")+selected.name:"tu negocio")+", el costo cambia según módulos, cantidad de usuarios, datos e integraciones. ¿Querés empezar por una sola función o conectar varias?";
   tag="precios";chips=["Empezar con algo simple","Pedir evaluación"];
  }else if(times){
   out="El plazo depende del alcance, las integraciones y las pruebas. No sería serio prometer una fecha sin ver tu proceso. Para empezar, conviene elegir un módulo pequeño y definir el resultado esperado. ¿Qué necesitás resolver primero?";
@@ -111,10 +160,10 @@ function guided(message,state){
   out="¡Hola! Soy Guardián de Fluynova. Puedo mostrarte soluciones concretas por rubro y ayudarte a definir qué conviene automatizar. ¿Tenés un comercio, un taller, una oficina u otro tipo de negocio?";
   tag="saludo";chips=["Dame ejemplos","Taller mecánico","Comercio","Peluquería"];
  }else if(selected && (sector && (hasExamples||!ff.length) || hasExamples&&!ff.length)){
-  out="Para un "+selected.name+" se me ocurren estas automatizaciones:\n\n"+
+  out="Para "+(selected.id==="educacion"?"una ":"un ")+selected.name+" se me ocurren estas automatizaciones:\n\n"+
     selected.items.map((x,i)=>(i+1)+". "+x.charAt(0).toUpperCase()+x.slice(1)+".").join("\n")+
     "\n\n"+selected.starter+"\n\n"+selected.ask;
-  st.topic="sistema";tag=selected.id;chips=selected.id==="taller"?["Turnos y presupuestos","Control de repuestos","Avisos a clientes","Cuánto cuesta"]:["Turnos","Stock","Presupuestos","Cuánto cuesta"];
+  st.topic="sistema";tag=selected.id;chips=selected.id==="taller"?["Turnos y presupuestos","Control de repuestos","Avisos a clientes","Cuánto cuesta"]:selected.id==="educacion"?["Analíticos por solicitud web","Pases escolares","Equivalencias","Cuánto cuesta"]:["Turnos","Stock","Presupuestos","Cuánto cuesta"];
  }else if(hasExamples && (!selected||!ff.length)){
   out=EXAMPLES;tag="ejemplos";chips=["Taller mecánico","Peluquería","Comercio","Inmobiliaria"];
  }else if(ff.length){
@@ -137,7 +186,7 @@ function guided(message,state){
   chips=["Cuánto cuesta","Empezar con algo simple","Pedir evaluación"];
  }else if(selected){
   out="Ya sé que hablamos de tu "+selected.name+". "+selected.starter+" "+selected.ask;
-  tag=selected.id;chips=["Dame ejemplos","Turnos y presupuestos","Cuánto cuesta"];
+  tag=selected.id;chips=selected.id==="educacion"?["Analíticos por solicitud web","Pases escolares","Equivalencias","Cuánto cuesta"]:["Dame ejemplos","Turnos y presupuestos","Cuánto cuesta"];
  }else if(/planillas?|excel|google sheets|reportes|formularios|copiar datos/.test(q)){
   st.topic="planillas";tag="planillas";
   out="Podríamos reducir copias de datos, aplicar validaciones, organizar reportes y conectar formularios con una planilla, siempre que las herramientas lo permitan. ¿Qué información copiás o controlás a mano?";
@@ -154,7 +203,7 @@ function guided(message,state){
   tag="general";chips=["Dame ejemplos","Taller mecánico","Comercio","Planillas"];
  }
  st.lastAnswerType=tag;
- return {reply:out,tag,choices:chips,context:{sector:st.sector,features:st.features.slice(),topic:st.topic,turn:st.turn},state:st};
+ return {reply:out,tag,choices:chips,context:{sector:st.sector,features:st.features.slice(),topic:st.topic,project:st.project,turn:st.turn},state:st};
 }
 const api={create,guided,clean};
 if(typeof module==="object"&&module.exports)module.exports=api;
