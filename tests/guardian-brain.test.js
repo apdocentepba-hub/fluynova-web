@@ -106,7 +106,7 @@ test('Ruta de primer piloto para analíticos',()=>{
 });
 test('El chat educativo ofrece chips relacionados, no turnos de taller',()=>{
  const [r]=conversation('tengo una institucion educativa');
- assert.deepEqual(r.choices.slice(0,3),['Analíticos por solicitud web','Pases escolares','Equivalencias']);
+ assert.deepEqual(r.choices.slice(0,4),['Legajos y libro matriz','Analíticos por solicitud web','Pases escolares','Equivalencias']);
 });
 test('Opciones educativas seleccionadas se convierten en proyecto',()=>{
  const [a,b]=conversation('tengo una institucion educativa','Analíticos por solicitud web');
@@ -142,4 +142,92 @@ test('Tras informar ENSPA y planillas, pregunta por exportación y no vuelve a p
  const [,,r]=conversation('institución educativa','analíticos por solicitud web','uso ENSPA y planillas');
  assert.match(r.reply,/¿Podés exportar un listado autorizado en CSV o Excel/);
  assert.doesNotMatch(r.reply,/¿Los datos ya están en ENSPA/);
+});
+
+
+test('Captura: pedido integral de alumno, notas y libro matriz genera una arquitectura específica',()=>{
+ const [first,r]=conversation('tengo una institucion educativa','necesito un sistema para volcar al alumno apenas ingresa ingresar todos sus datos volcar calificaciones que se vaya completando el matriz de cada año y demas cosas');
+ assert.equal(r.context.project,'legajos');
+ assert.equal(r.context.sector,'educacion');
+ assert.match(r.reply,/sistema integral de gestión académica/);
+ assert.match(r.reply,/Inscripción/);
+ assert.match(r.reply,/Trayectoria anual/);
+ assert.match(r.reply,/Calificaciones/);
+ assert.match(r.reply,/Libro matriz/);
+ assert.match(r.reply,/borrador/);
+ assert.match(r.reply,/protección de datos/);
+ assert.notEqual(r.reply,first.reply);
+ assert.doesNotMatch(r.reply,/¿Qué trámite te ocupa más tiempo/);
+});
+test('Un pedido integral sin hablar antes de una escuela se identifica',()=>{
+ const [r]=conversation('necesito un sistema para ingresar alumnos, cargar notas y completar libro matriz cada año');
+ assert.equal(r.context.project,'legajos');
+ assert.match(r.reply,/identificador interno/);
+ assert.match(r.reply,/libro matriz/);
+});
+test('Variantes de vocabulario: cargar legajos y notas',()=>{
+ const [,r]=conversation('institucion educativa','quiero cargar legajos y notas');
+ assert.equal(r.context.project,'legajos');
+ assert.match(r.reply,/gestión académica/);
+});
+test('Consulta contextual sobre libro matriz explica revisión humana y no vuelve al inicio',()=>{
+ const [,,r]=conversation('institucion educativa','quiero cargar legajos y notas','cómo se completa la matriz?');
+ assert.equal(r.context.project,'legajos');
+ assert.match(r.reply,/cursadas cerradas/);
+ assert.match(r.reply,/no completar ni firmar automáticamente el libro matriz oficial/);
+ assert.doesNotMatch(r.reply,/¿Qué trámite te ocupa más tiempo/);
+});
+test('Seguimiento anual responde cómo se arma el registro de cada año',()=>{
+ const [,,r]=conversation('institucion educativa','Legajos y libro matriz','Cómo se carga cada año');
+ assert.match(r.reply,/Cada ciclo lectivo se crea una ficha anual/);
+ assert.match(r.reply,/plan vigente/);
+ assert.match(r.reply,/sin transcribir dos veces/);
+});
+test('Seguimiento de calificaciones indica roles y rectificaciones',()=>{
+ const [,,r]=conversation('institucion educativa','Legajos y libro matriz','Cómo se cargan las notas');
+ assert.match(r.reply,/docente habilitado/);
+ assert.match(r.reply,/Secretaría revisa rectificaciones/);
+});
+test('Fuentes educativas no se convierten en promesas de integración con ENSPA',()=>{
+ const [,,r]=conversation('institucion educativa','Legajos y libro matriz','uso ENSPA y planillas');
+ assert.equal(r.context.project,'legajos');
+ assert.match(r.reply,/no afirmo que ENSPA tenga API/i);
+ assert.match(r.reply,/autorizada/);
+});
+test('El piloto escolar usa registros ficticios, no datos de menores reales',()=>{
+ const [,,r]=conversation('institucion educativa','Legajos y libro matriz','Empezar piloto');
+ assert.match(r.reply,/alumnos ficticios/);
+ assert.match(r.reply,/autorización institucional/);
+});
+test('Intención corta: digitalizar legajo escolar',()=>{
+ const [r]=conversation('quiero digitalizar el legajo escolar');
+ assert.equal(r.context.project,'legajos');
+});
+test('Botones del rubro escolar incluyen legajos',()=>{
+ const [r]=conversation('tengo una institucion educativa');
+ assert.equal(r.choices[0],'Legajos y libro matriz');
+ assert.ok(r.choices.includes('Analíticos por solicitud web'));
+});
+test('Un proyecto no reconocido pero detallado obtiene una propuesta, no repetición genérica',()=>{
+ const [first,r]=conversation('institucion educativa','necesito un sistema que revise mis tareas y me permita generar constancias');
+ assert.equal(r.tag,'propuesta_escolar');
+ assert.match(r.reply,/definir qué datos entran/);
+ assert.notEqual(r.reply,first.reply);
+ assert.doesNotMatch(r.reply,/¿Qué trámite te ocupa más tiempo/);
+});
+test('Pedir evaluación funciona como instrucción de contacto',()=>{
+ const [,,r]=conversation('institucion educativa','Legajos y libro matriz','Pedir evaluación');
+ assert.equal(r.tag,'contacto');
+ assert.match(r.reply,/formulario de Fluynova/);
+});
+test('Un analítico desde libros matriz conserva el proyecto analítico, no legajos',()=>{
+ const [,,r]=conversation('institucion educativa','analíticos por solicitud web','uso ENSPA y libros matriz');
+ assert.equal(r.context.project,'analiticos');
+ assert.match(r.reply,/No hay integración confirmada/);
+});
+test('Consultas de taller conservan funcionalidad anterior',()=>{
+ const [a,b]=conversation('automatizar mi taller mecanico','quiero turnos y presupuestos');
+ assert.equal(a.context.sector,'taller');
+ assert.equal(b.context.project,null);
+ assert.match(b.reply,/orden de trabajo/);
 });
