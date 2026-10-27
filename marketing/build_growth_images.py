@@ -42,7 +42,7 @@ def render(filename, brand, headline, subtitle, items, footer, disclaimer, palet
             if (ix+iy)//47%3!=0: continue
             d.ellipse((ix,iy,ix+3,iy+3),fill=palette["dot"])
     d.rounded_rectangle((74,68,480,132),radius=16,fill=palette["tint"],outline=palette["edge"],width=2)
-    d.text((98,82),brand,font=ft(29,True),fill=palette["accent"])
+    d.text((98,82),brand,font=ft(23,True),fill=palette["accent"])
     d.rounded_rectangle((75,169,101,175),radius=3,fill=palette["accent"])
     d.multiline_text((70,215),headline,font=ft(75,True),fill=palette["white"],spacing=2)
     d.text((74,432),subtitle,font=ft(33),fill=palette["muted"])
@@ -64,7 +64,7 @@ def render(filename, brand, headline, subtitle, items, footer, disclaimer, palet
 flu={"bg":(10,19,28),"bg_bottom":(13,42,39),"white":(248,252,247),"muted":(188,204,197),"accent":(191,250,129),"button":(13,30,23),"card":(21,46,42),"tint":(35,71,57),"edge":(55,93,73),"dot":(37,64,62)}
 apd={"bg":(11,25,52),"bg_bottom":(16,54,77),"white":(245,252,255),"muted":(183,212,233),"accent":(96,228,248),"button":(6,43,62),"card":(18,54,84),"tint":(29,80,108),"edge":(57,113,144),"dot":(36,76,103)}
 render("fluynova-turnos-guia-20261109.jpg","FLUYNOVA  /  GUÍA PRÁCTICA",
-       "¿PERDÉS TURNOS\\nEN WHATSAPP?",
+       "¿PERDÉS TURNOS\nEN WHATSAPP?",
        "Registrá estas 3 cosas antes de automatizar.",
        [("Nombre y contacto","Sabé a quién tenés que confirmar."),
         ("Fecha y horario","Evitá confusiones y superposiciones."),
@@ -72,7 +72,7 @@ render("fluynova-turnos-guia-20261109.jpg","FLUYNOVA  /  GUÍA PRÁCTICA",
        "GUARDÁ ESTA GUÍA  ·  SEGUÍ @FLUYNOVA",
        "Más ideas de automatización  •  fluynova-web.onrender.com",flu)
 render("apdocentepba-filtros-guia-20261029.jpg","APDOCENTEPBA  /  GUÍA DOCENTE",
-       "¿TUS ALERTAS\\nNO COINCIDEN?",
+       "¿TUS ALERTAS\nNO COINCIDEN?",
        "Revisá tus preferencias en estos 4 pasos.",
        [("Distrito","Comprobá qué distritos elegiste."),
         ("Cargo o materia","Verificá código y denominación."),
