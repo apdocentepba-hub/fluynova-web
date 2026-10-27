@@ -80,3 +80,12 @@ render("apdocentepba-filtros-guia-20261029.jpg","APDOCENTEPBA  /  GUÍA DOCENTE"
         ("Turno","Confirmá que coincide con tu búsqueda.")],
        "GUARDALA  ·  SEGUÍ @APDOCENTEPBA",
        "Las postulaciones y datos oficiales se verifican en ABC / DGCyE.",apd)
+
+render("fluynova-comercios-guia-colab-20261027.jpg","FLUYNOVA  /  PARA COMERCIOS",
+       "¿SE TE PIERDEN\nLOS PEDIDOS?",
+       "Tres hábitos simples para ganar claridad.",
+       [("Un registro único","Anotá cada pedido en el mismo lugar."),
+        ("Estados visibles","Pendiente · en curso · entregado."),
+        ("Próximo paso","Dejá claro quién hace qué y cuándo.")],
+       "GUARDÁ LA GUÍA  ·  SEGUÍ @FLUYNOVA",
+       "Soluciones para pequeños negocios  •  fluynova-web.onrender.com",flu)
