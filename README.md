@@ -15,7 +15,7 @@ Servicios: automatización de planillas Excel/Google Sheets, desarrollo web y so
 - **Web pública:** https://fluynova-web.onrender.com/
 - **Código:** https://github.com/apdocentepba-hub/fluynova-web
 - **Despliegue:** Render Web Service, workspace FLUYNOVA, rama `main` con auto-deploy confirmado.
-- **Consultas:** FormSubmit por HTTPS → `martin.nicolas.podubinio@gmail.com`.
+- **Consultas:** FormSubmit por HTTPS → `contacto.fluynova@gmail.com`.
 
 ## Qué está funcionando
 
@@ -31,7 +31,7 @@ Servicios: automatización de planillas Excel/Google Sheets, desarrollo web y so
 
 ## Particularidades de la arquitectura
 
-La versión inicial conserva una API en FastAPI y un prototipo de panel de administración basado en SQLite. El formulario público **no** usa esa base: envía directamente a FormSubmit, que remite el mensaje al Gmail personal y conserva un archivo temporal (ver la documentación del proveedor). **El panel `/admin` está deshabilitado por defecto** (`ADMIN_PANEL_ENABLED=0`) porque aún no se integró una base persistente. No se deben prometer funciones de CRM que no existen.
+La versión inicial conserva una API en FastAPI y un prototipo de panel de administración basado en SQLite. El formulario público **no** usa esa base: envía directamente a FormSubmit, que remite el mensaje al Gmail comercial de FLUYNOVA y conserva un archivo temporal (ver la documentación del proveedor). **El panel `/admin` está deshabilitado por defecto** (`ADMIN_PANEL_ENABLED=0`) porque aún no se integró una base persistente. No se deben prometer funciones de CRM que no existen.
 
 No activar `CONTACT_STORAGE_READY` en Render gratuito: SQLite local es efímero. Si más adelante se necesita un CRM propio, elegir almacenamiento persistente, políticas de acceso, copias de seguridad y un conector seguro con los mensajes.
 

@@ -10,7 +10,7 @@ menu?.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{
 }));
 document.getElementById('year').textContent=new Date().getFullYear();
 
-const CONTACT_EMAIL='martin.nicolas.podubinio@gmail.com';
+const CONTACT_EMAIL='contacto.fluynova@gmail.com';
 const form=document.getElementById('contact-form'),status=document.getElementById('form-status');
 const sendButton=form?.querySelector('button[type=submit]');
 // Atribución voluntaria: solo se adjuntan parámetros UTM al mensaje si la persona envía
