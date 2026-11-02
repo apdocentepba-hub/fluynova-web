@@ -1,5 +1,5 @@
 # FLUYNOVA | Propuesta de publicación Instagram — servicio Páginas Web
-Estado: **BORRADOR INTERNO. NO PUBLICADO NI PROGRAMADO.**
+Estado: **PROGRAMADO EN METRICOOL, NO PUBLICADO AÚN**. Reemplaza la publicación 02/11 10:00 sobre planillas.
 Fecha de preparación: 2026-11-01.
 Cuenta prevista: Instagram @fluynova por Metricool (marca 7583853, America/Buenos_Aires).
 
@@ -41,7 +41,7 @@ Valores de referencia en ARS, sujetos a alcance y condiciones finales. El domini
 ## Estado de difusión revisado 01/11/2026 aprox. 21:10 ART
 Última publicación confirmada en Metricool: 31/10 22:53, automatización de licitaciones — https://www.instagram.com/p/DfLmUCGimD5/ .
 Pendientes en Metricool, con autoPublish=true:
-- 02/11 10:00 — Planillas.
+- 02/11 10:00 — Páginas web (reemplazo confirmado).
 - 04/11 10:00 — Software a medida.
 - 06/11 10:00 — Guardián.
 El nuevo tema web **no se superpone con esas tres piezas**; elegir fecha distinta tras aprobación y pieza gráfica lista.
@@ -49,12 +49,22 @@ Instagram FLUYNOVA conectado a Metricool, **no está conectado a Buffer**. No du
 
 ## Control antes de publicación
 [ ] Revisar precios, condiciones y disponibilidad efectiva de la página de oferta.
-[ ] Preparar y probar la imagen 1080 × 1350 con legibilidad.
+[x] Imagen propia 1080 × 1350 con capturas de ambas demos reales, 147 KB, subida a Metricool.
 [ ] Confirmar que el vínculo principal no devuelve 503 por inicio en frío en Render; considerar alternativa estática con URL estable.
-[ ] Confirmar calendario y autorización de publicación.
+[x] Publicación original de planillas reemplazada, UUID conservado, autoPublish=true y estado PENDING.
 [ ] Solo tras publicar, registrar URL real, hora y estado PUBLISHED.
 
 ## Observación de disponibilidad web
 01/11/2026 21:10 ART, Firecrawl devolvió HTTP 503 "Render - Application loading" en / y /webs/. Render confirmó último despliegue live, instancia Free, y logs posteriores mostraron proceso Uvicorn arrancando a las 21:10:25 ART. Se debe corroborar accesibilidad externa luego del calentamiento; no contar un deploy live como prueba suficiente de disponibilidad continua. Render Free puede dormir procesos en inactividad.
 
 **Sin altas fiscales, cobros, campañas nuevas ni envíos a terceros.**
+
+## Estado del cambio confirmado — 01/11/2026 21:19 ART
+- Anterior ID: 406052838. Nuevo ID: 413407391. UUID conservado: 4543637012383813233.
+- Fecha: 02/11/2026 10:00 (America/Buenos_Aires), autoPublish=true, PENDING (aún no publicada).
+- Medio nuevo: https://static.metricool.com/planner/202611/7583853-file-4749506306007975851.jpeg
+- Imagen original del chat: FLUYNOVA_Instagram_Lanzamiento_Webs_20261102.jpg.
+- Copy: NUEVO EN FLUYNOVA: DISEÑO DE PÁGINAS WEB. Incluye demo, precios y CTA WEB por DM.
+- Los posts del 04/11 y 06/11 no se modificaron.
+- Métrica histórica: Instagram registró 5 seguidores en 30 y 31/10; el rango 01/11 no aporta una medición fiable de minutos. No se conoce la identidad de los nuevos perfiles.
+- Control: cambio y calendario verificados con getScheduledPosts en @fluynova.
