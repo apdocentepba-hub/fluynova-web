@@ -78,6 +78,28 @@ test("la portada recibe los 4 parámetros en campos ocultos al enviar", () => {
   }
 });
 
+test("los CTA se actualizan al abrir la landing con UTM en navegador", () => {
+  const vm = require("node:vm");
+  const src = fs.readFileSync(path.join(__dirname, "../static/diagnostico/attribution.js"), "utf8");
+  const attributes = [];
+  const anchors = Array.from({length: 2}, () => ({
+    setAttribute: (name, value) => attributes.push({name, value})
+  }));
+  const sandbox = {window: {
+    location: {search: "?utm_source=instagram&utm_medium=organic-social&utm_campaign=fluynova_tiempo_20261110&utm_content=carrusel_3p"},
+    document: {querySelectorAll: selector => {
+      assert.equal(selector, "a[data-diagnostic-cta]");
+      return anchors;
+    }}
+  }};
+  vm.runInNewContext(src, sandbox);
+  assert.equal(attributes.length, 2);
+  for (const entry of attributes) {
+    assert.equal(entry.name, "href");
+    assert.equal(entry.value, "/?utm_source=instagram&utm_medium=organic-social&utm_campaign=fluynova_tiempo_20261110&utm_content=carrusel_3p#contacto");
+  }
+});
+
 test("sin píxeles, cookies, localStorage ni envío independiente", () => {
   const js = fs.readFileSync(path.join(__dirname, "../static/diagnostico/attribution.js"), "utf8");
   assert.ok(!js.includes("fetch("));
