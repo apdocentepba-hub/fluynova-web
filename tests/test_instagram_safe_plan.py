@@ -10,7 +10,7 @@ spec.loader.exec_module(m)
 
 NOW = datetime(2026, 11, 3, 10, 36, tzinfo=timezone.utc)
 GOOD_MEDIA = "https://raw.githubusercontent.com/apdocentepba-hub/fluynova-web/main/marketing/growth/fluynova-turnos-guia-20261109.jpg"
-PENDING = {"brandId": "7583853", "fetchedAt": "2026-11-03T07:35:00-03:00", "data": [{"id": 406052874, "publicationDate": {"dateTime": "2026-11-04T10:00:00", "timezone": "America/Buenos_Aires"}, "providers": [{"network": "instagram", "status": "PENDING"}], "text": "Evaluá tu idea antes de escribir código."}]}
+PENDING = {"brandId": "7583853", "fetchedAt": "2026-11-03T07:35:00-03:00", "from": "2026-11-03T00:00:00-03:00", "to": "2026-11-30T23:59:59-03:00", "data": [{"id": 406052874, "publicationDate": {"dateTime": "2026-11-04T10:00:00", "timezone": "America/Buenos_Aires"}, "providers": [{"network": "instagram", "status": "PENDING"}], "text": "Evaluá tu idea antes de escribir código."}]}
 
 
 HISTORY_EMPTY = {
@@ -61,12 +61,12 @@ class SafePlan(unittest.TestCase):
                 self.assertFalse(m.safe_media(url))
 
     def test_detecta_contenido_similar(self):
-        calendar = {"brandId": "7583853", "fetchedAt": "2026-11-03T07:35:00-03:00", "data": [{"id": 100, "publicationDate": {"dateTime": "2026-11-01T10:00:00"}, "providers": [{"network": "instagram"}], "text": "Vencen documentos de tus proveedores sin que te enteres? Centralizá fechas responsables alertas para revisar a tiempo"}]}
+        calendar = {"brandId": "7583853", "fetchedAt": "2026-11-03T07:35:00-03:00", "from": "2026-11-03T00:00:00-03:00", "to": "2026-11-30T23:59:59-03:00", "data": [{"id": 100, "publicationDate": {"dateTime": "2026-11-01T10:00:00"}, "providers": [{"network": "instagram"}], "text": "Vencen documentos de tus proveedores sin que te enteres? Centralizá fechas responsables alertas para revisar a tiempo"}]}
         p = m.build_plan(calendar, [proposal()], now=NOW, published=HISTORY_EMPTY)
         self.assertTrue(any(s.startswith("contenido_similar_") for s in p["proposals"][0]["reasons"]))
 
     def test_texto_real_turnos_repetidos(self):
-        real = {"brandId": "7583853", "fetchedAt": "2026-11-03T07:35:00-03:00", "data": [{"id": "DfBCgNNAGOn", "publicationDate": {"dateTime": "2026-10-27T10:00:00"},
+        real = {"brandId": "7583853", "fetchedAt": "2026-11-03T07:35:00-03:00", "from": "2026-11-03T00:00:00-03:00", "to": "2026-11-30T23:59:59-03:00", "data": [{"id": "DfBCgNNAGOn", "publicationDate": {"dateTime": "2026-10-27T10:00:00"},
             "providers": [{"network": "instagram", "status": "PUBLISHED"}],
             "text": "¿Los turnos de tu negocio llegan por WhatsApp y después cuesta encontrar cada uno? Antes de pagar un sistema, probá organizar tres datos: Nombre y contacto de la persona. Fecha y horario del turno. Estado: pendiente, confirmado o cancelado."}]}
         actual = proposal(topic="Turnos WhatsApp: tres datos", date="2026-11-09T10:00:00-03:00", caption="¿Perdés turnos en WhatsApp? Guardá tres datos: nombre y contacto, fecha y horario, estado del turno. Pendiente, confirmado o cancelado. Guardá esta guía.")
@@ -129,6 +129,18 @@ class SafePlan(unittest.TestCase):
         p = m.build_plan(PENDING, [proposal()], now=NOW, published=real)
         self.assertEqual(p["published_count"], 1)
         self.assertEqual(p["proposals"][0]["decision"], "APTA_PARA_REVISION_MANUAL")
+
+
+    def test_calendario_sin_rango_bloquea_plan(self):
+        broken = {key: val for key, val in PENDING.items() if key != "to"}
+        with self.assertRaisesRegex(ValueError, "cobertura de fechas"):
+            m.build_plan(broken, [proposal()], now=NOW, published=HISTORY_EMPTY)
+
+    def test_propuesta_fuera_de_rango_no_se_aprueba(self):
+        p = m.build_plan(PENDING, [proposal(date="2026-12-04T10:00:00-03:00")],
+                         now=NOW, published=HISTORY_EMPTY)
+        self.assertEqual(p["proposals"][0]["decision"], "REVISAR")
+        self.assertIn("fuera_de_ventana_calendario", p["proposals"][0]["reasons"])
 
     def test_no_confunde_otras_redes(self):
         cal = {"data": [{"publicationDate": {"dateTime": "2026-11-04T10:00:00"}, "providers": [{"network": "facebook"}], "text": "Hola"}]}
