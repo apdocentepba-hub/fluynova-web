@@ -27,6 +27,13 @@
     a.card small{font-size:13px;color:var(--muted);margin-top:7px}
     a.primary{background:var(--accent);color:#11271b;border-color:var(--accent)}
     a.primary small{color:#2e4b30}
+    .demo-direct{margin:4px 0 18px;padding:14px 15px 9px;border:1px solid #355844;border-radius:15px;background:#101f1c}
+    .demo-direct h2{font-size:17px;line-height:1.35;color:var(--accent);margin:0 0 3px}
+    .demo-direct p{font-size:12px;color:var(--muted);margin:0 0 11px}
+    .demo-link{display:flex;flex-direction:column;gap:2px;padding:13px;border-radius:11px;text-decoration:none;background:#20382e;color:var(--text);margin-bottom:8px;border:1px solid #355c42}
+    .demo-link strong{font-size:15px}
+    .demo-link small{font-size:11px;overflow-wrap:anywhere;color:var(--muted)}
+    .demo-link:focus-visible,.demo-link:hover{outline:2px solid var(--accent);outline-offset:2px}
     .note{color:var(--muted);font-size:13px;text-align:center;margin:18px 0 8px}
     footer{margin-top:auto;padding:23px 0 0;border-top:1px solid #305147;text-align:center;color:var(--muted);font-size:12px}
     footer a{color:var(--accent)}
@@ -44,6 +51,18 @@
     <strong>🌐 Mirá 2 ejemplos reales de páginas web</strong>
     <small>Probá nuestras demostraciones de pastelería y distribuidora. Son proyectos ficticios, no clientes.</small>
   </a>
+  <section class="demo-direct" aria-labelledby="demos-titulo">
+    <h2 id="demos-titulo">Abrí cada demostración</h2>
+    <p>Son ejemplos ficticios creados por FLUYNOVA, no sitios de clientes.</p>
+    <a class="demo-link" href="https://fluynova-demo-pasteleria.pages.dev/" target="_blank" rel="noopener noreferrer">
+      <strong>🍰 Alba &amp; Miga · Pastelería</strong>
+      <small>fluynova-demo-pasteleria.pages.dev</small>
+    </a>
+    <a class="demo-link" href="https://fluynova-demo-distribuidora.pages.dev/" target="_blank" rel="noopener noreferrer">
+      <strong>📦 Nórdica Pro · Distribuidora</strong>
+      <small>fluynova-demo-distribuidora.pages.dev</small>
+    </a>
+  </section>
   <a class="card" href="/diagnostico/?utm_source=instagram&amp;utm_medium=profile&amp;utm_campaign=perfil_ig_202611&amp;utm_content=diagnostico">
     <strong>✳ Pedí una evaluación inicial sin cargo</strong>
     <small>Contanos qué tarea repetís y evaluamos posibles mejoras.</small>
