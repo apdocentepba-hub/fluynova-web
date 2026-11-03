@@ -95,6 +95,18 @@ def assert_snapshot(source: dict, *, now: datetime, source_name: str) -> None:
         raise ValueError(f"{source_name}: consulta ausente, futura o desactualizada")
 
 
+def pending_window(calendar: dict, *, now: datetime) -> tuple[datetime, datetime]:
+    """El calendario debe demostrar que cubre todas las fechas propuestas."""
+    try:
+        begin = parse_date(calendar["from"])
+        end = parse_date(calendar["to"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("calendario: cobertura de fechas no informada") from exc
+    if begin > now.astimezone(TZ) or end < now.astimezone(TZ) or end < begin:
+        raise ValueError("calendario: consulta no incluye la fecha actual")
+    return begin, end
+
+
 def published_items(history: dict, *, now: datetime) -> list[dict]:
     """Adapta la respuesta real 'rows' del endpoint de métricas IGPO.
 
@@ -206,18 +218,24 @@ def build_plan(calendar: dict, candidates: list[dict], *, now: datetime, publish
     assert_snapshot(calendar, now=now, source_name="calendario")
     if published is None:
         raise ValueError("Falta historial publicado: ninguna propuesta puede aprobarse")
-    items = calendar_items(calendar) + published_items(published, now=now)
+    begin, end = pending_window(calendar, now=now)
+    scheduled = calendar_items(calendar)
+    past = published_items(published, now=now)
+    items = scheduled + past
     results = []
     fingerprints = set()
     for candidate in candidates:
         item = check_candidate(candidate, items, now=now)
+        if item["date"] and not begin <= parse_date(item["date"]) <= end:
+            item["reasons"].append("fuera_de_ventana_calendario")
+            item["decision"] = "REVISAR"
         if item["fingerprint"] in fingerprints:
             item["reasons"].append("propuesta_duplicada_en_lote")
             item["decision"] = "REVISAR"
         fingerprints.add(item["fingerprint"])
         results.append(item)
     return {"brand": BRAND, "mode": "DRY_RUN_ONLY", "checked_at": now.astimezone(TZ).isoformat(),
-            "calendar_count": len(calendar_items(calendar)), "published_count": len(items) - len(calendar_items(calendar)), "proposals": results,
+            "calendar_count": len(scheduled), "published_count": len(past), "proposals": results,
             "limits": ["No consulta Meta/Metricool directamente", "No verifica que el archivo remoto sea descargable", "El filtro semántico no reemplaza una revisión editorial"]}
 
 
