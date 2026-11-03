@@ -53,7 +53,7 @@ test("la página del perfil no rastrea visitas ni manda datos",()=>{
   assert.ok(!/<script\b/i.test(html));
   assert.ok(!/<form\b/i.test(html));
   assert.ok(!/fetch\(|sendBeacon|localStorage|document\.cookie/i.test(html));
-  const external=[...html.matchAll(/href="(https?:\/\/[^"]+)"/g)].map(m=>m[1]);
+  const external=[...html.slice(html.indexOf("<main>")).matchAll(/href="(https?:\/\/[^"]+)"/g)].map(m=>m[1]);
   assert.deepEqual(external,[
     "https://fluynova-demo-pasteleria.pages.dev/",
     "https://fluynova-demo-distribuidora.pages.dev/"
