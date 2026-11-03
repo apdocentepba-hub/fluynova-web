@@ -38,3 +38,26 @@ Al pulsar cualquiera de los dos CTA, la dirección final debe ser:
 
 ## Alcance
 Este PR solo mejora atribución en FLUYNOVA. No modifica APDocente PBA, VOLVÉ, Técnica 6 ni el contenido programado para los días 04, 06 y 10/11/2026.
+
+## Ampliación de enlace de biografía (03/11/2026)
+**Observación real (solo lectura):** el perfil público https://www.instagram.com/fluynova/ muestra el enlace de biografía `https://fluynova-web.onrender.com/`, sin parámetros UTM ni acceso directo al diagnóstico. La observación procede de inspección del perfil público; puede cambiar.
+
+Se incorpora `static/instagram/index.html`:
+- Micrositio móvil sin scripts ni formularios propios, cuatro enlaces de acción con `utm_source=instagram&utm_medium=profile&utm_campaign=perfil_ig_202611`, diferenciados por `utm_content`: diagnóstico, soluciones, planillas y contacto.
+- **URL prevista tras aprobar el PR y desplegar:** `https://fluynova-web.onrender.com/instagram/`. Actualmente no existe en producción; NO cambiar el enlace de la biografía antes de verificarla accesible.
+- Enlaces verificados a rutas preexistentes de la web, sin píxeles, cookies o recolección de visitantes.
+
+Se incorpora `static/instagram/referral.js` en dos páginas de servicios existentes:
+- `/soluciones-express/` y `/automatizacion-de-planillas/` ahora preservarán el origen de Instagram cuando el visitante pase al formulario principal o a diagnóstico.
+- Afecta solamente los enlaces internos previstos y solamente si existe un `utm_source=instagram` y una campaña válida.
+- En visitas sin origen Instagram, conserva intactos los enlaces y las etiquetas de atribución propias del sitio.
+- No envía formularios, no almacena datos ni redirige al visitante de forma automática.
+
+**Evidencia actualizada:**
+- 27/27 pruebas aprobadas en GitHub Actions (Node.js 22), incluyendo UTMs, enlace de biografía, conservación por las dos páginas de servicios y comportamiento simulado en navegador.
+- En la misma CI, 7 rutas HTTP respondieron correctamente desde servidor local estático: `/instagram/`, `/diagnostico/`, `/diagnostico/attribution.js`, `/instagram/referral.js`, `/soluciones-express/`, `/automatizacion-de-planillas/` y `/`.
+- Ejecución de CI: https://github.com/apdocentepba-hub/fluynova-web/actions/runs/41630333437
+
+**Limitaciones:** No se probaron clics desde el Instagram autenticado, ni recepción de correo real, ni datos comerciales de una campaña ya publicada. UTMs pueden ser modificados manualmente; son indicadores de procedencia declarada, no comprobación criptográfica. La biografía no se modificó.
+
+**Criterios de finalización:** merge/despliegue autorizado de este PR; comprobar versión real `/instagram/`; modificar y verificar el enlace de perfil; verificar el envío consentido de un formulario de prueba y recepción de sus cuatro campos; medir consultas genuinas. No considerar el embudo operativo hasta entonces.
