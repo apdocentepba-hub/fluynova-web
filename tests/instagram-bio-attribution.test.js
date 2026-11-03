@@ -62,3 +62,15 @@ test("configuración responsive, con privacidad y sin promesas de clientes",()=>
   assert.match(html,/No compartas claves ni datos sensibles/);
   assert.ok(html.includes('href="/privacidad"'));
 });
+
+test("las dos demos tienen links externos completos y clicables en la bio landing",()=>{
+  const external=[...html.matchAll(/<a class="demo-link" href="([^"]+)"/g)].map(m=>m[1]);
+  assert.deepEqual(external,[
+    "https://fluynova-demo-pasteleria.pages.dev/",
+    "https://fluynova-demo-distribuidora.pages.dev/"
+  ]);
+  assert.equal((html.match(/target="_blank" rel="noopener noreferrer"/g)||[]).length,2);
+  assert.ok(html.includes("Son ejemplos ficticios creados por FLUYNOVA"));
+  assert.ok(html.includes("fluynova-demo-pasteleria.pages.dev</small>"));
+  assert.ok(html.includes("fluynova-demo-distribuidora.pages.dev</small>"));
+});
