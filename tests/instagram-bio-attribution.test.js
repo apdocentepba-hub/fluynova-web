@@ -10,11 +10,11 @@ function links(){
   return [...html.matchAll(/<a\s+class="card(?: primary)?"\s+href="([^"]+)"/g)]
     .map(x=>new URL(x[1].replaceAll("&amp;","&"),"https://fluynova-web.onrender.com"));
 }
-test("cuatro CTA y una única CTA primaria",()=>{
-  assert.equal(links().length,4);
+test("cinco CTA y una única CTA primaria",()=>{
+  assert.equal(links().length,5);
   assert.equal((html.match(/class="card primary"/g)||[]).length,1);
 });
-test("los cuatro botones atribuyen origen real al perfil Instagram",()=>{
+test("los cinco botones atribuyen origen real al perfil Instagram",()=>{
   for(const link of links()){
     assert.equal(link.searchParams.get("utm_source"),"instagram");
     assert.equal(link.searchParams.get("utm_medium"),"profile");
@@ -25,10 +25,10 @@ test("los cuatro botones atribuyen origen real al perfil Instagram",()=>{
 });
 test("cada CTA tiene etiqueta de contenido distinta para atribución voluntaria",()=>{
   assert.deepEqual(links().map(l=>l.searchParams.get("utm_content")),
-    ["diagnostico","soluciones","planillas","contacto"]);
+    ["webs","diagnostico","soluciones","planillas","contacto"]);
 });
-test("la CTA principal llega al diagnóstico y preserva origen en formulario",()=>{
-  const diagnostic=links()[0];
+test("CTA de diagnóstico llega al formulario y preserva origen",()=>{
+  const diagnostic=links()[1];
   assert.equal(diagnostic.pathname,"/diagnostico/");
   const next=new URL(buildLeadUrl(diagnostic.search),diagnostic.origin);
   assert.equal(next.pathname,"/");
@@ -36,6 +36,11 @@ test("la CTA principal llega al diagnóstico y preserva origen en formulario",()
   for(const key of ["utm_source","utm_medium","utm_campaign","utm_content"]){
     assert.equal(next.searchParams.get(key),diagnostic.searchParams.get(key));
   }
+});
+test("CTA principal muestra demostraciones ficticias y no las atribuye a clientes",()=>{
+  assert.equal(links()[0].pathname,"/webs/");
+  assert.ok(html.includes("Mirá 2 ejemplos reales de páginas web"));
+  assert.ok(html.includes("Son proyectos ficticios, no clientes"));
 });
 test("los destinos son reales dentro del repositorio y tienen portada",()=>{
   for(const href of links()){
