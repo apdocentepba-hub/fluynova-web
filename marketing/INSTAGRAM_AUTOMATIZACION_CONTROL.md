@@ -16,7 +16,7 @@ python marketing/instagram_safe_plan.py --calendar calendar.json --published pub
 Esquema mínimo de `calendar.json` (formato de `getScheduledPosts` de Metricool):
 
 ```json
-{"brandId":"7583853","fetchedAt":"2026-11-03T07:35:00-03:00","data":[{"id":406052874,"publicationDate":{"dateTime":"2026-11-04T10:00:00","timezone":"America/Buenos_Aires"},"providers":[{"network":"instagram","status":"PENDING"}],"text":"Contenido de ejemplo"}]}
+{"brandId":"7583853","fetchedAt":"2026-11-03T07:35:00-03:00","from":"2026-11-03T00:00:00-03:00","to":"2026-11-30T23:59:59-03:00","data":[{"id":406052874,"publicationDate":{"dateTime":"2026-11-04T10:00:00","timezone":"America/Buenos_Aires"},"providers":[{"network":"instagram","status":"PENDING"}],"text":"Contenido de ejemplo"}]}
 ```
 
 Esquema de `published.json` derivado de `getAnalyticsDataByMetrics` con la misma secuencia de métricas de la consulta (`IGPO01` fecha, `IGPO03` contenido, `IGPO06` URL). La envoltura `brandId/fetchedAt/from/to/fieldIds` documenta los parámetros reales de la consulta; **no la devuelve el API en la respuesta de filas**:
@@ -25,7 +25,7 @@ Esquema de `published.json` derivado de `getAnalyticsDataByMetrics` con la misma
 {"brandId":"7583853","fetchedAt":"2026-11-03T07:35:00-03:00","from":"2026-10-01T00:00:00-03:00","to":"2026-11-03T23:59:59-03:00","fieldIds":["IGPO01","IGPO03","IGPO06"],"rows":[["20261027","Ejemplo pedagógico de contenido ya publicado","https://www.instagram.com/p/DfBCgNNAGOn/"]]}
 ```
 
-`fetchedAt` debe ser del momento de consulta de los datos, como máximo 60 minutos antes de generar el plan, y `from` debe cubrir los últimos 21 días. El programa falla si faltan historial, campos esperados, cobertura o identidad de marca. Los valores de fecha ilustrativos se deben reemplazar por una consulta nueva: **no reutilizar este ejemplo como si fuera una consulta vigente**.
+`fetchedAt` debe ser del momento de consulta de los datos, como máximo 60 minutos antes de generar el plan. En el historial `from` debe cubrir los últimos 21 días; en el calendario debe incluir la fecha actual y el intervalo de publicación de cada propuesta. El programa falla si faltan historial, campos esperados, cobertura o identidad de marca. Los valores de fecha ilustrativos se deben reemplazar por una consulta nueva: **no reutilizar este ejemplo como si fuera una consulta vigente**.
 
 Esquema mínimo de `candidates.json`:
 
@@ -51,7 +51,7 @@ Esquema mínimo de `candidates.json`:
 5. Probar una publicación **programada** mediante una cuenta autorizada con el recurso gráfico correcto, verificar el registro PENDING y, tras la hora prevista, confirmar PUBLISHED y URL pública. No inferir publicación desde una desaparición del calendario.
 
 ## Verificación disponible
-Cobertura nueva: 21 pruebas unitarias sobre contratos JSON de Metricool, datos antiguos, múltiples marcas, URLs falsas, errores de columnas, colisión, repetición y fecha sin hora exacta. Verificación GitHub Actions agregada al PR: **consultar el estado del run antes de afirmar que pasaron**. Se usaron formas de datos y filas representativas de Metricool, no una conexión de producción en tiempo real.
+Cobertura nueva: 23 pruebas unitarias sobre contratos JSON de Metricool, datos antiguos, múltiples marcas, URLs falsas, errores de columnas, colisión, repetición y fecha sin hora exacta. Verificación GitHub Actions agregada al PR: **consultar el estado del run antes de afirmar que pasaron**. Se usaron formas de datos y filas representativas de Metricool, no una conexión de producción en tiempo real.
 
 ## Política
 - No modificar tareas activas de las demás marcas.
