@@ -1,0 +1,56 @@
+name: FLUYNOVA diagnostic campaign attribution tests
+on:
+  push:
+    branches: ['feature/ig-campaign-attribution-20261103']
+    paths:
+      - 'static/diagnostico/index.html'
+      - 'static/diagnostico/attribution.js'
+      - 'static/main.js'
+      - 'static/index.html'
+      - 'tests/diagnostico-attribution.test.js'
+      - 'tests/instagram-bio-attribution.test.js'
+      - 'static/instagram/index.html'
+      - 'static/instagram/referral.js'
+      - 'static/soluciones-express/index.html'
+      - 'static/automatizacion-de-planillas/index.html'
+      - 'tests/instagram-referral.test.js'
+      - '.github/workflows/diagnostico-attribution-tests.yml'
+  pull_request:
+    paths:
+      - 'static/diagnostico/index.html'
+      - 'static/diagnostico/attribution.js'
+      - 'static/main.js'
+      - 'static/index.html'
+      - 'tests/diagnostico-attribution.test.js'
+      - 'tests/instagram-bio-attribution.test.js'
+      - 'static/instagram/index.html'
+      - 'static/instagram/referral.js'
+      - 'static/soluciones-express/index.html'
+      - 'static/automatizacion-de-planillas/index.html'
+      - 'tests/instagram-referral.test.js'
+      - '.github/workflows/diagnostico-attribution-tests.yml'
+permissions:
+  contents: read
+jobs:
+  attribution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validación de sintaxis
+        run: node --check static/diagnostico/attribution.js && node --check tests/diagnostico-attribution.test.js && node --check tests/instagram-bio-attribution.test.js && node --check static/instagram/referral.js && node --check tests/instagram-referral.test.js
+      - name: Pruebas de conservación UTM y privacidad
+        run: node --test tests/diagnostico-attribution.test.js tests/instagram-bio-attribution.test.js tests/instagram-referral.test.js
+      - name: Smoke local HTTP (sin tocar producción)
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 --directory static >/tmp/fluynova-ig-smoke.log 2>&1 &
+          PID=$!
+          trap 'kill "$PID" 2>/dev/null || true' EXIT
+          sleep 2
+          for route in /instagram/ /diagnostico/ /diagnostico/attribution.js /instagram/referral.js /soluciones-express/ /automatizacion-de-planillas/ /; do
+            curl --fail --silent --show-error --max-time 8 "http://127.0.0.1:8765$route" >/dev/null
+            echo "LOCAL_HTTP_OK $route"
+          done
