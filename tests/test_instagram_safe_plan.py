@@ -54,6 +54,14 @@ class SafePlan(unittest.TestCase):
         p = m.build_plan(calendar, [proposal()], now=NOW)
         self.assertTrue(any(s.startswith("contenido_similar_") for s in p["proposals"][0]["reasons"]))
 
+    def test_texto_real_turnos_repetidos(self):
+        real = {"data": [{"id": "DfBCgNNAGOn", "publicationDate": {"dateTime": "2026-10-27T10:00:00"},
+            "providers": [{"network": "instagram", "status": "PUBLISHED"}],
+            "text": "¿Los turnos de tu negocio llegan por WhatsApp y después cuesta encontrar cada uno? Antes de pagar un sistema, probá organizar tres datos: Nombre y contacto de la persona. Fecha y horario del turno. Estado: pendiente, confirmado o cancelado."}]}
+        actual = proposal(topic="Turnos WhatsApp: tres datos", date="2026-11-09T10:00:00-03:00", caption="¿Perdés turnos en WhatsApp? Guardá tres datos: nombre y contacto, fecha y horario, estado del turno. Pendiente, confirmado o cancelado. Guardá esta guía.")
+        plan = m.build_plan(real, [actual], now=NOW)
+        self.assertIn("contenido_similar_DfBCgNNAGOn", plan["proposals"][0]["reasons"])
+
     def test_detecta_duplicado_interno(self):
         p = m.build_plan(PENDING, [proposal(), proposal(id="other")], now=NOW)
         self.assertIn("propuesta_duplicada_en_lote", p["proposals"][1]["reasons"])
