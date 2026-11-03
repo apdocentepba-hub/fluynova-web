@@ -105,7 +105,8 @@ def published_items(history: dict, *, now: datetime) -> list[dict]:
     assert_snapshot(history, now=now, source_name="historial")
     field_ids = history.get("fieldIds")
     rows = history.get("rows")
-    if (not isinstance(field_ids, list) or len(field_ids) != len(set(field_ids))
+    if (not isinstance(field_ids, list) or not all(isinstance(f, str) for f in field_ids)
+            or len(field_ids) != len(set(field_ids))
             or not set(HISTORY_FIELDS).issubset(set(field_ids)) or not isinstance(rows, list)):
         raise ValueError("historial: columnas o filas sin contrato válido")
     try:
@@ -124,7 +125,7 @@ def published_items(history: dict, *, now: datetime) -> list[dict]:
         raw_date = row[idx["IGPO01"]]
         caption = row[idx["IGPO03"]]
         link = row[idx["IGPO06"]]
-        if not isinstance(raw_date, str) or not re.fullmatch(r"\\d{8}", raw_date):
+        if not isinstance(raw_date, str) or not re.fullmatch(r"\d{8}", raw_date):
             raise ValueError(f"historial: fecha inválida en fila {count}")
         try:
             date = datetime.strptime(raw_date, "%Y%m%d").replace(tzinfo=TZ)
@@ -132,8 +133,12 @@ def published_items(history: dict, *, now: datetime) -> list[dict]:
             raise ValueError(f"historial: fecha inexistente en fila {count}") from exc
         if not isinstance(caption, str) or not isinstance(link, str):
             raise ValueError(f"historial: tipo de columna inesperado en fila {count}")
-        parsed = urlparse(link)
-        if (parsed.scheme != "https" or parsed.hostname not in {"instagram.com", "www.instagram.com"}
+        try:
+            parsed = urlparse(link)
+            valid_port = parsed.port in (None, 443)
+        except ValueError as exc:
+            raise ValueError(f"historial: URL inválida en fila {count}") from exc
+        if (not valid_port or parsed.scheme != "https" or parsed.hostname not in {"instagram.com", "www.instagram.com"}
                 or parsed.username or parsed.password or parsed.port
                 or not re.fullmatch(r"/(p|reel|tv)/[A-Za-z0-9_-]+/?", parsed.path)):
             raise ValueError(f"historial: enlace de Instagram inválido en fila {count}")
