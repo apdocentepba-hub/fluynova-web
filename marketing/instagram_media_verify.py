@@ -23,10 +23,10 @@ READ_TIMEOUT = 8
 IMAGE_MIMES = {"image/jpeg": "JPEG", "image/png": "PNG"}
 GH_PATTERN = re.compile(
     r"/apdocentepba-hub/fluynova-web/(?:main|[0-9a-f]{40})/"
-    r"(?:marketing/(?:growth|instagram)|static/marketing)/[A-Za-z0-9._-]+\\.(?:jpg|jpeg|png)$"
+    r"(?:marketing/(?:growth|instagram)|static/marketing)/[A-Za-z0-9._-]+\.(?:jpg|jpeg|png)$"
 )
 METRICOOL_PATTERN = re.compile(
-    r"/planner/20\\d{4}/7583853-file-\\d+\\.(?:jpg|jpeg|png)$"
+    r"/planner/20\d{4}/7583853-file-\d+\.(?:jpg|jpeg|png)$"
 )
 
 
@@ -132,7 +132,7 @@ def main() -> None:
     if not isinstance(candidates, list):
         raise ValueError("Las propuestas deben ser una lista JSON")
     data = audit_candidates(candidates)
-    args.out.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\\n", encoding="utf-8")
+    args.out.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Auditoría de medios: {args.out} ({sum(p['status']=='VERIFIED' for p in data['posts'])} verificadas)")
 
 
