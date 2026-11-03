@@ -1,0 +1,27 @@
+{
+  "brand": "fluynova",
+  "campaign": "2026-11-10-tiempo",
+  "files": [
+    {
+      "file": "01_tiempo.jpg",
+      "width": 1080,
+      "height": 1350,
+      "bytes": 140579,
+      "sha256": "f72f8c38477e43492962572d74fd72edbd816e87d92dd6cb752f4b13904601e4"
+    },
+    {
+      "file": "02_condiciones.jpg",
+      "width": 1080,
+      "height": 1350,
+      "bytes": 153337,
+      "sha256": "d1e8318245ee6a2e33dd1a7a109d9d1ec6fb004283e519c85e103851242e4602"
+    },
+    {
+      "file": "03_diagnostico.jpg",
+      "width": 1080,
+      "height": 1350,
+      "bytes": 152114,
+      "sha256": "7ed5980a9cf754be6e5af39ca9af7a01169b1b223001b9a772180ffd205673f8"
+    }
+  ]
+}\n
