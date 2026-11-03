@@ -35,7 +35,7 @@ def canonical_caption(text: str) -> str:
         raise ValueError("copy requerido")
     text = unicodedata.normalize("NFKD", text.casefold())
     text = "".join(c for c in text if not unicodedata.combining(c))
-    return " ".join(re.findall(r"[^\\s]+", text))
+    return " ".join(text.split())
 
 
 def receipt_key(candidate: dict) -> str:
