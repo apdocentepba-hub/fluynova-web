@@ -85,7 +85,7 @@ test("los CTA se actualizan al abrir la landing con UTM en navegador", () => {
   const anchors = Array.from({length: 2}, () => ({
     setAttribute: (name, value) => attributes.push({name, value})
   }));
-  const sandbox = {window: {
+  const sandbox = {URLSearchParams, window: {
     location: {search: "?utm_source=instagram&utm_medium=organic-social&utm_campaign=fluynova_tiempo_20261110&utm_content=carrusel_3p"},
     document: {querySelectorAll: selector => {
       assert.equal(selector, "a[data-diagnostic-cta]");
