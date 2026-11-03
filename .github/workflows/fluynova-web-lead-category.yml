@@ -1,0 +1,43 @@
+name: FLUYNOVA primer cliente — validar formulario web
+on:
+  push:
+    branches:
+      - 'feature/fluynova-primer-cliente-formulario-webs-20261103'
+    paths:
+      - 'static/index.html'
+      - 'static/main.js'
+      - 'tests/fluynova-web-lead-category.test.js'
+      - '.github/workflows/fluynova-web-lead-category.yml'
+  pull_request:
+    paths:
+      - 'static/index.html'
+      - 'static/main.js'
+      - 'tests/fluynova-web-lead-category.test.js'
+      - '.github/workflows/fluynova-web-lead-category.yml'
+permissions:
+  contents: read
+jobs:
+  contact-web:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Revisar sintaxis JS
+        run: |
+          node --check static/main.js
+          node --check tests/fluynova-web-lead-category.test.js
+      - name: Ejecutar prueba de captación comercial sin enviar correos
+        run: |
+          node --test tests/fluynova-web-lead-category.test.js
+      - name: Pruebas anteriores de atribución Instagram y web
+        run: |
+          node --test tests/instagram-bio-attribution.test.js tests/webs-instagram-traffic.test.js tests/diagnostico-attribution.test.js tests/instagram-referral.test.js
+      - name: Asegurar que la rama no modificó backend ni seguridad
+        run: |
+          git diff --name-only origin/main...HEAD
+          if git diff --name-only origin/main...HEAD | grep -E '^(worker|api|supabase|backend|infra)/'; then
+            echo 'Cambios no autorizados en backend/infra'; exit 1
+          fi
