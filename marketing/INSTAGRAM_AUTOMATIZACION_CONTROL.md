@@ -31,7 +31,7 @@ Esquema mínimo de `candidates.json`:
 - Marca de Metricool: 7583853.
 - Publicaciones del 04/11 10:00 y 06/11 10:00, horario Buenos Aires: `PENDING` y `autoPublish=true`.
 - El calendario obtenido mediante `getScheduledPosts` solo incluye publicaciones pendientes, por lo que **no alcanza para detectar repetición de un tema ya publicado**.
-- Se recuperaron publicaciones previas mediante `getAnalyticsDataByMetrics`. Se identificó contenido sobre organización de turnos publicado el 27/10, similar a la pieza JPG existente `marketing/growth/fluynova-turnos-guia-20261109.jpg`; se evitó programarla en esta revisión.
+- Se recuperaron publicaciones previas mediante `getAnalyticsDataByMetrics`. Se identificó contenido sobre organización de turnos publicado el 27/10, similar a la pieza JPG existente `marketing/growth/fluynova-turnos-guia-20261109.jpg`; se evitó programarla en esta revisión. Una prueba con una propuesta de 09/11 originalmente no detectó la similitud: se ajustó el umbral a 0,44 y la regresión posterior la marca `REVISAR` (no publicada). El umbral sigue siendo heurístico y deberá reevaluarse para evitar falsos positivos.
 - La cuenta @fluynova permanece conectada a Metricool, no a Buffer, según consultas realizadas.
 - No se ejecutaron publicaciones ni cambios al calendario.
 
@@ -43,7 +43,7 @@ Esquema mínimo de `candidates.json`:
 5. Probar una publicación **programada** mediante una cuenta autorizada con el recurso gráfico correcto, verificar el registro PENDING y, tras la hora prevista, confirmar PUBLISHED y URL pública. No inferir publicación desde una desaparición del calendario.
 
 ## Verificación disponible
-Pruebas locales: 10/10 con `unittest`, sin API externa. No está comprobada compatibilidad con la respuesta completa de Metricool ni ejecución continua. No requiere credenciales, secretos o servicios pagos.
+Pruebas locales: 11/11 con `unittest`, sin API externa. No está comprobada compatibilidad con la respuesta completa de Metricool ni ejecución continua. No requiere credenciales, secretos o servicios pagos.
 
 ## Política
 - No modificar tareas activas de las demás marcas.
