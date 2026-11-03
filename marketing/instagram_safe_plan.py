@@ -119,7 +119,7 @@ def check_candidate(candidate: dict, current: list[dict], *, now: datetime) -> d
             if delta <= timedelta(days=NEAR_DAYS):
                 if topic and normalized(topic) == normalized(item["topic"]) and item["topic"]:
                     reasons.append("tema_repetido_" + str(item["id"]))
-                elif caption and similarity(caption, item["text"]) >= 0.58:
+                elif caption and similarity(caption, item["text"]) >= 0.44:
                     reasons.append("contenido_similar_" + str(item["id"]))
     fingerprint = hashlib.sha256((BRAND + "|" + normalized(topic) + "|" + (when.isoformat() if when else "invalid")).encode()).hexdigest()[:16]
     return {"id": ident, "fingerprint": fingerprint, "date": when.isoformat() if when else None,
