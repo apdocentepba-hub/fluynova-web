@@ -10,6 +10,8 @@ on:
       - 'tests/diagnostico-attribution.test.js'
       - 'tests/instagram-bio-attribution.test.js'
       - 'static/instagram/index.html'
+      - 'static/webs/index.html'
+      - 'tests/webs-instagram-traffic.test.js'
       - 'static/instagram/referral.js'
       - 'static/soluciones-express/index.html'
       - 'static/automatizacion-de-planillas/index.html'
@@ -24,6 +26,8 @@ on:
       - 'tests/diagnostico-attribution.test.js'
       - 'tests/instagram-bio-attribution.test.js'
       - 'static/instagram/index.html'
+      - 'static/webs/index.html'
+      - 'tests/webs-instagram-traffic.test.js'
       - 'static/instagram/referral.js'
       - 'static/soluciones-express/index.html'
       - 'static/automatizacion-de-planillas/index.html'
@@ -41,16 +45,16 @@ jobs:
         with:
           node-version: '22'
       - name: Validación de sintaxis
-        run: node --check static/diagnostico/attribution.js && node --check tests/diagnostico-attribution.test.js && node --check tests/instagram-bio-attribution.test.js && node --check static/instagram/referral.js && node --check tests/instagram-referral.test.js
+        run: node --check static/diagnostico/attribution.js && node --check tests/diagnostico-attribution.test.js && node --check tests/instagram-bio-attribution.test.js && node --check static/instagram/referral.js && node --check tests/instagram-referral.test.js && node --check tests/webs-instagram-traffic.test.js
       - name: Pruebas de conservación UTM y privacidad
-        run: node --test tests/diagnostico-attribution.test.js tests/instagram-bio-attribution.test.js tests/instagram-referral.test.js
+        run: node --test tests/diagnostico-attribution.test.js tests/instagram-bio-attribution.test.js tests/instagram-referral.test.js tests/webs-instagram-traffic.test.js
       - name: Smoke local HTTP (sin tocar producción)
         run: |
           python3 -m http.server 8765 --bind 127.0.0.1 --directory static >/tmp/fluynova-ig-smoke.log 2>&1 &
           PID=$!
           trap 'kill "$PID" 2>/dev/null || true' EXIT
           sleep 2
-          for route in /instagram/ /diagnostico/ /diagnostico/attribution.js /instagram/referral.js /soluciones-express/ /automatizacion-de-planillas/ /; do
+          for route in /instagram/ /diagnostico/ /diagnostico/attribution.js /instagram/referral.js /soluciones-express/ /automatizacion-de-planillas/ /webs/ /; do
             curl --fail --silent --show-error --max-time 8 "http://127.0.0.1:8765$route" >/dev/null
             echo "LOCAL_HTTP_OK $route"
           done
