@@ -134,7 +134,7 @@ def main():
         raw=path.read_bytes()
         index.append({"file":name,"width":W,"height":H,"bytes":len(raw),"sha256":hashlib.sha256(raw).hexdigest()})
         print(f"VALIDATED {name} {len(raw)} bytes")
-    (ROOT/"manifest.json").write_text(json.dumps({"brand":"fluynova","campaign":"2026-11-10-tiempo","files":index},indent=2)+"\\n",encoding="utf-8")
+    (ROOT/"manifest.json").write_text(json.dumps({"brand":"fluynova","campaign":"2026-11-10-tiempo","files":index},indent=2)+"\n",encoding="utf-8")
 
 
 if __name__=="__main__":
