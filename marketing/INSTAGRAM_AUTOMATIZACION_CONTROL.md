@@ -86,3 +86,9 @@ El MCP de Metricool no incluye comentarios o mensajes del Inbox; no prometer res
 
 **Pendiente para operación continua:** capturar los JSON del conector en cada ejecución de la automatización, trasladar las garantías de idempotencia a almacenamiento realmente persistente, cerrar una transacción supervisada con reconciliación después de cualquier envío a Metricool y observar que se convierta de PENDING a PUBLISHED con URL.
 
+
+## Resultado CI integral de la fase (03/11/2026)
+- **52/52 pruebas unitarias aprobadas** en Python 3.11 (calendario e historial, URL spoofing/MIME/dimensiones, recibos transaccionales y preflight completo).
+- Run oficial: https://github.com/apdocentepba-hub/fluynova-web/actions/runs/41625789998
+- Los dos JPEG programados para **04/11 y 06/11** se descargaron desde Metricool: ambos 1080×1080, MIME image/jpeg, con tamaños **85.662** y **70.270 bytes**, respectivamente. La gráfica propia del 09/11 también pasó verificación de bytes, pero su contenido se mantiene descartado por repetición editorial.
+- La ejecución no programa, no envía mensajes y no modifica las colas de Metricool. Las pruebas de SQLite usan almacenamiento temporal de CI, no una base operativa persistente.
