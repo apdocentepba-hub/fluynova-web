@@ -1,0 +1,34 @@
+name: FLUYNOVA diagnostic campaign attribution tests
+on:
+  push:
+    branches: ['feature/ig-campaign-attribution-20261103']
+    paths:
+      - 'static/diagnostico/index.html'
+      - 'static/diagnostico/attribution.js'
+      - 'static/main.js'
+      - 'static/index.html'
+      - 'tests/diagnostico-attribution.test.js'
+      - '.github/workflows/diagnostico-attribution-tests.yml'
+  pull_request:
+    paths:
+      - 'static/diagnostico/index.html'
+      - 'static/diagnostico/attribution.js'
+      - 'static/main.js'
+      - 'static/index.html'
+      - 'tests/diagnostico-attribution.test.js'
+      - '.github/workflows/diagnostico-attribution-tests.yml'
+permissions:
+  contents: read
+jobs:
+  attribution:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validación de sintaxis
+        run: node --check static/diagnostico/attribution.js && node --check tests/diagnostico-attribution.test.js
+      - name: Pruebas de conservación UTM y privacidad
+        run: node --test tests/diagnostico-attribution.test.js
