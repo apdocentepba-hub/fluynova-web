@@ -53,7 +53,11 @@ test("la página del perfil no rastrea visitas ni manda datos",()=>{
   assert.ok(!/<script\b/i.test(html));
   assert.ok(!/<form\b/i.test(html));
   assert.ok(!/fetch\(|sendBeacon|localStorage|document\.cookie/i.test(html));
-  assert.ok(!/https?:\/\//.test(html.slice(html.indexOf("<main>"))));
+  const external=[...html.slice(html.indexOf("<main>")).matchAll(/href="(https?:\/\/[^"]+)"/g)].map(m=>m[1]);
+  assert.deepEqual(external,[
+    "https://fluynova-demo-pasteleria.pages.dev/",
+    "https://fluynova-demo-distribuidora.pages.dev/"
+  ]);
 });
 test("configuración responsive, con privacidad y sin promesas de clientes",()=>{
   assert.match(html,/<meta name="viewport"/);
@@ -61,4 +65,16 @@ test("configuración responsive, con privacidad y sin promesas de clientes",()=>
   assert.match(html,/Primera evaluación orientativa sin cargo/);
   assert.match(html,/No compartas claves ni datos sensibles/);
   assert.ok(html.includes('href="/privacidad"'));
+});
+
+test("las dos demos tienen links externos completos y clicables en la bio landing",()=>{
+  const external=[...html.matchAll(/<a class="demo-link" href="([^"]+)"/g)].map(m=>m[1]);
+  assert.deepEqual(external,[
+    "https://fluynova-demo-pasteleria.pages.dev/",
+    "https://fluynova-demo-distribuidora.pages.dev/"
+  ]);
+  assert.equal((html.match(/target="_blank" rel="noopener noreferrer"/g)||[]).length,2);
+  assert.ok(html.includes("Son ejemplos ficticios creados por FLUYNOVA"));
+  assert.ok(html.includes("fluynova-demo-pasteleria.pages.dev</small>"));
+  assert.ok(html.includes("fluynova-demo-distribuidora.pages.dev</small>"));
 });
