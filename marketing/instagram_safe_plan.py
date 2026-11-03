@@ -77,6 +77,72 @@ def calendar_items(obj: dict) -> list[dict]:
     return result
 
 
+
+BRAND_ID = "7583853"
+HISTORY_FIELDS = ("IGPO01", "IGPO03", "IGPO06")
+
+
+def assert_snapshot(source: dict, *, now: datetime, source_name: str) -> None:
+    """Datos sin marca o caducados bloquean por completo la planificación."""
+    if not isinstance(source, dict) or str(source.get("brandId")) != BRAND_ID:
+        raise ValueError(f"{source_name}: marca de Metricool ausente o equivocada")
+    try:
+        fetched = parse_date(source["fetchedAt"])
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(f"{source_name}: fetchedAt inválido") from exc
+    age = now.astimezone(TZ) - fetched
+    if not timedelta(0) <= age <= timedelta(minutes=60):
+        raise ValueError(f"{source_name}: consulta ausente, futura o desactualizada")
+
+
+def published_items(history: dict, *, now: datetime) -> list[dict]:
+    """Adapta la respuesta real 'rows' del endpoint de métricas IGPO.
+
+    El API devuelve fechas YYYYMMDD, copys y enlaces sin una hora exacta.
+    Los nombres de columnas se suministran en fieldIds en el mismo orden
+    utilizado en la solicitud; sin ellos se falla cerrado.
+    """
+    assert_snapshot(history, now=now, source_name="historial")
+    field_ids = history.get("fieldIds")
+    rows = history.get("rows")
+    if (not isinstance(field_ids, list) or len(field_ids) != len(set(field_ids))
+            or not set(HISTORY_FIELDS).issubset(set(field_ids)) or not isinstance(rows, list)):
+        raise ValueError("historial: columnas o filas sin contrato válido")
+    try:
+        start = parse_date(history["from"])
+        end = parse_date(history["to"])
+    except (KeyError, ValueError, TypeError) as exc:
+        raise ValueError("historial: cobertura temporal inválida") from exc
+    local_now = now.astimezone(TZ)
+    if start.date() > (local_now - timedelta(days=NEAR_DAYS)).date() or end.date() < local_now.date():
+        raise ValueError("historial: faltan fechas para prevenir duplicados")
+    idx = {field: i for i, field in enumerate(field_ids)}
+    result = []
+    for count, row in enumerate(rows):
+        if not isinstance(row, list) or len(row) != len(field_ids):
+            raise ValueError(f"historial: fila {count} incompleta")
+        raw_date = row[idx["IGPO01"]]
+        caption = row[idx["IGPO03"]]
+        link = row[idx["IGPO06"]]
+        if not isinstance(raw_date, str) or not re.fullmatch(r"\\d{8}", raw_date):
+            raise ValueError(f"historial: fecha inválida en fila {count}")
+        try:
+            date = datetime.strptime(raw_date, "%Y%m%d").replace(tzinfo=TZ)
+        except ValueError as exc:
+            raise ValueError(f"historial: fecha inexistente en fila {count}") from exc
+        if not isinstance(caption, str) or not isinstance(link, str):
+            raise ValueError(f"historial: tipo de columna inesperado en fila {count}")
+        parsed = urlparse(link)
+        if (parsed.scheme != "https" or parsed.hostname not in {"instagram.com", "www.instagram.com"}
+                or parsed.username or parsed.password or parsed.port
+                or not re.fullmatch(r"/(p|reel|tv)/[A-Za-z0-9_-]+/?", parsed.path)):
+            raise ValueError(f"historial: enlace de Instagram inválido en fila {count}")
+        result.append({"date": date, "day_only": True, "text": caption,
+                       "topic": "", "status": "PUBLISHED", "id": parsed.path.strip("/").split("/")[-1],
+                       "url": link})
+    return result
+
+
 def safe_media(url: str) -> bool:
     try:
         parsed = urlparse(url)
@@ -114,7 +180,9 @@ def check_candidate(candidate: dict, current: list[dict], *, now: datetime) -> d
             reasons.append("fecha_pasada")
         for item in current:
             delta = abs(when - item["date"])
-            if delta <= timedelta(hours=3):
+            if item.get("day_only") and when.date() == item["date"].date():
+                reasons.append("dia_ya_publicado_" + str(item["id"]))
+            elif not item.get("day_only") and delta <= timedelta(hours=3):
                 reasons.append("colision_horaria_" + str(item["id"]))
             if delta <= timedelta(days=NEAR_DAYS):
                 if topic and normalized(topic) == normalized(item["topic"]) and item["topic"]:
@@ -127,10 +195,13 @@ def check_candidate(candidate: dict, current: list[dict], *, now: datetime) -> d
             "reasons": sorted(set(reasons)), "notice": "No se publicó ni programó contenido"}
 
 
-def build_plan(calendar: dict, candidates: list[dict], *, now: datetime) -> dict:
+def build_plan(calendar: dict, candidates: list[dict], *, now: datetime, published: dict | None = None) -> dict:
     if not isinstance(candidates, list):
         raise ValueError("Las propuestas deben ser una lista")
-    items = calendar_items(calendar)
+    assert_snapshot(calendar, now=now, source_name="calendario")
+    if published is None:
+        raise ValueError("Falta historial publicado: ninguna propuesta puede aprobarse")
+    items = calendar_items(calendar) + published_items(published, now=now)
     results = []
     fingerprints = set()
     for candidate in candidates:
@@ -141,18 +212,20 @@ def build_plan(calendar: dict, candidates: list[dict], *, now: datetime) -> dict
         fingerprints.add(item["fingerprint"])
         results.append(item)
     return {"brand": BRAND, "mode": "DRY_RUN_ONLY", "checked_at": now.astimezone(TZ).isoformat(),
-            "calendar_count": len(items), "proposals": results,
+            "calendar_count": len(calendar_items(calendar)), "published_count": len(items) - len(calendar_items(calendar)), "proposals": results,
             "limits": ["No consulta Meta/Metricool directamente", "No verifica que el archivo remoto sea descargable", "El filtro semántico no reemplaza una revisión editorial"]}
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--calendar", type=Path, required=True)
+    ap.add_argument("--published", type=Path, required=True, help="Metricool IGPO rows con fieldIds/brandId/fetchedAt/from/to")
     ap.add_argument("--candidates", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     args = ap.parse_args()
     plan = build_plan(json.loads(args.calendar.read_text(encoding="utf-8")),
-                      json.loads(args.candidates.read_text(encoding="utf-8")), now=datetime.now(timezone.utc))
+                      json.loads(args.candidates.read_text(encoding="utf-8")), now=datetime.now(timezone.utc),
+                      published=json.loads(args.published.read_text(encoding="utf-8")))
     args.out.write_text(json.dumps(plan, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     print(f"Plan sin publicar: {args.out}")
 
