@@ -58,3 +58,31 @@ Cobertura nueva: 23 pruebas unitarias sobre contratos JSON de Metricool, datos a
 - No programar en horario pasado, duplicar temas ni ejecutar seguimientos no solicitados.
 - No guardar correos, tokens ni datos personales en repositorios públicos.
 - Ante incertidumbre o respuesta inconsistente: detener la programación y reportar el bloqueo.
+
+## Avance del 03/11 — verificación HTTP e idempotencia (sin publicar)
+
+Módulos nuevos en esta rama:
+- `instagram_media_verify.py`: valida URLs en dominios restringidos, bytes descargados, MIME JPEG/PNG, dimensiones y proporción antes de que un recurso pueda pasar a revisión. Rechaza dominios falsificados, redirecciones, contenido malformado y videos sin verificador específico. La descarga limita tamaño y tiempo; no expone credenciales.
+- `instagram_idempotency.py`: recibos SQLite con transacción `BEGIN IMMEDIATE`, clave SHA-256 por marca, fecha local, texto y orden de medios. Estados `RESERVED` → `PENDING` → `PUBLISHED`, con transiciones explícitas. No limpia reservas automáticamente si el proveedor responde con incertidumbre.
+- `instagram_preflight.py`: combina decisiones de calendario + historial, auditoría de imágenes y estado de recibos. Sigue en modo `PREFLIGHT_READ_ONLY`, no programa y no reserva.
+
+Los recibos SQLite fueron ensayados en CI y conservan el estado entre dos aperturas de una base en disco. **No equivalen a persistencia en Render gratuito**: antes de publicar se necesita volumen persistente o base remota durable, secreto en servidor y reconciliación de respuestas ambiguas. No alojar la base en el repositorio GitHub.
+
+Comando de auditoría integral local (requiere snapshots recientes, registro SQLite ya creado en almacenamiento duradero y conexión HTTP saliente):
+
+```bash
+python marketing/instagram_preflight.py --calendar calendar.json --published published.json --candidates candidates.json --ledger /ruta/segura/receipts.sqlite --out preflight.json
+```
+
+Ningún `APTA_PARA_REVISION_MANUAL` autoriza programar automáticamente.
+
+**Prueba HTTP real de CI:** el 03/11 GitHub Actions descargó y validó el JPEG público de Metricool programado el 04/11 (1080×1080, 85.662 bytes), y la gráfica propia `fluynova-turnos-guia-20261109.jpg` (1080×1350, 128.944 bytes). La gráfica propia no fue programada por su similitud con el contenido de turnos del 27/10. La validez HTTP es puntual, no garantiza disponibilidad futura.
+
+**Límite oficial:** Metricool MCP funciona en Free, pero la API HTTP propia requiere los planes Advanced/Custom. Para evitar costos usamos el conector de Metricool ya autorizado en ChatGPT y NO activamos una integración HTTP propia de pago. Fuentes:
+- https://help.metricool.com/es/limites-del-mcp-y-requisitos-del-plan-h72jg
+- https://help.metricool.com/es/guia-basica-para-la-integracion-con-la-api-r97af
+
+El MCP de Metricool no incluye comentarios o mensajes del Inbox; no prometer respuestas automáticas con esa conexión.
+
+**Pendiente para operación continua:** capturar los JSON del conector en cada ejecución de la automatización, trasladar las garantías de idempotencia a almacenamiento realmente persistente, cerrar una transacción supervisada con reconciliación después de cualquier envío a Metricool y observar que se convierta de PENDING a PUBLISHED con URL.
+
