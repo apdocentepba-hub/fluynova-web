@@ -1,0 +1,23 @@
+name: FLUYNOVA - Instagram planner safe tests
+on:
+  pull_request:
+    paths:
+      - 'marketing/instagram_safe_plan.py'
+      - 'tests/test_instagram_safe_plan.py'
+      - '.github/workflows/instagram-safe-plan-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Validar sintaxis y casos de regresión (sin acceso a cuentas)
+        run: |
+          python -m compileall -q marketing/instagram_safe_plan.py tests/test_instagram_safe_plan.py
+          python -m unittest discover -s tests -p 'test_instagram_safe_plan.py' -v
