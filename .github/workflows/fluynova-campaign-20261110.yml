@@ -50,4 +50,32 @@ jobs:
           if ! git diff --cached --quiet; then
             git commit -m 'Generar carrusel FLUYNOVA 10 nov (3 JPEG originales)'
             git push origin "HEAD:${GITHUB_REF_NAME}"
+      - name: Comprobar URL pública y checksum de cada JPEG
+        run: |
+          python - <<'PY'
+          import hashlib, json, time, urllib.request
+          from pathlib import Path
+          folder = Path('marketing/campaigns/fluynova_20261110')
+          data = json.loads((folder/'manifest.json').read_text())
+          for item in data['files']:
+              url = 'https://raw.githubusercontent.com/apdocentepba-hub/fluynova-web/campaign/fluynova-20261110-tiempo/marketing/campaigns/fluynova_20261110/' + item['file']
+              error = None
+              for trial in range(8):
+                  try:
+                      with urllib.request.urlopen(url, timeout=8) as response:
+                          blob=response.read(2_000_000)
+                          assert response.status==200
+                          assert response.headers.get('Content-Type', '').startswith('image/jpeg')
+                      digest=hashlib.sha256(blob).hexdigest()
+                      if digest != item['sha256']:
+                          raise ValueError('checksum does not match source')
+                      print('PUBLIC_URL_OK', item['file'], len(blob), digest)
+                      error = None
+                      break
+                  except Exception as exc:
+                      error = exc
+                      time.sleep(2)
+              if error is not None:
+                  raise RuntimeError(f'Asset {item["file"]} could not be publicly verified: {error}') from error
+          PY
           fi
