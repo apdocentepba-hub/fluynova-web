@@ -1,0 +1,22 @@
+{
+  "brand": "FLUYNOVA",
+  "content": "authentic screenshots of two own published fictitious demo sites",
+  "captured_demo_urls": {
+    "pasteleria": "https://fluynova-demo-pasteleria.pages.dev/",
+    "distribuidora": "https://fluynova-demo-distribuidora.pages.dev/"
+  },
+  "instagram_network": "instagram",
+  "post_type": "REEL",
+  "width": 1080,
+  "height": 1920,
+  "fps": 30,
+  "duration_seconds": 19.1,
+  "audio": "self-composed instrumental, no copyrighted samples",
+  "is_ai_generated_or_significantly_altered": true,
+  "sha256": "69d880c4fcdacec7b17c2566ee66430e1cdc46b2529b65a831724c05f922162c",
+  "bytes": 1530426,
+  "warnings": [
+    "demo brands and products are fictional; no customer work claims",
+    "source websites may change; screenshots captured only for this asset"
+  ]
+}
