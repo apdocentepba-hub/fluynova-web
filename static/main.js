@@ -26,6 +26,16 @@ if(form){
  form.elements.namedItem('origen_campania').value=cleanCampaignParam('utm_campaign');
  form.elements.namedItem('origen_mensaje').value=cleanCampaignParam('utm_content');
 
+ // Quien visita la demo de webs ve ya seleccionada la categoría correcta.
+ // Solo utiliza UTMs explícitas; no guarda navegación ni completa información personal.
+ const fromWebSales=referral.get('utm_source')==='webs' && referral.get('utm_campaign')==='webs_202611';
+ const fromInstagramWebs=referral.get('utm_source')==='instagram' &&
+   referral.get('utm_content')==='webs' && referral.get('utm_campaign')==='perfil_ig_202611';
+ if(fromWebSales||fromInstagramWebs){
+  const cat=form.elements.namedItem('category');
+  if(cat)cat.value='Crear página web / catálogo digital';
+ }
+
  // Guía a consulta comercial: solo se transfieren categorías predefinidas, no el chat.
  if(referral.get('utm_source')==='guardian'){
   const sectores={taller:'taller mecánico',peluqueria:'peluquería o centro de estética',comercio:'comercio',gastronomia:'local gastronómico',inmobiliaria:'inmobiliaria',salud:'consultorio',educacion:'institución educativa',servicios:'servicio técnico u oficio'};
@@ -110,7 +120,7 @@ renderEffortEstimate();
 
 document.querySelectorAll('[data-topic]').forEach(link=>link.addEventListener('click',()=>{
  if(!form)return;
- const categories=['Automatizar tareas','Desarrollar software','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
+ const categories=['Automatizar tareas','Desarrollar software','Crear página web / catálogo digital','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
  const selected=link.dataset.category;
  form.elements.namedItem('category').value=categories.includes(selected)?selected:'Otro / no estoy seguro';
  const msg=form.elements.namedItem('message');
@@ -136,7 +146,7 @@ function leadValidationError(v){
  if(v.name.length<2||v.name.length>100) return 'Ingresá un nombre de 2 a 100 caracteres.';
  const emailInput=form?.elements.namedItem('email');
  if(!v.email||v.email.length>180||!emailInput?.checkValidity()) return 'Ingresá un correo electrónico válido.';
- const categories=['Automatizar tareas','Desarrollar software','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
+ const categories=['Automatizar tareas','Desarrollar software','Crear página web / catálogo digital','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
  if(!categories.includes(v.category)) return 'Elegí qué tipo de servicio necesitás.';
  if(v.message.length<15||v.message.length>5000) return 'Contanos tu idea con al menos 15 caracteres (máximo 5.000).';
  if(!v.consent) return 'Tenés que aceptar el tratamiento de los datos para enviar tu consulta.';
