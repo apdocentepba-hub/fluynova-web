@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex,nofollow">
+<meta name="theme-color" content="#0b0f17">
+<title>FLUYNOVA · Cotizador de software (vista previa)</title>
+<meta name="description" content="Explorá costos orientativos de soluciones de software para negocios. Propuesta experimental, sin contratación habilitada.">
+<style>
+:root{color-scheme:dark;--bg:#0b0f17;--panel:#142132;--line:#33465c;--ink:#f1f7fb;--muted:#b2c3d1;--accent:#a8e777;--focus:#d1ffae}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(circle at 80% -20%,#183a36 0,transparent 42%),var(--bg);font:16px/1.65 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink)}
+a{color:var(--accent)}a:focus-visible,select:focus-visible,input:focus-visible,button:focus-visible{outline:3px solid var(--focus);outline-offset:3px}
+header,main,footer{max-width:1110px;margin:auto;padding:26px 22px}
+header{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);gap:16px}
+.brand{color:var(--accent);font-weight:900;letter-spacing:.09em;text-decoration:none}.back{text-decoration:none}
+h1{font-size:clamp(32px,5vw,53px);line-height:1.1;letter-spacing:-.03em;margin:18px 0 16px}
+h2{font-size:21px;margin:0 0 12px}h3{font-size:17px;margin:0 0 6px}
+.eyebrow{color:var(--accent);font-weight:800;letter-spacing:.1em;font-size:12px}
+.lead{max-width:750px;color:var(--muted);font-size:18px}
+.notice{background:#21303f;border:1px solid #4c6172;border-radius:12px;padding:13px 16px;color:#daebf4;font-size:14px;margin:16px 0}
+main{padding-top:34px}.layout{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);gap:18px;margin-top:26px;align-items:start}
+.panel{border:1px solid var(--line);background:var(--panel);border-radius:18px;padding:22px;min-width:0}
+label{display:block;font-size:14px;font-weight:700;margin-bottom:7px}
+select{width:100%;background:#0b1727;color:var(--ink);padding:12px 14px;border-radius:10px;border:1px solid #5b7088;font:inherit}
+.group{margin-bottom:20px}.help{margin:6px 0 0;color:var(--muted);font-size:13px}
+.check{display:flex;align-items:flex-start;gap:10px}.check input{margin:6px 0 0;accent-color:var(--accent);width:18px;height:18px;flex-shrink:0}.check label{font-weight:500}
+.plan-cards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:22px}
+.plan{background:#111d2d;border:1px solid #314a5c;border-radius:14px;padding:16px}.plan p{color:var(--muted);font-size:13px;margin:5px 0 0}
+.total{font-size:30px;letter-spacing:-.04em;font-weight:900;margin:0 0 8px;color:var(--accent)}
+.result-list{margin:0;padding:0;list-style:none}.result-list li{border-bottom:1px solid var(--line);padding:12px 0}.result-list strong{display:block;font-size:18px}
+.muted{color:var(--muted)}.cta{display:inline-block;background:var(--accent);color:#13220e;border-radius:10px;padding:12px 18px;text-decoration:none;font-weight:800;margin-top:18px}
+.note{font-size:13px;color:var(--muted);margin:16px 0 0}
+footer{color:var(--muted);font-size:12px;border-top:1px solid var(--line)}
+@media(max-width:790px){.layout{grid-template-columns:minmax(0,1fr)}.plan-cards{grid-template-columns:1fr}header{flex-direction:column;align-items:flex-start}}
+</style>
+</head>
+<body>
+<header><a class="brand" href="/">FLUYNOVA / NEGOCIOS</a><a class="back" href="/">Volver al sitio principal</a></header>
+<main>
+<div class="eyebrow">LABORATORIO COMERCIAL · SOLO VISTA PREVIA</div>
+<h1>Software para tu negocio.<br>Un punto de partida claro.</h1>
+<p class="lead">Compará propuestas iniciales para páginas web, presupuestos y gestión comercial. El cálculo es ilustrativo y no requiere registro ni envía tus selecciones a un servidor.</p>
+<div class="notice"><strong>Importante:</strong> esta página es una propuesta en evaluación. Los sistemas de CRM y automatizaciones todavía no están habilitados para contratar. Los importes no constituyen una oferta contractual.</div>
+<div class="plan-cards" aria-label="Paquetes orientativos">
+<article class="plan"><h3>01 · Presencia Web</h3><p>Sitio simple y formulario de consultas. El precio de inicio coincide con la referencia de la web ya existente.</p></article>
+<article class="plan"><h3>02 · Presupuestos + Clientes</h3><p>Registro de interesados, operaciones, cotizaciones y próximas acciones. En prototipo.</p></article>
+<article class="plan"><h3>03 · Gestión + Automatizaciones</h3><p>Gestión comercial y flujo adicional acordado. En desarrollo.</p></article>
+</div>
+<div class="layout">
+<section class="panel" aria-labelledby="config-title">
+<h2 id="config-title">Configurá un escenario</h2>
+<div class="group"><label for="plan">¿Qué solución te interesa?</label>
+<select id="plan"><option value="web">Presencia Web</option><option value="crm" selected>Presupuestos + Clientes</option><option value="gestion">Gestión + Automatizaciones</option></select>
+</div>
+<div class="group"><label for="team">Personas que usarían el sistema</label>
+<select id="team"><option value="1-5">De 1 a 5</option><option value="6-20">De 6 a 20</option><option value="21+">Más de 20</option></select>
+</div>
+<div class="group"><label for="infra">Alojamiento de la solución</label>
+<select id="infra"><option value="fluynova">Administrado por FLUYNOVA</option><option value="propia">Infraestructura propia del cliente</option></select>
+<p class="help">Si el software está alojado por FLUYNOVA, el servicio mensual es parte de la oferta y no puede omitirse.</p></div>
+<div class="group"><div class="check"><input type="checkbox" id="extra"><label for="extra">Necesito integraciones adicionales (WhatsApp, ARCA, Mercado Pago u otros sistemas)</label></div>
+<p class="help">Estas integraciones requieren evaluación técnica, costos adicionales y autorización de terceros.</p></div>
+<p class="note">No ingreses datos personales en esta calculadora. No utiliza cookies ni envía las preferencias a servidores.</p>
+</section>
+<section class="panel" aria-labelledby="result-title" aria-live="polite">
+<div class="eyebrow">ESTIMACIÓN PRELIMINAR</div>
+<h2 id="result-title">Resumen</h2>
+<p class="muted" id="selected-name">Presupuestos + Clientes</p>
+<p class="total" id="setup">$ 290.000</p>
+<p class="muted">Implementación inicial de referencia</p>
+<ul class="result-list">
+<li><span class="muted">Servicio mensual alojado</span><strong id="monthly">$ 39.000</strong></li>
+<li><span class="muted">Total ilustrativo del primer año (instalación + 12 meses)</span><strong id="first-year">$ 758.000</strong></li>
+</ul>
+<p class="notice" id="caveat">Cotización sujeta a revisión.</p>
+<a class="cta" href="/diagnostico/?utm_source=cotizador-gestion&amp;utm_medium=landing&amp;utm_campaign=estimador-202611" id="cta">Solicitar evaluación sin cargo</a>
+<p class="note">Los presupuestos finales requieren definición de alcance, impuestos, soporte, titularidad de datos y condiciones contractuales. No hay pagos, reservas ni altas automáticas.</p>
+</section>
+</div>
+</main>
+<footer>FLUYNOVA · Propuesta comercial en laboratorio · Sin conexión con bases de clientes ni servicios de cobro.</footer>
+<script src="./cotizador.js"></script>
+<script>
+"use strict";
+const calc=globalThis.FluynovaSoftwareQuote;
+const ids=["plan","team","infra","extra","setup","monthly","first-year","selected-name","caveat"];
+const $=id=>document.getElementById(id);
+function render(){
+ const q=calc.estimate({plan:$("plan").value,team:$("team").value,infra:$("infra").value,extraIntegration:$("extra").checked});
+ $("selected-name").textContent=q.label;
+ $("setup").textContent=(q.requiresCustomQuote?"Desde ":"")+calc.ars(q.setup);
+ $("monthly").textContent=q.monthly===null?"A cotizar / opcional":("Desde "+calc.ars(q.monthly));
+ $("first-year").textContent=q.firstYear===null?"A cotizar":("Desde "+calc.ars(q.firstYear));
+ $("caveat").textContent=q.caveat+(q.isPublishedOffer?" El servicio web cuenta con una referencia pública previa.":" Es un producto en desarrollo, no contratable.");
+}
+for(const id of ["plan","team","infra","extra"])$(id).addEventListener("change",render);
+render();
+</script>
+</body></html>
