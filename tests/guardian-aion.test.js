@@ -50,7 +50,7 @@ test('Salir del diagnóstico limpia el estado sin persistir mensajes', () => {
  brain.guided('Analizar mi proceso', st);
  const r = brain.guided('cancelar diagnostico', st);
  assert.equal(r.tag, 'aion_cierre');
- assert.deepEqual(st.aion, {stage:'idle', process:null, volume:null, goal:null, source:null});
+ assert.deepEqual(st.aion, {stage:'idle', process:null, volume:null, goal:null, source:null, trigger:null, recipient:null});
  assert.ok(!JSON.stringify(st).includes('cancelar diagnostico'));
 });
 test('El motor AION público no incorpora proyectos ni datos personales', () => {
@@ -60,18 +60,14 @@ test('El motor AION público no incorpora proyectos ni datos personales', () => 
 });
 
 test('La tarea libre reconoce WhatsApp, frecuencia y objetivo sin inventar integraciones', () => {
-  const [,question,objective,plan]=conversation(
-    'Analizar mi proceso',
-    'Respondo consultas por WhatsApp todos los días',
-    'Quiero avisos automáticos',
-    'no debería llegar a esta etapa'
-  );
-  assert.equal(question.tag, 'aion_objetivo');
-  assert.equal(objective.tag, 'aion_plan');
-  assert.match(objective.reply, /consultas recibidas/);
-  assert.match(objective.reply, /integración oficial/);
-  assert.match(objective.reply, /diario/);
-  assert.notEqual(plan.tag, 'aion_plan');
+ const r=conversation('Analizar mi proceso','Respondo consultas por WhatsApp todos los días','Quiero avisos automáticos','Cuando llega una consulta','Mi equipo');
+ assert.equal(r[1].tag,'aion_objetivo');
+ assert.equal(r[2].tag,'aion_disparador');
+ assert.equal(r[3].tag,'aion_destinatarios');
+ assert.equal(r[4].tag,'aion_plan');
+ assert.match(r[4].reply,/consultas recibidas/);
+ assert.match(r[4].reply,/canal oficial autorizado/);
+ assert.match(r[4].reply,/diario/);
 });
 test('No se inventa una tarea si el visitante no explicó qué hace', () => {
   const [,reply]=conversation('Analizar mi proceso','no sé qué necesito');
@@ -119,21 +115,41 @@ test('El estado AION no almacena texto libre ni datos particulares', () => {
 
 
 test('Captura 05/11: objetivo adelantado no se confunde con frecuencia', () => {
-  const replies=conversation('Analizar mi proceso','Respondo consultas por WhatsApp','quiero avisos automaticos');
-  assert.equal(replies[1].tag,'aion_frecuencia');
-  assert.equal(replies[2].tag,'aion_plan');
-  assert.match(replies[2].reply,/objetivo: avisos/);
-  assert.match(replies[2].reply,/Frecuencia por determinar/);
-  assert.match(replies[2].reply,/WhatsApp requieren una integración oficial/);
-  assert.doesNotMatch(replies[2].reply,/qué resultado querés lograr/i);
+ const r=conversation('Analizar mi proceso','Respondo consultas por WhatsApp','quiero avisos automaticos','Cuando llega una consulta','Mi equipo');
+ assert.equal(r[1].tag,'aion_frecuencia');
+ assert.equal(r[2].tag,'aion_disparador');
+ assert.equal(r[3].tag,'aion_destinatarios');
+ assert.equal(r[4].tag,'aion_plan');
+ assert.match(r[4].reply,/Objetivo: avisos automáticos/);
+ assert.match(r[4].reply,/Frecuencia por determinar/);
+ assert.match(r[4].reply,/WhatsApp: integrar únicamente/);
 });
 test('La misma captura funciona con botones predefinidos y no mezcla sesiones', () => {
-  const a=brain.create();
-  brain.guided('Analizar mi proceso',a);
-  brain.guided('Consultas de clientes',a);
-  const result=brain.guided('Avisos automáticos',a);
-  assert.equal(result.tag,'aion_plan');
-  assert.equal(result.state.aion.stage,'done');
-  const b=brain.create();
-  assert.equal(b.aion.goal,null);
+ const a=brain.create();brain.guided('Analizar mi proceso',a);brain.guided('Consultas de clientes',a);
+ assert.equal(brain.guided('Avisos automáticos',a).tag,'aion_disparador');
+ assert.equal(brain.guided('Cambio de estado',a).tag,'aion_destinatarios');
+ assert.equal(brain.guided('Mi equipo',a).tag,'aion_plan');
+ assert.equal(a.aion.stage,'done');
+ const b=brain.create();assert.equal(b.aion.goal,null);
+});
+
+test('Distingue la frecuencia del evento que dispara avisos',()=>{
+ const s=brain.create();for(const m of ['Analizar mi proceso','Respondo consultas por WhatsApp','Todos los días','Avisos automáticos'])brain.guided(m,s);
+ assert.equal(brain.guided('Todos los días',s).tag,'aion_aclaracion_disparador');
+ assert.equal(s.aion.volume,'diario');assert.equal(s.aion.trigger,null);
+});
+test('No inventa disparador ni destinatario si la persona no sabe',()=>{
+ const r=conversation('Analizar mi proceso','Respondo consultas por WhatsApp','Avisos automáticos','No lo sé todavía','No lo sé todavía');
+ assert.equal(r[4].tag,'aion_plan');assert.match(r[4].reply,/todavía por definir/);assert.match(r[4].reply,/NO está conectado/);
+});
+test('No conserva frases libres en las categorias del diagnóstico',()=>{
+ const s=brain.create();for(const m of ['Analizar mi proceso','Respondo consultas por WhatsApp','Todos los días','Avisos automáticos','Cuando llega una consulta','Mi equipo'])brain.guided(m,s);
+ assert.equal(s.aion.trigger,'nueva_consulta');assert.equal(s.aion.recipient,'equipo');
+ assert.ok(!JSON.stringify(s.aion).includes('Respondo consultas'));
+});
+test('Vuelve a preguntar ante un evento y un destinatario ambiguos',()=>{
+ const s=brain.create();for(const m of ['Analizar mi proceso','Respondo consultas por WhatsApp','Avisos automáticos'])brain.guided(m,s);
+ assert.equal(brain.guided('necesito algo urgente',s).tag,'aion_aclaracion_disparador');
+ assert.equal(brain.guided('Cambio de estado',s).tag,'aion_destinatarios');
+ assert.equal(brain.guided('esta semana',s).tag,'aion_aclaracion_destinatarios');
 });
