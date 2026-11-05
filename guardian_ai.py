@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import time
 import urllib.error
 import urllib.request
@@ -35,8 +36,25 @@ SYSTEM = """Sos Guardián × AION, asistente comercial de FLUYNOVA (Argentina). 
 Cerrá cuando corresponda con el enlace de consulta. No prometas que una persona responderá en un horario determinado.
 """
 
+# Las credenciales por sí solas nunca habilitan llamadas a terceros.
 def _enabled() -> bool:
-    return bool(os.getenv("GUARDIAN_AI_KEY", "").strip() and os.getenv("GUARDIAN_AI_MODEL", "").strip())
+    return bool(
+        os.getenv("GUARDIAN_EXTERNAL_AI_ALLOWED", "0") == "1"
+        and os.getenv("GUARDIAN_AI_KEY", "").strip()
+        and os.getenv("GUARDIAN_AI_MODEL", "").strip()
+    )
+
+# Detección preventiva, no una garantía completa de ausencia de datos privados.
+_SENSITIVE = re.compile(
+    r"\b(?:dni|cuil|cuit|contrase(?:ñ|n)a|password|token|api[ _-]?key|"
+    r"clave[ _-]?(?:api|privada|secreta)|tarjeta[ _-]?(?:de[ _-]?)?(?:cr[eé]dito|d[eé]bito))\b",
+    re.IGNORECASE,
+)
+_EMAIL = re.compile(r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b", re.IGNORECASE)
+_CARD = re.compile(r"(?<!\d)(?:\d[ -]?){13,19}(?!\d)")
+
+def _contains_sensitive(text: str) -> bool:
+    return bool(_SENSITIVE.search(text) or _EMAIL.search(text) or _CARD.search(text))
 
 @router.get("/capabilities")
 def capabilities():
@@ -79,6 +97,8 @@ async def chat(request: Request):
         txt = row.get("content")
         if not isinstance(txt, str) or not txt.strip() or len(txt) > 700:
             raise HTTPException(422, detail="Longitud de mensaje inválida.")
+        if _contains_sensitive(txt):
+            raise HTTPException(422, detail="El mensaje contiene información que no debe enviarse a una IA externa. Quitá datos sensibles o usá el diagnóstico guiado.")
         messages.append({"role": row["role"], "content": txt.strip()})
     if messages[-1]["role"] != "user":
         raise HTTPException(422, detail="Último mensaje inválido.")
