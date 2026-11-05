@@ -128,7 +128,7 @@ export async function build({sourceDir, outputDir}={}) {
 
 const ownFile=process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url);
 if(ownFile){
-  const root=resolve(fileURLToPath(new URL('..',import.meta.url)),'..');
+  const root=fileURLToPath(new URL('../',import.meta.url));
   build({sourceDir:join(root,'static'),outputDir:join(root,'dist-commercial-static-preview')})
     .then(info=>console.log(JSON.stringify(info,null,2)))
     .catch(error=>{console.error(error.message);process.exitCode=1;});
