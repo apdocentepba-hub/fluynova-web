@@ -115,13 +115,25 @@ def optional_notification(name: str, email: str, organization: str, category: st
         print(f"SMTP notification failed: {type(exc).__name__}")
 
 
+async def contact_body_limited(request: Request, limit: int = 16384) -> bytes:
+    """Bound memory even when Content-Length is missing or forged."""
+    declared = request.headers.get("content-length")
+    if declared is not None:
+        if not declared.isascii() or not declared.isdecimal():
+            raise HTTPException(400, detail="Longitud de solicitud inválida.")
+        if int(declared) > limit:
+            raise HTTPException(413, detail="El mensaje es demasiado extenso.")
+    chunks = bytearray()
+    async for chunk in request.stream():
+        if len(chunks) + len(chunk) > limit:
+            raise HTTPException(413, detail="El mensaje es demasiado extenso.")
+        chunks.extend(chunk)
+    return bytes(chunks)
+
+
 @app.post("/api/contact")
 async def send_contact(request: Request, background: BackgroundTasks):
-    if int(request.headers.get("content-length", "0") or "0") > 16384:
-        raise HTTPException(413, detail="El mensaje es demasiado extenso.")
-    body = await request.body()
-    if len(body) > 16384:
-        raise HTTPException(413, detail="El mensaje es demasiado extenso.")
+    body = await contact_body_limited(request)
     try:
         import json
         payload = json.loads(body)
@@ -148,11 +160,10 @@ async def send_contact(request: Request, background: BackgroundTasks):
             and 15 <= len(message) <= 5000 and payload.get("consent") is True):
         raise HTTPException(422, detail="Revisá los datos: faltan campos obligatorios o hay valores inválidos.")
 
+    # Use the ASGI client identity only. Accepting user-supplied X-Forwarded-For
+    # would allow callers to bypass the in-memory rate limiter by spoofing IPs.
+    # Configure trusted proxy handling at the ASGI ingress instead, not here.
     remote = request.client.host if request.client else "unknown"
-    if os.getenv("TRUST_PROXY", "0") == "1":
-        forwarded = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
-        if forwarded:
-            remote = forwarded
     now = time.monotonic()
     recent = [t for t in _attempts.get(remote, []) if now - t < 3600]
     if len(recent) >= 5:
