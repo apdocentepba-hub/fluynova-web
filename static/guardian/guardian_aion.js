@@ -10,7 +10,7 @@
   if (!base) return;
 
   function newAion() {
-    return {stage:'idle',process:null,volume:null,goal:null,source:null};
+    return {stage:'idle',process:null,volume:null,goal:null,source:null,trigger:null,recipient:null};
   }
   function create() {
     const state = base.create();
@@ -38,6 +38,63 @@
     if (/\b(reportes?|informes?|estadisticas?|indicadores?|medir)\b/.test(q)) return 'reportes';
     if (/\b(evitar|eliminar|reducir|sacar|no repetir|sin repetir|automatizar|copiar menos|carga doble|menos carga|menos tiempo|ahorrar)\b/.test(q)) return 'evitar doble carga';
     return null;
+  }
+  function triggerOf(q) {
+    if (/\b(no lo se|no se|por definir|todavia no)\b/.test(q)) return 'por_definir';
+    if (/\b(sin respuesta|no responde|espera|demora|tiempo sin|pasaron|seguimiento a las)\b/.test(q)) return 'sin_respuesta';
+    if (/\b(vence|vencimiento|fecha limite|plazo|caduca)\b/.test(q)) return 'vencimiento';
+    if (/\b(cambio de estado|cambia de estado|estado cambia|se completo|finalizado|listo el pedido)\b/.test(q)) return 'cambio_estado';
+    if (/\b(nueva consulta|llega una consulta|nuevo mensaje|llega un mensaje|recibo un mensaje|entra una consulta|cuando escriben)\b/.test(q)) return 'nueva_consulta';
+    return null;
+  }
+  function recipientOf(q) {
+    if (/\b(no lo se|no se|por definir|todavia no)\b/.test(q)) return 'por_definir';
+    if (/\b(ambos|los dos|equipo y cliente|cliente y equipo|a todos)\b/.test(q)) return 'ambos';
+    if (/\b(clientes|cliente|usuario|solicitante|comprador)\b/.test(q)) return 'clientes';
+    if (/\b(equipo|personal|administrador|a mi|para mi|interno|empleados|vendedor|responsable)\b/.test(q)) return 'equipo';
+    return null;
+  }
+  const triggerText={
+    nueva_consulta:'cuando ingresa una consulta nueva',
+    sin_respuesta:'cuando una consulta sigue sin respuesta tras un plazo a definir',
+    vencimiento:'cuando se acerca un vencimiento definido',
+    cambio_estado:'cuando cambia el estado de una consulta',
+    por_definir:'todavía por definir'
+  };
+  const recipientText={
+    clientes:'clientes (solo con consentimiento y canal habilitado)',
+    equipo:'equipo interno',
+    ambos:'equipo interno y clientes autorizados',
+    por_definir:'todavía por definir'
+  };
+  function startAlerts(st) {
+    st.aion.goal='avisos';
+    st.aion.stage='trigger';
+    return answer('Entendido: necesitás avisos automáticos, no una frecuencia de trabajo. ¿Qué evento debería disparar cada aviso?',
+      'aion_disparador',['Cuando llega una consulta','Sin respuesta después de un tiempo','Cambio de estado','No lo sé todavía'],st);
+  }
+  function alertPlan(st) {
+    const a=st.aion, source=a.source||sources[a.process];
+    const trigger=triggerText[a.trigger]||'todavía por definir';
+    const recipient=recipientText[a.recipient]||'todavía por definir';
+    const integration=a.source==='mensajes'
+      ? '\nWhatsApp: integrar únicamente mediante un canal oficial autorizado; hoy NO está conectado ni enviamos mensajes.'
+      : '\nEl canal de entrega y sus permisos deben verificarse antes de activar avisos reales.';
+    return answer('Diagnóstico orientativo de FLUYNOVA:\n\n'+
+      'Proceso: '+tasks[a.process]+' (fuente: '+source+').\n'+
+      'Frecuencia: '+(a.volume==='sin medir'?'por determinar':a.volume)+'.\n'+
+      'Objetivo: avisos automáticos.\n'+
+      'Disparador: '+trigger+'.\n'+
+      'Destinatarios: '+recipient+'.\n\n'+
+      'Piloto recomendado:\n'+
+      '1. Simular consultas y estados con datos ficticios, sin conectar WhatsApp.\n'+
+      '2. Definir el evento y el plazo exacto que generan un aviso; evitar duplicados.\n'+
+      '3. Simular la entrega al destinatario elegido y revisar permisos antes de cualquier envío real.\n'+
+      '4. Medir avisos esperados, generados, omitidos y duplicados; revisar errores manualmente.\n\n'+
+      'Frecuencia '+(a.volume==='sin medir'?'por determinar':'declarada: '+a.volume)+
+      '. No es un presupuesto ni una promesa de ahorro.'+integration+
+      '\n\n¿Querés pedir una evaluación para implementar este piloto?',
+      'aion_plan',['Pedir evaluación','Cuánto cuesta','Analizar mi proceso'],st);
   }
   function sourceOf(q) {
     const tools=[];
@@ -107,6 +164,7 @@
       const earlyGoal=goalOf(q);
       if (earlyGoal) {
         st.aion.volume=volumeOf(q)||'sin medir';
+        if (earlyGoal==='avisos') return startAlerts(st);
         st.aion.goal=earlyGoal;
         st.aion.stage='done';
         const source=st.aion.source||sources[st.aion.process];
@@ -130,6 +188,7 @@
       const goal=goalOf(q);
       if (!goal) return answer('Necesito un objetivo concreto para no inventar una solución. ¿Querés evitar la carga repetida, ordenar todo en un panel, recibir avisos o generar reportes?',
         'aion_aclaracion_objetivo',['Evitar carga doble','Tener un panel','Avisos automáticos','Generar reportes'],st);
+      if (goal==='avisos') return startAlerts(st);
       st.aion.goal=goal;
       st.aion.stage='done';
       const sector=st.sector?' ('+st.sector+')':'';
@@ -144,6 +203,23 @@
         'Frecuencia declarada: '+(st.aion.volume||'sin medir')+'. No es un presupuesto ni una promesa de ahorro.'+caveat+
         '\n\n¿Querés pedir una evaluación para ese piloto?',
         'aion_plan',['Pedir evaluación','Cuánto cuesta','Analizar mi proceso'],st);
+    }
+    if (st.aion.stage==='trigger') {
+      const trigger=triggerOf(q);
+      if (!trigger) return answer('Para definir los avisos necesito el evento que los dispara, no cada cuánto trabajás. ¿Qué debería ocurrir?', 'aion_aclaracion_disparador',
+        ['Cuando llega una consulta','Sin respuesta después de un tiempo','Cambio de estado','No lo sé todavía'],st);
+      st.aion.trigger=trigger;
+      st.aion.stage='recipient';
+      return answer('Bien. ¿Quién debe recibir el aviso? Todavía no se enviará ninguno.',
+        'aion_destinatarios',['Mi equipo','Los clientes','Ambos','No lo sé todavía'],st);
+    }
+    if (st.aion.stage==='recipient') {
+      const recipient=recipientOf(q);
+      if (!recipient) return answer('¿Los avisos serían para tu equipo, para clientes con autorización o para ambos?', 'aion_aclaracion_destinatarios',
+        ['Mi equipo','Los clientes','Ambos','No lo sé todavía'],st);
+      st.aion.recipient=recipient;
+      st.aion.stage='done';
+      return alertPlan(st);
     }
     return regular;
   }
