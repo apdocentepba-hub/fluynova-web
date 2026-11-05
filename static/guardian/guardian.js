@@ -6,22 +6,22 @@
 'use strict';
 if(document.getElementById('fg-launcher'))return;
 var ICON='✳', history=[], lastIntent='', aiEnabled=false, inFlight=false;
-var engine=window.FluynovaGuardianBrain;
+var engine=window.FluynovaAionGuardian||window.FluynovaGuardianBrain;
 var conversation=engine?engine.create():null;
 var lastResult=null;
 var css=document.createElement('link');css.rel='stylesheet';css.href='/guardian/guardian.css?v=2';document.head.appendChild(css);
 var root=document.createElement('div');root.id='fg-root';
 root.innerHTML='<button id="fg-launcher" type="button" aria-expanded="false" aria-controls="fg-panel"><span aria-hidden="true">'+ICON+'</span><span>Hablar con Guardián</span></button>'+
 '<section id="fg-panel" role="dialog" aria-label="Asistente Guardián de Fluynova" aria-modal="false" hidden>'+
-'<header class="fg-head"><div class="fg-avatar" aria-hidden="true">'+ICON+'</div><div><strong>Guardián · FLUYNOVA</strong><small>Asistente guiado · Versión piloto</small></div><button type="button" class="fg-close" aria-label="Cerrar asistente">✕</button></header>'+
+'<header class="fg-head"><div class="fg-avatar" aria-hidden="true">'+ICON+'</div><div><strong>GUARDIÁN × AION · FLUYNOVA</strong><small>Diagnóstico guiado · IA opcional</small></div><button type="button" class="fg-close" aria-label="Cerrar asistente">✕</button></header>'+
 '<div id="fg-log" role="log" aria-live="polite" aria-relevant="additions text"></div>'+
-'<div id="fg-prompts"><button type="button" data-q="¿Qué puedo automatizar?">Qué automatizar</button><button type="button" data-q="¿Cuánto cuesta?">Precios</button><button type="button" data-q="Necesito un sistema a medida">Software</button><button type="button" data-q="Quiero hablar con una persona">Contacto</button></div>'+
+'<div id="fg-prompts"><button type="button" data-q="Analizar mi proceso">Analizar mi proceso</button><button type="button" data-q="¿Cuánto cuesta?">Precios</button><button type="button" data-q="Necesito un sistema a medida">Software</button><button type="button" data-q="Quiero hablar con una persona">Contacto</button></div>'+
 '<form id="fg-form"><label class="fg-sr" for="fg-question">Tu pregunta</label><input id="fg-question" maxlength="650" placeholder="Contame qué necesitás..." required autocomplete="off"><button type="submit" id="fg-send" aria-label="Enviar pregunta">➤</button></form>'+
 '<label class="fg-consent" id="fg-ai-option" hidden><input type="checkbox" id="fg-ai-consent"> Autorizo enviar este chat a un proveedor externo de IA para recibir respuestas generadas.</label>'+
 '<div class="fg-footer"><span>Sin cuentas ni claves sensibles.</span><a id="fg-lead" href="/?utm_source=guardian&utm_medium=asistente&utm_campaign=consulta_guiada#contacto">Pedir evaluación ↗</a></div></section>';
 document.body.appendChild(root);
 var launch=root.querySelector('#fg-launcher'),panel=root.querySelector('#fg-panel'),log=root.querySelector('#fg-log'),form=root.querySelector('#fg-form'),input=root.querySelector('#fg-question'),consent=root.querySelector('#fg-ai-consent'),option=root.querySelector('#fg-ai-option'),submit=root.querySelector('#fg-send');
-function open(){panel.hidden=false;launch.setAttribute('aria-expanded','true');if(!log.children.length)add('assistant','Hola, soy Guardián. Te ayudo a encontrar una solución para tu negocio y a preparar una consulta. ¿Qué necesitás mejorar?');input.focus()}
+function open(){panel.hidden=false;launch.setAttribute('aria-expanded','true');if(!log.children.length)add('assistant','Hola, soy Guardián × AION. Te ayudo a analizar un proceso y preparar una consulta comercial. El diagnóstico guiado funciona sin enviar tus mensajes a un proveedor externo. ¿Qué necesitás mejorar?');input.focus()}
 function close(){panel.hidden=true;launch.setAttribute('aria-expanded','false');launch.focus()}
 launch.addEventListener('click',function(){panel.hidden?open():close()});
 root.querySelector('.fg-close').addEventListener('click',close);
