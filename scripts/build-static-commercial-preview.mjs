@@ -6,6 +6,7 @@
 import {cp, mkdir, readdir, readFile, rm, writeFile} from 'node:fs/promises';
 import {resolve, relative, join, extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
+import {spawnSync} from 'node:child_process';
 
 function replaceOnce(source, match, replacement, label) {
   const first = source.indexOf(match);
@@ -204,7 +205,18 @@ export async function build({sourceDir, outputDir}={}) {
 const ownFile=process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url);
 if(ownFile){
   const root=fileURLToPath(new URL('../',import.meta.url));
-  build({sourceDir:join(root,'static'),outputDir:join(root,'dist-commercial-static-preview')})
-    .then(info=>console.log(JSON.stringify(info,null,2)))
-    .catch(error=>{console.error(error.message);process.exitCode=1;});
+  // La vista previa NO se publica si fallan las pruebas reales de Node.
+  const checks=spawnSync(process.execPath,['--test','tests/static-commercial-preview.test.mjs'],{
+    cwd:root,encoding:'utf8',timeout:30000
+  });
+  if(checks.stdout)process.stdout.write(checks.stdout);
+  if(checks.stderr)process.stderr.write(checks.stderr);
+  if(checks.error || checks.status!==0){
+    console.error('Pruebas del formulario no aprobadas; compilación cancelada');
+    process.exitCode=1;
+  }else{
+    build({sourceDir:join(root,'static'),outputDir:join(root,'dist-commercial-static-preview')})
+      .then(info=>console.log(JSON.stringify(info,null,2)))
+      .catch(error=>{console.error(error.message);process.exitCode=1;});
+  }
 }
