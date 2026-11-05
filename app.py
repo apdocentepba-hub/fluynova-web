@@ -187,10 +187,10 @@ async def send_contact(request: Request, background: BackgroundTasks):
 
 
 def formsubmit_ready() -> bool:
-    """Fail closed: provider configuration alone is not delivery confirmation.
+    """Fail closed: a configured provider is not proof that leads reach the inbox.
 
-    FORMSUBMIT_DELIVERY_VERIFIED is a manual operational acknowledgement.
-    It is never inferred from a successful GET or a live deploy.
+    FORMSUBMIT_DELIVERY_VERIFIED is a manual operating acknowledgement, never
+    inferred from a successful GET, a deploy or provider configuration alone.
     """
     return (
         os.getenv("FORMSUBMIT_ACTIVE", "0") == "1"
