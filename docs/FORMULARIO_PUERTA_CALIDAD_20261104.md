@@ -48,3 +48,15 @@ node --test tests/*.test.js
 - Sólo después, revisar PR #17, aprobar cambios visuales y decidir despliegue. `main` permanece sin cambios.
 
 **Prohibido interpretar `FORMSUBMIT_ACTIVE=1` como prueba de entrega: es solamente una opción de configuración.**
+
+## Cierre de regresión sobre el código real y seguridad API — 04/11/2026
+
+Se recuperaron de GitHub los scripts y páginas referenciados por **todos los archivos `tests/*.test.js`** de la rama de desarrollo. Se contrastaron los SHA de objeto Git en los archivos transferidos; `app.py` se recuperó aparte en su representación base64 exacta, evitando que una exportación de Google Docs añadiera líneas vacías. Las primeras dos ejecuciones fallaron por **páginas faltantes en la copia local** (`soluciones-express/` y `automatizacion-de-planillas/`), no por una regresión real. Tras recuperar esas páginas se obtuvo la suite global **136/136 Node PASS**.
+
+Se identificaron dos riesgos latentes en la API alternativa `POST /api/contact` de FastAPI (normalmente deshabilitada):
+- `await request.body()` almacenaba todo el cuerpo antes de comprobar su tamaño. Se reemplazó por `contact_body_limited`, que inspecciona `Content-Length` cuando existe y **lee el stream con tope 16 KiB**, rechazando longitud malformada (400) y exceso (413).
+- Con `TRUST_PROXY=1`, la aplicación utilizaba directamente el primer valor de `X-Forwarded-For`, que podía ser falsificado por un visitante para evadir el límite de consultas. Ahora la clave se obtiene solo de `request.client.host` proporcionado por ASGI; cualquier interpretación de cabeceras de proxy debe configurarse y auditarse en la entrada confiable de Uvicorn/Render. El límite sigue siendo **en memoria**: no equivale a un rate limiter global entre procesos ni persiste tras reinicios.
+
+**Nueva evidencia:** `node --test tests/*.test.js` → **136/136 PASS** y `python -m pytest -q tests/test_contact_api_local.py` → **15/15 PASS** sobre el árbol local de fuentes de la rama, con FastAPI real, SQLite temporal, sin SMTP externo y sin datos de clientes. Se agregaron tres tests Python para transferencia sin longitud declarada, longitud inválida e IP simulada cambiante con `TRUST_PROXY=1`. `python -m py_compile app.py` también aprobó. Los blob SHA exactos subidos a GitHub y comprobados son `app.py` = `3a612825ea2bf536cb2367899246ec59e2229c6a`, test Python = `67f6314d9767f0e45f74e3cd895e60e22db562fa`.
+
+**Límites:** no se efectuó `git clone` por falta de red directa en el contenedor; se reconstruyeron y cotejaron los archivos necesarios para la suite, no todos los archivos binarios y comerciales del repositorio. No se lanzó GitHub Actions, no se publicó, no se modificó `main`, no se probó FormSubmit en vivo y no se envió ninguna consulta. La persistencia duradera y la recepción de mensajes **continúan pendientes**.
