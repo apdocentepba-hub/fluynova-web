@@ -105,6 +105,10 @@ async function send(question){
 }
 form.addEventListener('submit',function(event){event.preventDefault();send(input.value)});
 root.querySelector('#fg-prompts').addEventListener('click',function(event){var button=event.target.closest('[data-q]');if(!button)return;if(panel.hidden)open();send(button.getAttribute('data-q'))});
-fetch('/api/guardian/capabilities',{cache:'no-store'}).then(function(response){return response.ok?response.json():null}).then(function(info){if(!isPreview&&info&&info.external_ai_enabled===true){aiEnabled=true;option.hidden=false}}).catch(function(){/* La guía local sigue disponible */});
+// El laboratorio es un sitio estático: no tiene API ni utiliza IA externa.
+// Evitar el GET /api/guardian/capabilities (404) en la vista previa.
+if(!isPreview){
+ fetch('/api/guardian/capabilities',{cache:'no-store'}).then(function(response){return response.ok?response.json():null}).then(function(info){if(info&&info.external_ai_enabled===true){aiEnabled=true;option.hidden=false}}).catch(function(){/* La guía local sigue disponible */});
+}
 if(document.body.dataset.guardianOpen==='true')open();
 })();
