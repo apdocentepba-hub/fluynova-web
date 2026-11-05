@@ -32,3 +32,45 @@ test('el resultado agregado no inventa éxitos de destinos que fallan',async()=>
  assert.equal(r.length,5);assert.equal(r.filter(x=>x.ok).length,4);
  assert.equal(r.find(x=>x.label==='Diagnóstico comercial').ok,false);
 });
+
+test('la allowlist rechaza otros subdominios válidos y tampering del marcador',()=>{
+ assert.equal(targetIsSafe({label:'Falso',url:'https://untrusted.onrender.com/',expected:'FLUYNOVA'}),false);
+ assert.equal(targetIsSafe({...TARGETS[0],expected:'cualquier texto'}),false);
+ assert.equal(targetIsSafe({...TARGETS[0],url:'https://fluynova-ops-lab-preview-20261104.onrender.com/demo.html?token=x'}),false);
+ assert.equal(targetIsSafe({...TARGETS[0],url:'not a url'}),false);
+});
+
+test('las redirecciones se bloquean ANTES de seguirlas, aunque el destino sea mismo host',async()=>{
+ let opts;
+ const r=await probe(TARGETS[0],{fetcher:async(_url,o)=>{opts=o;return make(302,'','https://fluynova-ops-lab-preview-20261104.onrender.com/demo.html')},sleep:async()=>{}});
+ assert.equal(opts.redirect,'manual');
+ assert.equal(r.reason,'REDIRECCIÓN INESPERADA');
+ assert.deepEqual(r.observations,[302]);
+});
+
+test('rechaza HTML gigante declarado por Content-Length sin leerlo',async()=>{
+ let read=false;
+ const response={status:200,url:TARGETS[0].url,headers:{get:key=>key==='content-length'?'9999999':'text/html'},text:async()=>{read=true;return'FLUYNOVA Ops'}};
+ const r=await probe(TARGETS[0],{fetcher:async()=>response,sleep:async()=>{}});
+ assert.equal(r.ok,false);assert.equal(r.reason,'HTML DEMASIADO GRANDE');assert.equal(read,false);
+});
+
+test('corta el cuerpo si el stream excede el límite antes de descargarlo entero',async()=>{
+ let pulls=0;
+ const body=new ReadableStream({pull(controller){pulls++;controller.enqueue(new Uint8Array(280000).fill(65));if(pulls>=4)controller.close();}});
+ const r=await probe(TARGETS[0],{fetcher:async()=>({status:200,url:TARGETS[0].url,headers:{get:key=>key==='content-type'?'text/html':''},body}),sleep:async()=>{}});
+ assert.equal(r.reason,'HTML DEMASIADO GRANDE');assert.equal(r.ok,false);
+ assert.ok(pulls<=4);
+});
+
+test('la respuesta HTML pequeña por stream sigue dando PASS',async()=>{
+ const bytes=new TextEncoder().encode('<html><title>FLUYNOVA Ops</title></html>');
+ const body=new ReadableStream({start(c){c.enqueue(bytes);c.close()}});
+ const r=await probe(TARGETS[0],{fetcher:async()=>({status:200,url:TARGETS[0].url,headers:{get:key=>key==='content-type'?'text/html':''},body}),sleep:async()=>{}});
+ assert.equal(r.ok,true);
+});
+
+test('rechaza configuración sin timeout o con tiempo excesivo',async()=>{
+ await assert.rejects(probe(TARGETS[0],{timeoutMs:60000}),{name:'TypeError'});
+ await assert.rejects(probe(TARGETS[0],{attempts:0}),{name:'TypeError'});
+});
