@@ -57,3 +57,19 @@ Se encontró un riesgo real en la herramienta de QA inicial (NO desplegada): con
 ## Restricciones
 
 No se modificó `main`, no se ejecutó una automatización, no se desplegó el verificador ni se contactaron clientes. La galería `/laboratorio/` sigue en PR borrador #17 y **no se publica aún**.
+
+## Atribución voluntaria de la demo que motivó una consulta — revisión v3 (04/11/2026)
+
+**Problema comercial:** la galería tenía varias vías de consulta sin una referencia que permitiera distinguir si la persona había elegido CRM, pastelería, distribuidora o cotizador. No conviene recopilar perfiles individuales ni instalar píxeles para solucionarlo.
+
+**Implementación solo en rama de desarrollo:**
+
+- Se identificaron seis CTA relevantes con parámetros `utm_source=laboratorio`, `utm_medium=portfolio`, `utm_campaign=demostraciones_202611` y un `utm_content` específico para `hero`, `crm`, `pasteleria`, `distribuidora`, `cotizador` y `cierre`. Los enlaces externos de las demos no cambiaron.
+- Los CTA de servicios web siguen pasando primero por `/webs/`, donde el script de atribución que ya existía (`/instagram/referral.js`) ahora admite también `laboratorio`, pero **solo** la campaña explícita `demostraciones_202611`. Así, al pasar después al formulario de contacto, se conserva qué demo originó el interés.
+- Los demás CTA pasan por `/diagnostico/`, cuyo script existente ya conserva los UTM explícitos y válidos al llevar a `/#contacto`.
+- No se crean cookies, sesiones, almacenamiento de navegación, píxeles, solicitudes remotas ni envíos automáticos. Los valores de campaña se transmiten **solo al enviar voluntariamente el formulario existente**, que mantiene el consentimiento previo.
+- No se personaliza de forma oculta el contenido ni se afirma haber medido conversiones: la herramienta solo habilita una atribución básica de fuente a futuras consultas reales.
+
+**Pruebas:** `node --test tests/*.test.js` desde el laboratorio local completo: **22/22 PASS, 0 FAIL**. De las pruebas, cinco son nuevas de atribución y conservan la compatibilidad del flujo de Instagram existente. `static/diagnostico/attribution.js` no se modifica; en el ensayo se usó una copia equivalente de su implementación, por lo que sigue pendiente una regresión sobre el árbol completo actualizado en un checkout del repositorio antes de merge.
+
+**No publicar todavía:** validar navegación real por páginas web, diagnóstico y formulario, revisar mensajes legales/privacidad, aprobar diseño comercial y enlaces. No se ha ejecutado ningún envío de prueba a un buzón real ni se ha modificado producción.
