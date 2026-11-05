@@ -6,7 +6,7 @@ const path=require('node:path');
 const {PLANES,PRECIO_SECCION_EXTRA,presupuesto,importe,textoPresupuesto}=require('../scripts/presupuesto-web.cjs');
 test('precio de cada paquete coincide con el cotizador público existente',()=>{
  const landing=fs.readFileSync(path.resolve(__dirname,'../static/webs/index.html'),'utf8');
- const options=[...landing.matchAll(/<option value="(\\d+)">([^<]+)<\\/option>/g)]
+ const options=[...landing.matchAll(/<option value="(\d+)">([^<]+)<\/option>/g)]
    .map(match=>({precio:Number(match[1]),etiqueta:match[2]}));
  for(const p of Object.values(PLANES)){
    const matched=options.filter(x=>x.etiqueta.startsWith(p.etiqueta+' — '));
