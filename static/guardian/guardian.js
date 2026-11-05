@@ -5,6 +5,7 @@
 (function(){
 'use strict';
 if(document.getElementById('fg-launcher'))return;
+var isPreview=document.body&&document.body.dataset.guardianPreview==='true';
 var ICON='✳', history=[], lastIntent='', aiEnabled=false, inFlight=false;
 var engine=window.FluynovaAionGuardian||window.FluynovaGuardianBrain;
 var conversation=engine?engine.create():null;
@@ -20,6 +21,7 @@ root.innerHTML='<button id="fg-launcher" type="button" aria-expanded="false" ari
 '<label class="fg-consent" id="fg-ai-option" hidden><input type="checkbox" id="fg-ai-consent"> Autorizo enviar este chat a un proveedor externo de IA para recibir respuestas generadas.</label>'+
 '<div class="fg-footer"><span>Sin cuentas ni claves sensibles.</span><a id="fg-lead" href="/?utm_source=guardian&utm_medium=asistente&utm_campaign=consulta_guiada#contacto">Pedir evaluación ↗</a></div></section>';
 document.body.appendChild(root);
+if(isPreview)root.querySelector('#fg-lead').href='https://fluynova-web.onrender.com/?utm_source=guardian&utm_medium=asistente&utm_campaign=consulta_guiada#contacto';
 var launch=root.querySelector('#fg-launcher'),panel=root.querySelector('#fg-panel'),log=root.querySelector('#fg-log'),form=root.querySelector('#fg-form'),input=root.querySelector('#fg-question'),consent=root.querySelector('#fg-ai-consent'),option=root.querySelector('#fg-ai-option'),submit=root.querySelector('#fg-send');
 function open(){panel.hidden=false;launch.setAttribute('aria-expanded','true');if(!log.children.length)add('assistant','Hola, soy Guardián × AION. Te ayudo a analizar un proceso y preparar una consulta comercial. El diagnóstico guiado funciona sin enviar tus mensajes a un proveedor externo. ¿Qué necesitás mejorar?');input.focus()}
 function close(){panel.hidden=true;launch.setAttribute('aria-expanded','false');launch.focus()}
@@ -48,7 +50,7 @@ function localReply(question){
 function linkToContact(topic){
  var link=document.getElementById('fg-lead');if(!link)return;
  var tag=encodeURIComponent(String(topic||'general').slice(0,32));
- var url='/?utm_source=guardian&utm_medium=asistente&utm_campaign=consulta_guiada&utm_content='+tag;
+ var url=(isPreview?'https://fluynova-web.onrender.com/':'/')+'?utm_source=guardian&utm_medium=asistente&utm_campaign=consulta_guiada&utm_content='+tag;
  if(conversation){
   if(conversation.sector)url+='&guardian_sector='+encodeURIComponent(conversation.sector);
   if(conversation.project)url+='&guardian_proyecto='+encodeURIComponent(conversation.project);
