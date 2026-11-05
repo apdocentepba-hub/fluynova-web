@@ -27,3 +27,9 @@
 #fg-root :focus-visible{outline:3px solid #d2ffb5;outline-offset:2px}
 @media(max-width:500px){#fg-launcher{bottom:11px;right:11px;font-size:13px}#fg-panel{inset:5px 5px 5px 5px;width:auto;height:auto;border-radius:13px}#fg-prompts button{font-size:10px}}
 @media(prefers-reduced-motion:reduce){#fg-root *{scroll-behavior:auto!important}}
+
+#fg-root .fg-footer .fg-secondary{border:1px solid #65877a;border-radius:7px;background:#1b302c;color:#d5fae4;font:600 10px system-ui,sans-serif;padding:6px;cursor:pointer}
+#fg-root .fg-footer .fg-secondary[hidden]{display:none!important}
+#fg-root .fg-footer{flex-wrap:wrap;justify-content:flex-end}
+#fg-root .fg-footer span{margin-right:auto}
+@media(max-width:500px){#fg-root .fg-footer{gap:5px;padding:8px;font-size:9px}}
