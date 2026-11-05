@@ -104,6 +104,23 @@
         'aion_frecuencia',['Todos los días','Varias veces por semana','Una vez al mes','No lo sé'],st);
     }
     if (st.aion.stage==='volume') {
+      const earlyGoal=goalOf(q);
+      if (earlyGoal) {
+        st.aion.volume=volumeOf(q)||'sin medir';
+        st.aion.goal=earlyGoal;
+        st.aion.stage='done';
+        const source=st.aion.source||sources[st.aion.process];
+        const caution=st.aion.source==='mensajes'
+          ? ' Los avisos a través de WhatsApp requieren una integración oficial autorizada.'
+          : '';
+        return answer('Diagnóstico orientativo de FLUYNOVA:\n\n'+
+          '1. Relevar '+tasks[st.aion.process]+' (fuente: '+source+').\n'+
+          '2. Diseñar un piloto pequeño con datos ficticios.\n'+
+          '3. Medir el objetivo: '+earlyGoal+'.\n'+
+          '4. Verificar permisos, errores, respaldo y revisión humana.\n\n'+
+          'Frecuencia por determinar. No es un presupuesto ni una promesa de ahorro.'+caution,
+          'aion_plan',['Pedir evaluación','Cuánto cuesta','Analizar mi proceso'],st);
+      }
       st.aion.volume=volumeOf(q)||'sin medir';
       st.aion.stage='goal';
       return answer('Frecuencia: '+(st.aion.volume==='sin medir'?'todavía sin medir':st.aion.volume)+'. Para una primera versión pequeña, ¿qué resultado querés lograr?',
