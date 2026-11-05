@@ -52,7 +52,7 @@ test('Salir del diagnóstico limpia el estado sin persistir mensajes', () => {
  brain.guided('Analizar mi proceso', st);
  const r = brain.guided('cancelar diagnostico', st);
  assert.equal(r.tag, 'aion_cierre');
- assert.deepEqual(st.aion, {stage:'idle', process:null, volume:null, goal:null, source:null, trigger:null, recipient:null});
+ assert.deepEqual(st.aion, {stage:'idle', process:null, volume:null, goal:null, source:null, trigger:null, recipient:null, delay:null});
  assert.ok(!JSON.stringify(st).includes('cancelar diagnostico'));
 });
 test('El motor AION público no incorpora proyectos ni datos personales', () => {
@@ -207,4 +207,43 @@ test('Sigue sirviendo el flujo de preguntas tradicionales',()=>{
  assert.equal(r[3].tag,'aion_disparador');
  assert.equal(r[4].tag,'aion_destinatarios');
  assert.equal(r[5].tag,'aion_plan');
+});
+
+test('Alertas por falta de respuesta solicitan un plazo antes de destinatarios',()=>{
+ const r=conversation('Analizar mi proceso','Respondo consultas por WhatsApp','Todos los días',
+ 'Avisos automáticos','Sin respuesta después de un tiempo','30 minutos','Mi equipo');
+ assert.equal(r[4].tag,'aion_plazo');
+ assert.equal(r[5].tag,'aion_destinatarios');
+ assert.equal(r[6].tag,'aion_plan');
+ assert.match(r[6].reply,/30 minutos/);
+});
+test('Una frase completa aporta plazo y destinatario sin repreguntar',()=>{
+ const r=conversation('Analizar mi proceso',
+ 'Respondo consultas por WhatsApp todos los días, quiero avisos si una consulta sigue sin respuesta durante 1 hora para mi equipo');
+ assert.equal(r[1].tag,'aion_plan');
+ assert.match(r[1].reply,/durante 1 hora/);
+});
+test('Plazo no definido no se reemplaza por valor inventado',()=>{
+ const r=conversation('Analizar mi proceso','Respondo consultas por WhatsApp','avisos',
+ 'sin respuesta','No lo sé todavía','Los clientes');
+ assert.equal(r[4].tag,'aion_destinatarios');
+ assert.equal(r[5].tag,'aion_plan');
+ assert.match(r[5].reply,/un plazo aún por definir/);
+});
+test('Plazo desconocido requiere aclaración pero conserva estado',()=>{
+ const state=brain.create();
+ for(const m of ['Analizar mi proceso','Respondo consultas por WhatsApp','avisos','sin respuesta'])
+   brain.guided(m,state);
+ assert.equal(brain.guided('en algún momento',state).tag,'aion_aclaracion_plazo');
+ assert.equal(state.aion.delay,null);
+ assert.equal(brain.guided('15 minutos',state).tag,'aion_destinatarios');
+ assert.equal(state.aion.delay,'15 minutos');
+});
+test('Cancelar diagnóstico borra también el plazo del estado',()=>{
+ const state=brain.create();
+ for(const m of ['Analizar mi proceso','Respondo consultas por WhatsApp','avisos',
+                 'sin respuesta','30 minutos']) brain.guided(m,state);
+ brain.guided('cancelar diagnostico',state);
+ assert.equal(state.aion.stage,'idle');
+ assert.equal(state.aion.delay,null);
 });
