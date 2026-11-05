@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 @pytest.fixture
 def app_with_isolated_storage(tmp_path, monkeypatch):
     monkeypatch.setenv("DATA_DIR", str(tmp_path / "isolated_db"))
-    for key in ("CONTACT_STORAGE_READY", "FORMSUBMIT_ACTIVE", "SMTP_HOST", "SMTP_TO", "SMTP_FROM", "TRUST_PROXY", "ADMIN_PANEL_ENABLED"):
+    for key in ("CONTACT_STORAGE_READY", "FORMSUBMIT_ACTIVE", "FORMSUBMIT_DELIVERY_VERIFIED", "SMTP_HOST", "SMTP_TO", "SMTP_FROM", "TRUST_PROXY", "ADMIN_PANEL_ENABLED"):
         monkeypatch.delenv(key, raising=False)
     guardian = ModuleType("guardian_ai")
     guardian.router = APIRouter()
