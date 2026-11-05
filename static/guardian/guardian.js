@@ -10,7 +10,7 @@ var ICON='✳', history=[], lastIntent='', aiEnabled=false, inFlight=false;
 var engine=window.FluynovaAionGuardian||window.FluynovaGuardianBrain;
 var conversation=engine?engine.create():null;
 var lastResult=null;
-var css=document.createElement('link');css.rel='stylesheet';css.href='/guardian/guardian.css?v=2';document.head.appendChild(css);
+var css=document.createElement('link');css.rel='stylesheet';css.href='/guardian/guardian.css?v=3';document.head.appendChild(css);
 var root=document.createElement('div');root.id='fg-root';
 root.innerHTML='<button id="fg-launcher" type="button" aria-expanded="false" aria-controls="fg-panel"><span aria-hidden="true">'+ICON+'</span><span>Hablar con Guardián</span></button>'+
 '<section id="fg-panel" role="dialog" aria-label="Asistente Guardián de Fluynova" aria-modal="false" hidden>'+
@@ -19,14 +19,34 @@ root.innerHTML='<button id="fg-launcher" type="button" aria-expanded="false" ari
 '<div id="fg-prompts"><button type="button" data-q="Analizar mi proceso">Analizar mi proceso</button><button type="button" data-q="¿Cuánto cuesta?">Precios</button><button type="button" data-q="Necesito un sistema a medida">Software</button><button type="button" data-q="Quiero hablar con una persona">Contacto</button></div>'+
 '<form id="fg-form"><label class="fg-sr" for="fg-question">Tu pregunta</label><input id="fg-question" maxlength="650" placeholder="Contame qué necesitás..." required autocomplete="off"><button type="submit" id="fg-send" aria-label="Enviar pregunta">➤</button></form>'+
 '<label class="fg-consent" id="fg-ai-option" hidden><input type="checkbox" id="fg-ai-consent"> Autorizo enviar este chat a un proveedor externo de IA para recibir respuestas generadas.</label>'+
-'<div class="fg-footer"><span>Sin cuentas ni claves sensibles.</span><a id="fg-lead" href="/?utm_source=guardian&utm_medium=asistente&utm_campaign=consulta_guiada#contacto">Pedir evaluación ↗</a></div></section>';
+'<div class="fg-footer"><span>Sin datos sensibles.</span><button type="button" class="fg-secondary" id="fg-copy" hidden>Copiar diagnóstico</button><button type="button" class="fg-secondary" id="fg-clear">Borrar chat</button><a id="fg-lead" href="/?utm_source=guardian&utm_medium=asistente&utm_campaign=consulta_guiada#contacto">Pedir evaluación ↗</a></div></section>';
 document.body.appendChild(root);
 if(isPreview)root.querySelector('#fg-lead').href='https://fluynova-web.onrender.com/#contacto';
-var launch=root.querySelector('#fg-launcher'),panel=root.querySelector('#fg-panel'),log=root.querySelector('#fg-log'),form=root.querySelector('#fg-form'),input=root.querySelector('#fg-question'),consent=root.querySelector('#fg-ai-consent'),option=root.querySelector('#fg-ai-option'),submit=root.querySelector('#fg-send');
-function open(){panel.hidden=false;launch.setAttribute('aria-expanded','true');if(!log.children.length)add('assistant','Hola, soy Guardián × AION. Te ayudo a analizar un proceso y preparar una consulta comercial. El diagnóstico guiado funciona sin enviar tus mensajes a un proveedor externo. Los mensajes permanecen temporalmente en esta pestaña hasta recargarla. ¿Qué necesitás mejorar?');input.focus()}
+var launch=root.querySelector('#fg-launcher'),panel=root.querySelector('#fg-panel'),log=root.querySelector('#fg-log'),form=root.querySelector('#fg-form'),input=root.querySelector('#fg-question'),consent=root.querySelector('#fg-ai-consent'),option=root.querySelector('#fg-ai-option'),submit=root.querySelector('#fg-send'),copy=root.querySelector('#fg-copy'),clear=root.querySelector('#fg-clear');
+function open(){panel.hidden=false;launch.setAttribute('aria-expanded','true');if(!log.children.length)add('assistant','Hola, soy Guardián × AION. Te ayudo a analizar un proceso y preparar una consulta comercial. El diagnóstico guiado funciona sin enviar tus mensajes a un proveedor externo. Los mensajes permanecen temporalmente en esta pestaña hasta recargarla o borrarlos. ¿Qué necesitás mejorar?');input.focus()}
 function close(){panel.hidden=true;launch.setAttribute('aria-expanded','false');launch.focus()}
 launch.addEventListener('click',function(){panel.hidden?open():close()});
 root.querySelector('.fg-close').addEventListener('click',close);
+clear.addEventListener('click',function(){
+ if(inFlight)return;
+ history=[]; lastIntent='';lastResult=null;
+ conversation=engine?engine.create():null;
+ log.replaceChildren();input.value='';consent.checked=false;copy.hidden=true;
+ updateChoices(['Analizar mi proceso','¿Cuánto cuesta?','Necesito un sistema a medida','Quiero hablar con una persona']);
+ if(isPreview)root.querySelector('#fg-lead').href='https://fluynova-web.onrender.com/#contacto';
+ add('assistant','Conversación borrada de esta pestaña. ¿Querés analizar un nuevo proceso?');
+ input.focus();
+});
+copy.addEventListener('click',function(){
+ if(!lastResult||lastResult.tag!=='aion_plan')return;
+ var text=String(lastResult.reply||'');
+ if(!text||!navigator.clipboard||!navigator.clipboard.writeText){
+  add('assistant','No se pudo copiar automáticamente. Podés seleccionar y copiar el diagnóstico del chat.');return;
+ }
+ navigator.clipboard.writeText(text).then(function(){
+  copy.textContent='Copiado';setTimeout(function(){copy.textContent='Copiar diagnóstico'},2000);
+ }).catch(function(){add('assistant','No se pudo copiar automáticamente. Seleccioná el texto del diagnóstico.');});
+});
 function add(role,message){
  var p=document.createElement('div');p.className='fg-message '+(role==='user'?'fg-user':'fg-assistant');p.textContent=String(message||'');log.appendChild(p);log.scrollTop=log.scrollHeight;
 }
@@ -77,6 +97,7 @@ async function send(question){
    }catch(error){reply='El modo IA no está disponible ahora. Te oriento con la guía local:\n\n'+localReply(question)}
   }else reply=localReply(question);
   add('assistant',reply);
+  copy.hidden=!(lastResult&&lastResult.tag==='aion_plan');
   history.push({role:'user',content:question},{role:'assistant',content:reply});if(history.length>8)history=history.slice(-8);
   linkToContact(lastIntent);
  }catch(error){add('assistant','No pude completar la respuesta. Probá nuevamente o solicitá una evaluación comercial.');}
@@ -84,6 +105,6 @@ async function send(question){
 }
 form.addEventListener('submit',function(event){event.preventDefault();send(input.value)});
 root.querySelector('#fg-prompts').addEventListener('click',function(event){var button=event.target.closest('[data-q]');if(!button)return;if(panel.hidden)open();send(button.getAttribute('data-q'))});
-fetch('/api/guardian/capabilities',{cache:'no-store'}).then(function(response){return response.ok?response.json():null}).then(function(info){if(info&&info.external_ai_enabled===true){aiEnabled=true;option.hidden=false}}).catch(function(){/* La guía local sigue disponible */});
+fetch('/api/guardian/capabilities',{cache:'no-store'}).then(function(response){return response.ok?response.json():null}).then(function(info){if(!isPreview&&info&&info.external_ai_enabled===true){aiEnabled=true;option.hidden=false}}).catch(function(){/* La guía local sigue disponible */});
 if(document.body.dataset.guardianOpen==='true')open();
 })();
