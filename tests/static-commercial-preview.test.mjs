@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {mkdtemp, mkdir, writeFile, readFile, rm} from 'node:fs/promises';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
-import {transformHtml, transformMainJs, transformGuardianJs, build} from '../scripts/build-static-commercial-preview.mjs';
+import {transformHtml, transformMainJs, transformGuardianJs, build, verifyOutput} from '../scripts/build-static-commercial-preview.mjs';
 
 const home = '<!doctype html><html><head><meta name="robots" content="index,follow"></head><body class="flx-ux-2026"><form id="contact-form" method="POST" action="https://formsubmit.co/contacto.fluynova@gmail.com"><button class="btn btn-primary submit-btn" type="submit">Enviar</button></form><a href="/privacidad">Privacidad</a></body></html>';
 const main = `let contactEnabled=false;\nasync function loadContactAvailability(){\n const res=await fetch('/api/config');\n}\nloadContactAvailability();\nasync function deliverDirect(v){fetch('https://formsubmit.co/ajax/'+v.email)}\nform?.addEventListener('submit',e=>e.preventDefault());\n// Respaldo sin AJAX:\nalternateSend?.addEventListener('click',()=>HTMLFormElement.prototype.submit.call(form));\n// Compartir de forma voluntaria:\nconst done=true;`;
@@ -19,6 +19,15 @@ test('replaces existing robots directive, never leaves index,follow',()=>{
  const x=transformHtml(home,true);
  assert.equal((x.match(/name="robots"/g)||[]).length,1);
  assert.doesNotMatch(x,/content="index,follow"/);
+});
+test('public preview banner is visibly distinguishable on all pages',()=>{
+ const x=transformHtml(home,true),y=transformHtml('<html><head></head><body>Interior</body></html>');
+ for(const text of [x,y]) {
+  assert.match(text,/role="note" data-fluynova-preview="true"/);
+  assert.match(text,/El envío automático está desactivado/);
+  assert.match(text,/https:\/\/fluynova-web.onrender.com\//);
+  assert.equal((text.match(/data-fluynova-preview=/g)||[]).length,1);
+ }
 });
 test('homepage is impossible to submit to FormSubmit with unmodified HTML',()=>{
  const x=transformHtml(home,true);
@@ -61,13 +70,33 @@ test('a standalone static build copies assets and does not change source',async(
   await writeFile(join(sourceDir,'sitemap.xml'),'<xml></xml>');
   const output=await build({sourceDir,outputDir});
   assert.equal(output.pages,2);
+  assert.equal(output.verifiedPages,2);
   assert.equal(output.externalSubmissions,false);
   assert.match(await readFile(join(outputDir,'robots.txt'),'utf8'),/Disallow: \//);
-  assert.rejects(readFile(join(outputDir,'sitemap.xml'),'utf8'));
+  await assert.rejects(readFile(join(outputDir,'sitemap.xml'),'utf8'));
   assert.equal(await readFile(join(sourceDir,'index.html'),'utf8'),home);
   assert.equal(await readFile(join(outputDir,'styles.css'),'utf8'),'body{}');
   assert.doesNotMatch(await readFile(join(outputDir,'main.js'),'utf8'),/fetch\('\/api\/config'/);
  }finally{await rm(dir,{force:true,recursive:true});}
+});
+test('build verification rejects tampered preview before publication',async()=>{
+ const dir=await mkdtemp(join(tmpdir(),'fluynova-tamper-'));
+ try {
+  const sourceDir=join(dir,'static'), outputDir=join(dir,'dist');
+  await mkdir(join(sourceDir,'guardian'),{recursive:true});
+  await writeFile(join(sourceDir,'index.html'),home);
+  await writeFile(join(sourceDir,'privacidad.html'),'<html><head></head><body>Privacidad</body></html>');
+  await writeFile(join(sourceDir,'main.js'),main);
+  await writeFile(join(sourceDir,'guardian','guardian.js'),guardian);
+  await build({sourceDir,outputDir});
+  const index=join(outputDir,'index.html');
+  const good=await readFile(index,'utf8');
+  await writeFile(index,good.replace('data-fluynova-preview="true"','data-fluynova-preview="false"'));
+  await assert.rejects(verifyOutput(outputDir),/Salvaguardas HTML/);
+  await writeFile(index,good);
+  await writeFile(join(outputDir,'guardian','guardian.js'),"fetch('/api/guardian/chat');");
+  await assert.rejects(verifyOutput(outputDir),/Salvaguardas del catálogo/);
+ } finally {await rm(dir,{force:true,recursive:true});}
 });
 test('build refuses to overwrite source directory',async()=>{
  await assert.rejects(build({sourceDir:'/tmp/inside',outputDir:'/tmp/inside'}),/fuera/);
