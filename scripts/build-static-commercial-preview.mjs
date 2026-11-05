@@ -70,6 +70,7 @@ export function transformMainJs(source) {
   }
   return source;
 }
+
 export function transformGuardianJs(source) {
   const start = source.indexOf("fetch('/api/guardian/capabilities'");
   const end = source.indexOf("if(document.body.dataset.guardianOpen", start);
