@@ -16,13 +16,15 @@ Fecha de trabajo: 2026-11-05
 5. Detección preventiva de referencias a DNI, CUIL, CUIT, contraseñas, tokens, emails y secuencias largas tipo tarjeta antes de enviar texto a proveedor externo. No sustituye DLP profesional.
 6. Controles locales «Copiar diagnóstico» y «Borrar chat». No se crea base de conversaciones.
 
-## Evidencias y alcance de las pruebas
-- 19 casos de reglas guiadas comprobados en motor V8 con API de test de Node emulada.
-- 9 casos de lógica de interfaz comprobados en V8 con DOM emulado.
-- 4 casos del archivo `tests/guardian-preview.test.js` ejecutados en V8 con módulos Node emulados: 4/4.
-- 10 casos de un *fragmento equivalente* de los controles de seguridad Python ejecutados con Python local: 10/10.
-- **No se afirma** que esos resultados prueben el entorno Node íntegro, FastAPI completo, Render ni un navegador real.
-- No se verificó el estado del nuevo despliegue en Render: el conector solicitó seleccionar el espacio de trabajo.
+## Evidencias y alcance de las pruebas — actualización 05/11/2026
+- Render laboratorio: servicio `srv-dbm8p5l6e07s73bgaivg`, rama `feature/aion-guardian-chat-piloto-20261105`, autoDeploy apagado.
+- Despliegue `dep-dbmd62gae00c73ambkng` en estado `live` el 05/11/2026 a las 19:04:06 UTC, commit `fbac7ff0022c563c238248542ea4e333a287d345`.
+- **75/75 subpruebas reales de Node.js aprobadas; 0 fallidas**, comprobadas en los logs del build de Render. Incluyen reglas de diagnóstico, interfaz con DOM simulado y prueba Python invocada mediante `unittest`.
+- La prueba Python usa credenciales ficticias: no activa ni llama a ningún modelo externo.
+- El laboratorio estático ya **no hace GET a /api/guardian/capabilities**: evita la consulta a una API inexistente. Regresión incluida en `tests/guardian-preview.test.js`.
+- Producción Render `fluynova-web` permanece `live` en `8549828b53f4c2890888ca7db9777a04fefc5ae7` y `main` coincide con ese commit.
+- Los logs de compilación prueban que se ejecutaron las suites. **No equivalen** a una prueba de navegación sobre el URL público ni verifican un modelo generativo real.
+- La lectura directa del URL publicado y el navegador conectado siguen sin poder ejecutarse en este entorno; no se afirma HTTP 200 ni funcionamiento visual confirmado.
 
 ## Comandos para pruebas completas (desde la raíz del repositorio)
 ```sh
@@ -38,4 +40,8 @@ python -m unittest discover -s tests -p 'test_guardian_ai_security.py'
 - E: Una prueba real HTTP y visual de Render debe verificar que el servicio corre el mismo SHA que GitHub, y que la web principal sigue en su SHA previo.
 
 ## Criterio de certificación
-**PENDIENTE:** ejecutar Node y Python completos sobre el checkout real; comprobar último deploy/commit de Render; realizar prueba real HTTP y de navegación; verificar logs sin contenidos privados y estabilidad del laboratorio. Hasta entonces **no está certificado ni listo para producción**.
+**REALIZADO:** pruebas Node y Python dentro del build de Render; verificación de despliegue `live`, commit y aislamiento de producción.
+
+**PENDIENTE:** validar carga de HTML/CSS/JS por HTTP en el URL público, prueba real de interacción en Chrome/Firefox y revisión de errores en consola/red; verificación de privacidad en navegador real. No activar IA generativa externa sin autorización y revisión de costos/permisos. Hasta entonces **no está certificado para fusión en producción**.
+
+**Nota de versionado:** cambios solo documentales posteriores al último build no exigen desplegar nuevamente; verificar SHA del último build antes de anunciarlo como publicado.
