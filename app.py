@@ -28,7 +28,8 @@ DATA.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA / "consultas.db"
 STATUSES = {"Nuevo", "En análisis", "Presupuestado", "En desarrollo", "Cerrado", "Descartado"}
 ALLOWED_CATEGORIES = {
-    "Automatizar tareas", "Desarrollar software", "Conectar herramientas / datos",
+    "Automatizar tareas", "Desarrollar software", "Crear página web / catálogo digital",
+    "Conectar herramientas / datos",
     "Inteligencia artificial", "Otro / no estoy seguro",
 }
 EMAIL = re.compile(r"^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$")
