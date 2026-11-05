@@ -85,3 +85,47 @@ test("preselección no envía formularios, hace tracking ni persiste actividad",
  assert.ok(start>0&&end>start);
  assert.doesNotMatch(segment,/fetch\s*\(|\.submit\s*\(|localStorage|sessionStorage|document\.cookie|sendBeacon/);
 });
+
+const backendCategories=fs.readFileSync(path.join(__dirname,"../app.py"),"utf8");
+const expectedCategories=[
+  "Automatizar tareas",
+  "Desarrollar software",
+  "Crear página web / catálogo digital",
+  "Gestionar clientes (CRM)",
+  "Presupuestos y cotizaciones",
+  "Pedidos, ventas y stock",
+  "Turnos, reservas y agenda",
+  "Planillas, reportes y tableros",
+  "WhatsApp, correo y respuestas automáticas",
+  "Conectar herramientas / datos",
+  "Inteligencia artificial",
+  "Otro / no estoy seguro"
+];
+test("seis nuevos temas aparecen sin quitar las seis opciones anteriores",()=>{
+ const match=home.match(/<select name="category" required>([\s\S]*?)<\/select>/);
+ assert.ok(match,"encontrar selector de contacto");
+ const categories=[...match[1].matchAll(/<option>([^<]+)<\/option>/g)].map(m=>m[1]);
+ assert.deepEqual(categories,expectedCategories);
+});
+test("ambas validaciones JS aceptan los mismos 12 temas del selector",()=>{
+ const blocks=[...source.matchAll(/const categories=\[([^\]]+)\];/g)];
+ assert.equal(blocks.length,2,"selección comercial y validación");
+ for(const block of blocks){
+   const categories=[...block[1].matchAll(/'([^']+)'/g)].map(x=>x[1]);
+   assert.deepEqual(categories,expectedCategories);
+ }
+});
+test("backend opcional no rechaza temas válidos ni la categoría web preexistente",()=>{
+ const block=backendCategories.match(/ALLOWED_CATEGORIES\s*=\s*\{([\s\S]*?)\}/);
+ assert.ok(block);
+ const accepted=[...block[1].matchAll(/"([^"]+)"/g)].map(m=>m[1]);
+ assert.deepEqual(accepted,expectedCategories);
+});
+test("FormSubmit, alternativa tradicional, consentimiento y respuesta no fueron reemplazados",()=>{
+ assert.ok(home.includes('action="https://formsubmit.co/contacto.fluynova@gmail.com"'));
+ assert.ok(home.includes('name="consent" required'));
+ assert.ok(home.includes('id="alternate-send"'));
+ assert.ok(source.includes("fetch('https://formsubmit.co/ajax/'+encodeURIComponent(CONTACT_EMAIL)"));
+ assert.ok(source.includes("HTMLFormElement.prototype.submit.call(form)"));
+ assert.ok(source.includes("const res=await fetch('/api/config'"));
+});
