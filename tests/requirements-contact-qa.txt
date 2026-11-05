@@ -1,0 +1,3 @@
+# Solo entorno de pruebas. No se utiliza en Render ni en producción.
+pytest>=8,<10
+httpx>=0.27,<1
