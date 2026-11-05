@@ -1,0 +1,31 @@
+name: FLUYNOVA - presupuestador interno
+on:
+  pull_request:
+    paths:
+      - 'scripts/presupuesto-web.cjs'
+      - 'tests/presupuesto-web.test.cjs'
+      - 'static/webs/index.html'
+      - '.github/workflows/presupuesto-web-interno.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  presupuesto-interno:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar sintaxis de herramienta y pruebas
+        run: |
+          node --check scripts/presupuesto-web.cjs
+          node --check tests/presupuesto-web.test.cjs
+      - name: Verificar precios vigentes, límites y resultados
+        run: node --test tests/presupuesto-web.test.cjs
+      - name: Probar cálculo aislado sin red, correo ni pagos
+        run: |
+          node scripts/presupuesto-web.cjs catalogo 2 | tee /tmp/cotizacion.txt
+          grep -F '590.000' /tmp/cotizacion.txt
+          grep -F '295.000' /tmp/cotizacion.txt
