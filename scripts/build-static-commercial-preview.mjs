@@ -1,6 +1,6 @@
 /**
  * Build an isolated, non-indexable static review of the commercial FLUYNOVA site.
- * Source site is never modified. No backend API, no automatic emails, no dependencies. FormSubmit on explicit user submit.
+ * Source site is never modified. No backend API or cross-origin JavaScript requests. Native POST upon explicit submit.
  * Usage: node scripts/build-static-commercial-preview.mjs
  */
 import {cp, mkdir, readdir, readFile, rm, writeFile} from 'node:fs/promises';
@@ -34,7 +34,7 @@ export function transformHtml(html, isHome = false) {
   html = html.replace(/<body(\s[^>]*)?>/i, (_match, attrs = '') =>
     `<body${attrs || ''} data-fluynova-static="true">\n` +
     '<div role="note" data-fluynova-preview="true" style="padding:10px 14px;background:#174435;color:#fff;text-align:center;font:600 13px/1.5 system-ui,Arial,sans-serif">' +
-    'VISTA PREVIA DE FLUYNOVA — Formulario de prueba: al pulsar Enviar se envía realmente a FLUYNOVA. No uses datos escolares ni sensibles. ' +
+    'VISTA PREVIA DE FLUYNOVA — Formulario de prueba: abre FormSubmit en otra pestaña. Evitá datos escolares o sensibles. ' +
     '<a style="color:#c8ffdd;text-decoration:underline" href="https://fluynova-web.onrender.com/">Abrir la web oficial</a>' +
     '</div>');
   if (isHome) {
@@ -43,30 +43,69 @@ export function transformHtml(html, isHome = false) {
     if (!html.includes(action)) throw new Error('Acción de formulario no autorizada');
     html = replaceOnce(html,
       action,
-      action + ' data-contact-provider="formsubmit"', 'acción del formulario');
+      action + ' data-contact-provider="formsubmit" target="_blank" rel="noopener noreferrer"', 'acción del formulario');
     if (!html.includes('class="btn btn-primary submit-btn" type="submit"') ||
         !html.includes('name="consent"')) throw new Error('Falta envío o consentimiento');
-    html = html.replace('</head>', '\n<!-- Vista previa con envío real solo por acción del visitante -->\n</head>');
+    html = replaceOnce(html,
+      '<input type="hidden" name="_template" value="table">',
+      '<input type="hidden" name="_template" value="table"><input type="hidden" name="_replyto" value="">',
+      'Reply-To de contacto');
+    // El botón AJAX alternativo no debe existir: es una única acción HTML nativa.
+    html = html.replace(/<button id="alternate-send"[^>]*>[^<]*<\/button>/, '');
+    if (html.includes('id="alternate-send"')) throw new Error('Falló retiro del botón duplicado');
+    html = html.replace('</head>', '\n<!-- Vista previa: FormSubmit mediante POST HTML, sin AJAX -->\n</head>');
   }
   return html;
 }
 
 export function transformMainJs(source) {
-  // Static hosting has no /api/config. Enable FormSubmit only in THIS preview.
+  // Static hosting has no /api/config; use browser's native form POST, not AJAX.
   const readyStart=source.indexOf('async function loadContactAvailability(){');
   const readyEnd=source.indexOf('loadContactAvailability();',readyStart);
-  if(readyStart<0||readyEnd<0||readyEnd<=readyStart) throw new Error('No se encontró puerta de disponibilidad');
+  if(readyStart<0||readyEnd<0)throw new Error('No se encontró puerta de disponibilidad');
   source=source.slice(0,readyStart)+
-    `function loadContactAvailability(){\n if(!form||!sendButton)return;\n contactEnabled=true;\n sendButton.disabled=false;\n sendButton.innerHTML='Enviar mi consulta <span aria-hidden="true">↗</span>';\n feedback('Esta vista previa envía consultas reales a FLUYNOVA mediante FormSubmit. Usá datos propios de prueba; el proveedor puede pedir activación. Comprobaremos la entrega por correo.','');\n}\n`+
+    `function loadContactAvailability(){
+ if(!form||!sendButton)return;
+ contactEnabled=true;
+ sendButton.disabled=false;
+ sendButton.textContent='Enviar mediante FormSubmit ↗';
+ feedback('El formulario abre el proveedor de correo en otra pestaña. Solo su confirmación indica si se procesó el envío.','');
+}
+`+
     source.slice(readyEnd);
-  // Confirm native + AJAX paths are ONLY the approved FormSubmit mailbox.
-  const native='https://formsubmit.co/contacto.fluynova@gmail.com';
-  const ajax="fetch('https://formsubmit.co/ajax/'+encodeURIComponent(CONTACT_EMAIL)";
-  if (!source.includes(ajax) || !source.includes('HTMLFormElement.prototype.submit.call(form)') ||
-      !source.includes("const CONTACT_EMAIL='contacto.fluynova@gmail.com';") ||
-      !source.includes('if(!v.consent)') || !source.includes('if(v.website)return;') ||
-      source.includes("fetch('/api/config'")) {
-    throw new Error('Contrato de contacto incompleto o sin consentimiento');
+
+  const from=source.indexOf('async function deliverDirect(v){');
+  const to=source.indexOf('// Respaldo manual:',from);
+  if(from<0||to<0||to<=from)throw new Error('No se encontró el controlador AJAX');
+  source=source.slice(0,from)+`// Envío nativo: el usuario decide enviar. El navegador muestra la respuesta de FormSubmit.
+form?.addEventListener('submit',event=>{
+ const v=currentLead();
+ if(v.website){event.preventDefault();feedback('Revisá los campos del formulario.','error');return;}
+ const error=leadValidationError(v);
+ if(error){event.preventDefault();feedback(error,'error');form.reportValidity?.();return;}
+ if(form.getAttribute('method')?.toUpperCase()!=='POST' ||
+    form.getAttribute('action')!=='https://formsubmit.co/contacto.fluynova@gmail.com') {
+    event.preventDefault();feedback('Destino de contacto inválido. Usá la opción por correo.','error');return;
+ }
+ const subject=form.querySelector('input[name="_subject"]');
+ const reply=form.querySelector('input[name="_replyto"]');
+ if(!subject||!reply){event.preventDefault();feedback('Faltan campos de entrega.','error');return;}
+ subject.value='FLUYNOVA | Nueva consulta: '+v.category;
+ reply.value=v.email;
+ feedback('FormSubmit se abre en otra pestaña. Verificá su confirmación; el envío todavía no está comprobado.','');
+ // No preventDefault: navegación POST nativa, sin CORS, en otra pestaña.
+});
+`+source.slice(to);
+  const altStart=source.indexOf('// Respaldo sin AJAX:');
+  const altEnd=source.indexOf('// Compartir de forma voluntaria:',altStart);
+  if(altStart<0||altEnd<0)throw new Error('No se encontró el respaldo duplicado');
+  source=source.slice(0,altStart)+'// No hay botón AJAX alternativo: el POST nativo es el único envío automático.\\n'+source.slice(altEnd);
+  if(source.includes('https://formsubmit.co/ajax/') ||
+     source.includes('HTMLFormElement.prototype.submit.call(form)') ||
+     source.includes("fetch('/api/config'") ||
+     !source.includes("const error=leadValidationError(v);") ||
+     !source.includes("No preventDefault: navegación POST nativa")) {
+    throw new Error('Quedó un envío AJAX o falta validación en navegador');
   }
   return source;
 }
@@ -116,16 +155,21 @@ export async function verifyOutput(dest) {
   const js=await readFile(join(dest,'main.js'),'utf8');
   const guardian=await readFile(join(dest,'guardian','guardian.js'),'utf8');
   const robots=await readFile(join(dest,'robots.txt'),'utf8');
-  if (!/id="contact-form"[^>]*action="https:\/\/formsubmit\.co\/contacto\.fluynova@gmail\.com"/.test(index) ||
-      !/data-contact-provider="formsubmit"/.test(index) ||
+  if (!/id="contact-form"[^>]*method="POST"[^>]*action="https:\/\/formsubmit\.co\/contacto\.fluynova@gmail\.com"/.test(index) ||
+      !/data-contact-provider="formsubmit"[^>]*target="_blank"/.test(index) ||
       !/name="consent"[^>]*required/.test(index) ||
-      !js.includes("fetch('https://formsubmit.co/ajax/'+encodeURIComponent(CONTACT_EMAIL)") ||
-      !js.includes('HTMLFormElement.prototype.submit.call(form)') ||
-      !js.includes('contactEnabled=true;') ||
+      !/name="_replyto"/.test(index) ||
+      !js.includes("form?.addEventListener('submit',event=>") ||
+      !js.includes("const error=leadValidationError(v);") ||
+      !js.includes("No preventDefault: navegación POST nativa") ||
+      !js.includes("contactEnabled=true;") ||
+      /https:\/\/formsubmit\.co\/ajax\//.test(js) ||
+      /HTMLFormElement\.prototype\.submit/.test(js) ||
       js.includes("fetch('/api/config'") ||
+      /id="alternate-send"/.test(index) ||
       /fetch\s*\(/.test(guardian) || !/Disallow: \//.test(robots) ||
       paths.some(path=>path.endsWith('/sitemap.xml'))) {
-    throw new Error('Salvaguardas del catálogo estático ausentes');
+    throw new Error('Salvaguardas de POST HTML faltantes');
   }
   return {verifiedPages:pages.length};
 }
@@ -154,7 +198,7 @@ export async function build({sourceDir, outputDir}={}) {
   await writeFile(join(dest,'robots.txt'),'User-agent: *\nDisallow: /\n','utf8');
   await rm(join(dest,'sitemap.xml'),{force:true});
   const verification=await verifyOutput(dest);
-  return {pages,verifiedPages:verification.verifiedPages,destination:dest,externalSubmissions:true,deliveryVerified:false,backendRequired:false};
+  return {pages,verifiedPages:verification.verifiedPages,destination:dest,externalSubmissions:true,nativePost:true,deliveryVerified:false,backendRequired:false};
 }
 
 const ownFile=process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url);
