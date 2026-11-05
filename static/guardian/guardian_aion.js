@@ -44,7 +44,7 @@
     if (/\b(sin respuesta|no responde|espera|demora|tiempo sin|pasaron|seguimiento a las)\b/.test(q)) return 'sin_respuesta';
     if (/\b(vence|vencimiento|fecha limite|plazo|caduca)\b/.test(q)) return 'vencimiento';
     if (/\b(cambio de estado|cambia de estado|estado cambia|se completo|finalizado|listo el pedido)\b/.test(q)) return 'cambio_estado';
-    if (/\b(nueva consulta|llega una consulta|nuevo mensaje|llega un mensaje|recibo un mensaje|entra una consulta|cuando escriben)\b/.test(q)) return 'nueva_consulta';
+    if (/\b(nueva consulta|llega una consulta|nuevo mensaje|llega un mensaje|recibo un mensaje|entra una consulta|cuando escriben|(?:llega|llegue|entra|entre|ingresa|ingrese) (?:una|un) (?:consulta|mensaje))\b/.test(q)) return 'nueva_consulta';
     return null;
   }
   function recipientOf(q) {
@@ -67,8 +67,25 @@
     ambos:'equipo interno y clientes autorizados',
     por_definir:'todavía por definir'
   };
-  function startAlerts(st) {
+  function startAlerts(st, message='') {
     st.aion.goal='avisos';
+    // Completar solo datos explícitos, evitando deducir destinatarios
+    // por la mera presencia de la palabra «clientes» en el proceso.
+    const trigger=triggerOf(message);
+    if (trigger && trigger!=='por_definir') st.aion.trigger=trigger;
+    if (/\b(?:para|a|hacia)\s+(?:mis?\s+|los?\s+)?(?:equipos?|clientes?|usuarios?|personal|administradores?|empleados?|ambos|los dos)\b/.test(message)) {
+      const recipient=recipientOf(message);
+      if (recipient && recipient!=='por_definir') st.aion.recipient=recipient;
+    }
+    if(st.aion.trigger && st.aion.recipient) {
+      st.aion.stage='done';
+      return alertPlan(st);
+    }
+    if(st.aion.trigger) {
+      st.aion.stage='recipient';
+      return answer('Ya identifiqué el evento disparador. ¿Quién debe recibir el aviso? Todavía no se enviará ninguno.',
+        'aion_destinatarios',['Mi equipo','Los clientes','Ambos','No lo sé todavía'],st);
+    }
     st.aion.stage='trigger';
     return answer('Entendido: necesitás avisos automáticos, no una frecuencia de trabajo. ¿Qué evento debería disparar cada aviso?',
       'aion_disparador',['Cuando llega una consulta','Sin respuesta después de un tiempo','Cambio de estado','No lo sé todavía'],st);
@@ -150,6 +167,11 @@
       st.aion.process=found;
       st.aion.source=sourceOf(q);
       const knownVolume=volumeOf(q);
+      const statedGoal=goalOf(q);
+      if (statedGoal==='avisos') {
+        st.aion.volume=knownVolume||'sin medir';
+        return startAlerts(st,q);
+      }
       if (knownVolume) {
         st.aion.volume=knownVolume;
         st.aion.stage='goal';
@@ -164,7 +186,7 @@
       const earlyGoal=goalOf(q);
       if (earlyGoal) {
         st.aion.volume=volumeOf(q)||'sin medir';
-        if (earlyGoal==='avisos') return startAlerts(st);
+        if (earlyGoal==='avisos') return startAlerts(st,q);
         st.aion.goal=earlyGoal;
         st.aion.stage='done';
         const source=st.aion.source||sources[st.aion.process];
@@ -188,7 +210,7 @@
       const goal=goalOf(q);
       if (!goal) return answer('Necesito un objetivo concreto para no inventar una solución. ¿Querés evitar la carga repetida, ordenar todo en un panel, recibir avisos o generar reportes?',
         'aion_aclaracion_objetivo',['Evitar carga doble','Tener un panel','Avisos automáticos','Generar reportes'],st);
-      if (goal==='avisos') return startAlerts(st);
+      if (goal==='avisos') return startAlerts(st,q);
       st.aion.goal=goal;
       st.aion.stage='done';
       const sector=st.sector?' ('+st.sector+')':'';
