@@ -31,7 +31,12 @@ if(form){
  const fromWebSales=referral.get('utm_source')==='webs' && referral.get('utm_campaign')==='webs_202611';
  const fromInstagramWebs=referral.get('utm_source')==='instagram' &&
    referral.get('utm_content')==='webs' && referral.get('utm_campaign')==='perfil_ig_202611';
- if(fromWebSales||fromInstagramWebs){
+ // Solo demos de diseño web propias; no confiamos en UTMs arbitrarias de terceros.
+ const fromLaboratorioWebs=referral.get('utm_source')==='laboratorio' &&
+   referral.get('utm_medium')==='portfolio' &&
+   referral.get('utm_campaign')==='demostraciones_202611' &&
+   ['pasteleria','distribuidora'].includes(referral.get('utm_content'));
+ if(fromWebSales||fromInstagramWebs||fromLaboratorioWebs){
   const cat=form.elements.namedItem('category');
   if(cat)cat.value='Crear página web / catálogo digital';
  }
