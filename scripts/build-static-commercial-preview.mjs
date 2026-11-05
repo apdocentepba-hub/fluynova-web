@@ -29,8 +29,14 @@ export function transformHtml(html, isHome = false) {
   }
   // Privacy was served by a FastAPI route: static sites need its existing .html file.
   html = html.replace(/href=(['"])\/privacidad\1/g, 'href="/privacidad.html"');
-  html = html.replace(/<body(\s[^>]*)?>/i, (match, attrs = '') =>
-    `<body${attrs || ''} data-fluynova-static="true">`);
+  // Every public preview page clearly states its limitations. No visitor should
+  // confuse this non-indexed review with a commercial contact channel.
+  html = html.replace(/<body(\s[^>]*)?>/i, (_match, attrs = '') =>
+    `<body${attrs || ''} data-fluynova-static="true">\n` +
+    '<div role="note" data-fluynova-preview="true" style="padding:10px 14px;background:#174435;color:#fff;text-align:center;font:600 13px/1.5 system-ui,Arial,sans-serif">' +
+    'VISTA PREVIA DE FLUYNOVA — El envío automático está desactivado. ' +
+    '<a style="color:#c8ffdd;text-decoration:underline" href="https://fluynova-web.onrender.com/">Abrir la web oficial</a>' +
+    '</div>');
   if (isHome) {
     html = replaceOnce(html,
       'id="contact-form" method="POST" action="https://formsubmit.co/contacto.fluynova@gmail.com"',
@@ -100,6 +106,33 @@ async function walk(dir) {
   }
   return paths;
 }
+export async function verifyOutput(dest) {
+  const paths = await walk(dest);
+  const pages = paths.filter(path => extname(path).toLowerCase() === '.html');
+  if (!pages.length) throw new Error('Vista previa sin páginas HTML');
+  for (const path of pages) {
+    const html=await readFile(path,'utf8');
+    if (!/<meta name="robots" content="noindex,nofollow,noarchive">/.test(html) ||
+        !/data-fluynova-preview="true"/.test(html) ||
+        /href=["']\/privacidad["']/.test(html) ||
+        /<form\b[^>]*action=["']https?:\/\//i.test(html)) {
+      throw new Error('Salvaguardas HTML ausentes en '+relative(dest,path));
+    }
+  }
+  const index=await readFile(join(dest,'index.html'),'utf8');
+  const js=await readFile(join(dest,'main.js'),'utf8');
+  const guardian=await readFile(join(dest,'guardian','guardian.js'),'utf8');
+  const robots=await readFile(join(dest,'robots.txt'),'utf8');
+  if (!/id="contact-form"[^>]*action="\/#contacto"/.test(index) ||
+      !/type="submit" disabled/.test(index) ||
+      /https:\/\/formsubmit\.co\//.test(js) || /HTMLFormElement\.prototype\.submit/.test(js) ||
+      /fetch\s*\(/.test(guardian) || !/Disallow: \//.test(robots) ||
+      paths.some(path=>path.endsWith('/sitemap.xml'))) {
+    throw new Error('Salvaguardas del catálogo estático ausentes');
+  }
+  return {verifiedPages:pages.length};
+}
+
 export async function build({sourceDir, outputDir}={}) {
   if (!sourceDir||!outputDir) throw new TypeError('Definí origen y destino');
   const src=resolve(sourceDir), dest=resolve(outputDir);
@@ -123,7 +156,8 @@ export async function build({sourceDir, outputDir}={}) {
   await writeFile(guardian,transformGuardianJs(await readFile(guardian,'utf8')),'utf8');
   await writeFile(join(dest,'robots.txt'),'User-agent: *\nDisallow: /\n','utf8');
   await rm(join(dest,'sitemap.xml'),{force:true});
-  return {pages,destination:dest,externalSubmissions:false,backendRequired:false};
+  const verification=await verifyOutput(dest);
+  return {pages,verifiedPages:verification.verifiedPages,destination:dest,externalSubmissions:false,backendRequired:false};
 }
 
 const ownFile=process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url);
