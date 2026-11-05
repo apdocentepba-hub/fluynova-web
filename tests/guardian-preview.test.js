@@ -100,7 +100,7 @@ test('la vista previa no envía conversaciones a la IA aunque la API indique cap
   assert.equal(ui.item('#fg-ai-option').hidden, true);
   for (const text of ['Analizar mi proceso','Respondo consultas por WhatsApp',
                       'quiero avisos automaticos','Cambio de estado','Mi equipo']) ui.submit(text);
-  assert.ok(ui.requests.every(url => url === '/api/guardian/capabilities'));
+  assert.equal(ui.requests.length,0,'Un sitio estático no debe intentar conectar a una API que no existe');
   assert.equal(ui.item('#fg-lead').href, 'https://fluynova-web.onrender.com/#contacto');
 });
 
