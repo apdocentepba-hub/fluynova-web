@@ -5,16 +5,19 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {transformHtml, transformMainJs, transformGuardianJs, build, verifyOutput} from '../scripts/build-static-commercial-preview.mjs';
 
-const home = '<!doctype html><html><head><meta name="robots" content="index,follow"></head><body class="flx-ux-2026"><form id="contact-form" method="POST" action="https://formsubmit.co/contacto.fluynova@gmail.com"><input type="checkbox" name="consent" required><button class="btn btn-primary submit-btn" type="submit">Enviar</button></form><a href="/privacidad">Privacidad</a></body></html>';
+const home = '<!doctype html><html><head><meta name="robots" content="index,follow"></head><body class="flx-ux-2026"><form id="contact-form" method="POST" action="https://formsubmit.co/contacto.fluynova@gmail.com"><input type="hidden" name="_template" value="table"><input type="checkbox" name="consent" required><button class="btn btn-primary submit-btn" type="submit">Enviar</button></form><a href="/privacidad">Privacidad</a></body></html>';
 const main = `const CONTACT_EMAIL='contacto.fluynova@gmail.com';
 let contactEnabled=false;
 async function loadContactAvailability(){
  const res=await fetch('/api/config');
 }
 loadContactAvailability();
-function leadValidationError(v){ if(!v.consent) return 'Debés consentir'; }
+function leadValidationError(v){if(!v.consent)return 'Aceptá los términos';return '';}
+function currentLead(){return {website:'',consent:true,category:'Automatizar tareas',email:'cliente@example.org'};}
 async function deliverDirect(v){return fetch('https://formsubmit.co/ajax/'+encodeURIComponent(CONTACT_EMAIL),{method:'POST'});}
 form?.addEventListener('submit',e=>{e.preventDefault();const v=currentLead();if(v.website)return;});
+// Respaldo manual:
+const prepareEmail=document.getElementById('prepare-email');
 // Respaldo sin AJAX:
 alternateSend?.addEventListener('click',()=>HTMLFormElement.prototype.submit.call(form));
 // Compartir de forma voluntaria:
@@ -36,29 +39,32 @@ test('public preview banner is visibly distinguishable on all pages',()=>{
  const x=transformHtml(home,true),y=transformHtml('<html><head></head><body>Interior</body></html>');
  for(const text of [x,y]) {
   assert.match(text,/role="note" data-fluynova-preview="true"/);
-  assert.match(text,/Formulario de prueba: al pulsar Enviar se envía realmente a FLUYNOVA/);
+  assert.match(text,/Formulario de prueba: abre FormSubmit en otra pestaña/);
   assert.match(text,/https:\/\/fluynova-web.onrender.com\//);
   assert.equal((text.match(/data-fluynova-preview=/g)||[]).length,1);
  }
 });
-test('homepage uses exact authorized FormSubmit recipient with explicit submit and consent',()=>{
+test('homepage provides native POST in new tab, explicit consent and replyto',()=>{
  const x=transformHtml(home,true);
  assert.match(x,/method="POST" action="https:\/\/formsubmit\.co\/contacto\.fluynova@gmail\.com"/);
- assert.match(x,/data-contact-provider="formsubmit"/);
- assert.match(x,/type="submit">Enviar/);
+ assert.match(x,/data-contact-provider="formsubmit" target="_blank"/);
  assert.match(x,/name="consent" required/);
+ assert.match(x,/name="_replyto"/);
+ assert.doesNotMatch(x,/id="alternate-send"/);
  assert.doesNotMatch(x,/type="submit" disabled/);
 });
 test('invalid home changes cause a fail-closed build',()=>{
  assert.throws(()=>transformHtml('<html><head></head><body></body></html>',true),/Acción de formulario no autorizada/);
 });
-test('static preview bypasses backend configuration but keeps only approved provider on explicit send',()=>{
+test('static main JS uses only validated HTML native POST, no AJAX or API readiness',()=>{
  const x=transformMainJs(main);
  assert.doesNotMatch(x,/fetch\('\/api\/config'/);
- assert.match(x,/https:\/\/formsubmit.co\/ajax\//);
- assert.match(x,/HTMLFormElement.prototype.submit/);
+ assert.doesNotMatch(x,/https:\/\/formsubmit.co\/ajax\//);
+ assert.doesNotMatch(x,/HTMLFormElement.prototype.submit.call/);
  assert.match(x,/contactEnabled=true/);
- assert.match(x,/sendButton.disabled=false/);
+ assert.match(x,/event.preventDefault\(\)/);
+ assert.match(x,/const error=leadValidationError\(v\);/);
+ assert.match(x,/No preventDefault: navegación POST nativa/);
 });
 test('missing essential frontend code fails closed',()=>{
  assert.throws(()=>transformMainJs('let contactEnabled=false;'),/puerta de disponibilidad/);
@@ -86,6 +92,7 @@ test('a standalone static build copies assets and does not change source',async(
   assert.equal(output.pages,2);
   assert.equal(output.verifiedPages,2);
   assert.equal(output.externalSubmissions,true);
+  assert.equal(output.nativePost,true);
   assert.equal(output.deliveryVerified,false);
   assert.match(await readFile(join(outputDir,'robots.txt'),'utf8'),/Disallow: \//);
   await assert.rejects(readFile(join(outputDir,'sitemap.xml'),'utf8'));
@@ -109,10 +116,10 @@ test('build verification rejects tampered preview before publication',async()=>{
   await writeFile(index,good.replace('data-fluynova-preview="true"','data-fluynova-preview="false"'));
   await assert.rejects(verifyOutput(outputDir),/Salvaguardas HTML/);
   await writeFile(index,good.replace('name="consent" required','name="consent"'));
-  await assert.rejects(verifyOutput(outputDir),/Salvaguardas del catálogo/);
+  await assert.rejects(verifyOutput(outputDir),/Salvaguardas de POST HTML/);
   await writeFile(index,good);
   await writeFile(join(outputDir,'guardian','guardian.js'),"fetch('/api/guardian/chat');");
-  await assert.rejects(verifyOutput(outputDir),/Salvaguardas del catálogo/);
+  await assert.rejects(verifyOutput(outputDir),/Salvaguardas de POST HTML/);
  } finally {await rm(dir,{force:true,recursive:true});}
 });
 test('build refuses to overwrite source directory',async()=>{
