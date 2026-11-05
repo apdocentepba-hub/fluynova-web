@@ -116,3 +116,24 @@ test('El estado AION no almacena texto libre ni datos particulares', () => {
   assert.equal(state.aion.source,'mensajes');
   assert.ok(!JSON.stringify(state.aion).includes('clientes por WhatsApp'));
 });
+
+
+test('Captura 05/11: objetivo adelantado no se confunde con frecuencia', () => {
+  const replies=conversation('Analizar mi proceso','Respondo consultas por WhatsApp','quiero avisos automaticos');
+  assert.equal(replies[1].tag,'aion_frecuencia');
+  assert.equal(replies[2].tag,'aion_plan');
+  assert.match(replies[2].reply,/objetivo: avisos/);
+  assert.match(replies[2].reply,/Frecuencia por determinar/);
+  assert.match(replies[2].reply,/WhatsApp requieren una integración oficial/);
+  assert.doesNotMatch(replies[2].reply,/qué resultado querés lograr/i);
+});
+test('La misma captura funciona con botones predefinidos y no mezcla sesiones', () => {
+  const a=brain.create();
+  brain.guided('Analizar mi proceso',a);
+  brain.guided('Consultas de clientes',a);
+  const result=brain.guided('Avisos automáticos',a);
+  assert.equal(result.tag,'aion_plan');
+  assert.equal(result.state.aion.stage,'done');
+  const b=brain.create();
+  assert.equal(b.aion.goal,null);
+});
