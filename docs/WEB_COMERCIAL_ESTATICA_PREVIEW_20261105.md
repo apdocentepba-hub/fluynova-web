@@ -34,3 +34,17 @@
 6. Vigilar uso compartido de minutos de build y ancho de banda del sitio de pruebas; la gratuidad base no elimina posibles cargos por excedentes.
 
 **NO MERGE / NO CAMBIO PRODUCCIÓN / NO ENVÍOS / NO COBROS.**
+
+## QA de continuidad — 05/11/2026, segunda revisión
+
+- Se comprobaron **14 rutas** públicas de la vista previa mediante lecturas HTTP externas: `/`, `/webs/`, `/laboratorio/`, `/guardian/`, `/cotizador-gestion/`, `/diagnostico/`, `/soluciones-express/`, `/privacidad.html`, `/instagram/`, `/guia-automatizacion/`, `/productos/`, `/software-a-medida/`, `/automatizacion-de-planillas/` y `/automatizar-consultas-y-presupuestos/`. Todas devolvieron contenido y la directiva `noindex,nofollow,noarchive`. Esto acredita respuestas puntuales, **no disponibilidad continua**.
+- Los cuatro enlaces externos de demostración devolvieron contenido esperado: `fluynova-demo-pasteleria.pages.dev`, `fluynova-demo-distribuidora.pages.dev`, `fluynova-ops-lab-preview-20261104.onrender.com/demo.html` y `fluynova-cotizador-lab-20261104.onrender.com/cotizador-gestion/`. Son demos con datos ficticios.
+- El generador se reforzó: **todas las páginas incluyen un aviso de VISTA PREVIA**, enlazan a la web oficial y aclaran que el envío automático está desactivado. `verifyOutput` examina los archivos producidos antes de finalizar la compilación y aborta si faltan controles fundamentales.
+- Suite local Node 22.16.0: **12/12 PASS**. Cubre aviso, privacidad, ausencia de POST a FormSubmit, bloqueo de API del Guardián, fuente intacta, y detección de alteraciones deliberadas. SHA de objeto Git de los archivos probados cotejados con GitHub: generador `621e3dcc313523479e68ce0ccf7684188e4fbba6`; tests `35338c53eec5744c730508c73a5075f78fe8ac51`.
+- Render: despliegue de vista previa `dep-dbm6bf5g1s2s73c8ihmg` del commit `3706094f09361648274f86b86ff88e37c2134df0` marcado `live`, con log explícito `pages:14` y `verifiedPages:14`.
+- **Límite actual:** las comprobaciones externas extraen contenido/metadata, pero no ejecutan toda la experiencia interactiva en Chromium de un usuario real. El extractor omite algunos elementos fuera de `main`, por lo que no permite certificar visualmente el aviso; esto sí quedó verificado en el generador y su compilación en Render. No se enviaron formularios reales ni correos.
+- La automatización de navegador con créditos de un servicio externo **no se ejecutó**; su saldo actual es insuficiente. No cargar saldo ni generar cargos sin autorización.
+- Render sigue configurado con **autoDeploy: no** en esta vista; el servicio Python oficial mantiene el commit de producción `8549828b53f4c2890888ca7db9777a04fefc5ae7`.
+
+**Pendiente:** navegador real desktop/móvil, validar preparación de mailto sin envío, accesibilidad con teclado, activación y recepción actual de FormSubmit y aprobación de migración. Ninguna de esas acciones se infiere del 12/12 PASS.
+
