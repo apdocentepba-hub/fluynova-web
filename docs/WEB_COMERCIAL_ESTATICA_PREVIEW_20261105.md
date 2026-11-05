@@ -48,3 +48,19 @@
 
 **Pendiente:** navegador real desktop/móvil, validar preparación de mailto sin envío, accesibilidad con teclado, activación y recepción actual de FormSubmit y aprobación de migración. Ninguna de esas acciones se infiere del 12/12 PASS.
 
+
+## Corrección posterior — 05/11/2026: formulario real en vista previa
+
+**Esta sección reemplaza la descripción anterior de "envío automático bloqueado" para la vista estática.** Tras una prueba visual del usuario que mostró el botón deshabilitado, se restauraron las rutas originales de FormSubmit **solamente en la vista previa aislada**.
+
+- En el HTML, `action="https://formsubmit.co/contacto.fluynova@gmail.com"` y `method="POST"` quedan disponibles. El botón ya no tiene atributo `disabled`; consentimiento obligatorio, validación y honeypot permanecen.
+- En el JavaScript, la disponibilidad de la vista previa ya no consulta `/api/config` de FastAPI. `contactEnabled` se habilita para que el visitante pueda enviar una consulta voluntaria mediante `fetch('https://formsubmit.co/ajax/...')`, con alternativa de POST tradicional y opción de preparar el correo si algo falla.
+- Se agregó un aviso visible a todas las páginas: **la vista previa puede generar envíos reales**, no ingresar datos escolares ni sensibles.
+- La compilación comprueba destinatario exacto, consentimiento, JavaScript de envío, Guardián sin conexión API, 14 páginas noindex, sin sitemap.
+- Pruebas de construcción en Node 22.16.0: **12/12 PASS**, sin red ni mensajes enviados. SHA GitHub del generador `9ea9c3b20ed63713dee54ed5343f8c7429858446`; SHA de tests `7f4407297feb63f74e52b68d8b9b173b3e843b92`.
+- Despliegue manual de Render en este servicio de vista previa: `dep-dbm6ghp5efls73cl00cg` (estado `live`, **14 páginas verificadas**). Registro de Render: `externalSubmissions:true` y `deliveryVerified:false`.
+- Comprobación HTTP de selector del formulario en la URL publicada: botón habilitado «Enviar mi consulta», `action` correcto, consentimiento requerido y respaldo manual presente. No se envió ninguna consulta con este control.
+- Gmail FLUYNOVA confirma recepción **histórica** de mensajes del 30/10/2026 de la web oficial y correo de activación de FormSubmit. **No hay aún comprobación de que el nuevo dominio esté activado ni que su correo llegue al buzón**.
+- FormSubmit podría requerir activación específica del origen de vista previa. La prueba de recepción autorizada con datos ficticios propios debe hacerse antes de afirmar «formulario operativo».
+
+**No fusionar en main / no cambios en web oficial.**
