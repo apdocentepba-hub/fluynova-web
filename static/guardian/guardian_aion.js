@@ -10,7 +10,7 @@
   if (!base) return;
 
   function newAion() {
-    return {stage:'idle',process:null,volume:null,goal:null,source:null,trigger:null,recipient:null};
+    return {stage:'idle',process:null,volume:null,goal:null,source:null,trigger:null,recipient:null,delay:null};
   }
   function create() {
     const state = base.create();
@@ -47,6 +47,15 @@
     if (/\b(nueva consulta|llega una consulta|nuevo mensaje|llega un mensaje|recibo un mensaje|entra una consulta|cuando escriben|(?:llega|llegue|entra|entre|ingresa|ingrese) (?:una|un) (?:consulta|mensaje))\b/.test(q)) return 'nueva_consulta';
     return null;
   }
+  function delayOf(q) {
+    if (/\b(no lo se|no se|por definir|todavia no)\b/.test(q)) return 'por_definir';
+    const minutes=q.match(/\b(15|30|45|60|120)\s*(?:minutos?|mins?|min)\b/);
+    if (minutes) return minutes[1]+' minutos';
+    const hours=q.match(/\b(1|2|4|12|24)\s*(?:horas?|hrs?|hs?)\b/);
+    if (hours) return hours[1]+' '+(hours[1]==='1'?'hora':'horas');
+    if (/\b(una hora|media hora)\b/.test(q)) return q.includes('media hora')?'30 minutos':'1 hora';
+    return null;
+  }
   function recipientOf(q) {
     if (/\b(no lo se|no se|por definir|todavia no)\b/.test(q)) return 'por_definir';
     if (/\b(ambos|los dos|equipo y cliente|cliente y equipo|a todos)\b/.test(q)) return 'ambos';
@@ -73,9 +82,15 @@
     // por la mera presencia de la palabra «clientes» en el proceso.
     const trigger=triggerOf(message);
     if (trigger && trigger!=='por_definir') st.aion.trigger=trigger;
+    if (st.aion.trigger==='sin_respuesta') st.aion.delay=delayOf(message);
     if (/\b(?:para|a|hacia)\s+(?:mis?\s+|los?\s+)?(?:equipos?|clientes?|usuarios?|personal|administradores?|empleados?|ambos|los dos)\b/.test(message)) {
       const recipient=recipientOf(message);
       if (recipient && recipient!=='por_definir') st.aion.recipient=recipient;
+    }
+    if(st.aion.trigger==='sin_respuesta' && !st.aion.delay) {
+      st.aion.stage='delay';
+      return answer('¿Cuánto tiempo sin responder una consulta debería pasar antes de generar el aviso? Podés dejarlo por definir.',
+        'aion_plazo',['15 minutos','30 minutos','1 hora','No lo sé todavía'],st);
     }
     if(st.aion.trigger && st.aion.recipient) {
       st.aion.stage='done';
@@ -92,7 +107,9 @@
   }
   function alertPlan(st) {
     const a=st.aion, source=a.source||sources[a.process];
-    const trigger=triggerText[a.trigger]||'todavía por definir';
+    const trigger=a.trigger==='sin_respuesta'
+      ? 'cuando una consulta sigue sin respuesta durante '+(a.delay==='por_definir'?'un plazo aún por definir':(a.delay||'un plazo aún por definir'))
+      : (triggerText[a.trigger]||'todavía por definir');
     const recipient=recipientText[a.recipient]||'todavía por definir';
     const integration=a.source==='mensajes'
       ? '\nWhatsApp: integrar únicamente mediante un canal oficial autorizado; hoy NO está conectado ni enviamos mensajes.'
@@ -231,8 +248,29 @@
       if (!trigger) return answer('Para definir los avisos necesito el evento que los dispara, no cada cuánto trabajás. ¿Qué debería ocurrir?', 'aion_aclaracion_disparador',
         ['Cuando llega una consulta','Sin respuesta después de un tiempo','Cambio de estado','No lo sé todavía'],st);
       st.aion.trigger=trigger;
+      if (trigger==='sin_respuesta') {
+        st.aion.delay=delayOf(q);
+        if (!st.aion.delay) {
+          st.aion.stage='delay';
+          return answer('¿Cuánto tiempo sin responder una consulta debería pasar antes de generar el aviso?',
+            'aion_plazo',['15 minutos','30 minutos','1 hora','No lo sé todavía'],st);
+        }
+      }
       st.aion.stage='recipient';
       return answer('Bien. ¿Quién debe recibir el aviso? Todavía no se enviará ninguno.',
+        'aion_destinatarios',['Mi equipo','Los clientes','Ambos','No lo sé todavía'],st);
+    }
+    if (st.aion.stage==='delay') {
+      const delay=delayOf(q);
+      if (!delay) return answer('Necesito un plazo concreto, por ejemplo 15 minutos, 30 minutos o 1 hora. También podés elegir no definirlo todavía.',
+        'aion_aclaracion_plazo',['15 minutos','30 minutos','1 hora','No lo sé todavía'],st);
+      st.aion.delay=delay;
+      if (st.aion.recipient) {
+        st.aion.stage='done';
+        return alertPlan(st);
+      }
+      st.aion.stage='recipient';
+      return answer('Plazo registrado: '+(delay==='por_definir'?'por definir':delay)+'. ¿Quién debe recibir el aviso?',
         'aion_destinatarios',['Mi equipo','Los clientes','Ambos','No lo sé todavía'],st);
     }
     if (st.aion.stage==='recipient') {
