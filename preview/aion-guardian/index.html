@@ -15,15 +15,19 @@ article{padding:20px;background:#182c2b;border:1px solid #3d6256;border-radius:1
 button{background:#bdff85;color:#16261d;border:0;border-radius:10px;padding:13px 18px;font-weight:800;cursor:pointer}
 a{color:#bfff93}footer{border-top:1px solid #2e4540;padding:20px 22px;color:#aabeb3;font-size:12px}
 @media(max-width:680px){.cards{grid-template-columns:1fr}main{margin-top:30px}}
+@media(min-width:1100px){
+ body[data-guardian-preview="true"] main{width:min(850px,calc(100vw - 520px));max-width:none;margin:48px 0 90px max(24px,calc((100vw - 460px - 850px)/2))}
+ body[data-guardian-preview="true"] .cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
 </style>
 <script defer src="/guardian/guardian_brain.js?v=6"></script>
-<script defer src="/guardian/guardian_aion.js?v=1"></script>
-<script defer src="/guardian/guardian.js?v=4"></script>
-</head><body data-guardian-open="true">
+<script defer src="/guardian/guardian_aion.js?v=2"></script>
+<script defer src="/guardian/guardian.js?v=5"></script>
+</head><body data-guardian-open="true" data-guardian-preview="true">
 <header><div class="brand">FLUY<span>NOVA</span> · GUARDIÁN × AION</div><span class="note">LABORATORIO · NO PUBLICADO EN LA WEB COMERCIAL</span></header>
 <main><small>Asistente comercial · Evaluación privada de funcionalidad (enlace de prueba público, no indexado)</small>
 <h1>Tu problema, <em>un diagnóstico inicial.</em></h1>
-<p>Probá cómo Guardián incorpora el método de análisis AION: reconocer el trabajo repetitivo, estimar su frecuencia y proponer un piloto verificable. El chat está abierto a la derecha o abajo en celular.</p>
+<p>Probá cómo Guardián incorpora el método de análisis AION: entender el trabajo repetitivo, interpretar la frecuencia cuando ya la explicaste y proponer un piloto verificable. El chat está abierto a la derecha o abajo en celular. Esta versión no usa una IA generativa.</p>
 <button id="open-chat" type="button">Abrir GUARDIÁN × AION</button>
 <section class="cards" aria-label="Qué se puede probar">
 <article><h2>1 · Consultá</h2><p>Escribí «Analizar mi proceso» para comenzar el diagnóstico en tres preguntas.</p></article>
