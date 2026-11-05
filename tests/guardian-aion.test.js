@@ -1,4 +1,6 @@
 'use strict';
+// Ejecuta también las pruebas de interfaz de la vista previa durante el build de Render.
+require('./guardian-preview.test.js');
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
 const brain = require('../static/guardian/guardian_aion.js');
