@@ -186,9 +186,21 @@ async def send_contact(request: Request, background: BackgroundTasks):
     return JSONResponse({"ok": True, "message": "Consulta recibida"}, status_code=201)
 
 
+def formsubmit_ready() -> bool:
+    """Fail closed: provider configuration alone is not delivery confirmation.
+
+    FORMSUBMIT_DELIVERY_VERIFIED is a manual operational acknowledgement.
+    It is never inferred from a successful GET or a live deploy.
+    """
+    return (
+        os.getenv("FORMSUBMIT_ACTIVE", "0") == "1"
+        and os.getenv("FORMSUBMIT_DELIVERY_VERIFIED", "0") == "1"
+    )
+
+
 @app.get("/api/config")
 def config():
-    return {"contact_enabled": os.getenv("FORMSUBMIT_ACTIVE", "0") == "1", "contact_method": "formsubmit"}
+    return {"contact_enabled": formsubmit_ready(), "contact_method": "formsubmit"}
 
 
 @app.get("/api/health")
