@@ -155,3 +155,16 @@ test('Vuelve a preguntar ante un evento y un destinatario ambiguos',()=>{
  assert.equal(brain.guided('Cambio de estado',s).tag,'aion_destinatarios');
  assert.equal(brain.guided('esta semana',s).tag,'aion_aclaracion_destinatarios');
 });
+
+
+test('La API Python exige habilitación explícita y rechaza datos sensibles (unittest real)', () => {
+ const {spawnSync} = require('node:child_process');
+ const result = spawnSync('python', [
+  '-m','unittest','discover','-s','tests','-p','test_guardian_ai_security.py','-v'
+ ], {
+  encoding:'utf8',timeout:20000,
+  env:{...process.env,GUARDIAN_EXTERNAL_AI_ALLOWED:'0',GUARDIAN_AI_KEY:'',GUARDIAN_AI_MODEL:''}
+ });
+ assert.equal(result.error,undefined, String(result.error||''));
+ assert.equal(result.status,0,(result.stdout||'')+'\n'+(result.stderr||''));
+});
