@@ -168,3 +168,43 @@ test('La API Python exige habilitación explícita y rechaza datos sensibles (un
  assert.equal(result.error,undefined, String(result.error||''));
  assert.equal(result.status,0,(result.stdout||'')+'\n'+(result.stderr||''));
 });
+
+test('Interpreta todos los datos expresados en una sola frase', () => {
+ const [,diagnosis]=conversation('Analizar mi proceso',
+ 'Respondo consultas por WhatsApp todos los días y quiero avisos automáticos cuando llega una consulta para mi equipo');
+ assert.equal(diagnosis.tag,'aion_plan');
+ assert.match(diagnosis.reply,/Frecuencia: diario/);
+ assert.match(diagnosis.reply,/Disparador: cuando ingresa una consulta nueva/);
+ assert.match(diagnosis.reply,/Destinatarios: equipo interno/);
+});
+test('Una frase que adelanta el objetivo pero no la frecuencia conserva frecuencia desconocida',()=>{
+ const [,response]=conversation('Analizar mi proceso','Respondo consultas por WhatsApp y quiero avisos automáticos');
+ assert.equal(response.tag,'aion_disparador');
+ assert.equal(response.state.aion.volume,'sin medir');
+});
+test('Mencionar clientes como fuente no significa enviárselos a ellos',()=>{
+ const [,response]=conversation('Analizar mi proceso','Quiero avisos automáticos de las consultas de clientes');
+ assert.equal(response.tag,'aion_disparador');
+ assert.equal(response.state.aion.recipient,null);
+});
+test('El objetivo puede incluir un disparador y destinatario explícitos',()=>{
+ const r=conversation('Analizar mi proceso','Respondo consultas por WhatsApp',
+    'Todos los días','Quiero avisos cuando llegue un mensaje para mi equipo');
+ assert.equal(r[3].tag,'aion_plan');
+ assert.match(r[3].reply,/Disparador: cuando ingresa una consulta nueva/);
+ assert.match(r[3].reply,/Destinatarios: equipo interno/);
+});
+test('Si el mensaje adelanta solo el disparador pregunta por destinatario',()=>{
+ const r=conversation('Analizar mi proceso','Respondo consultas por WhatsApp',
+   'Todos los días','Avisos cuando llega una consulta');
+ assert.equal(r[3].tag,'aion_destinatarios');
+ assert.equal(r[3].state.aion.trigger,'nueva_consulta');
+ assert.equal(r[3].state.aion.recipient,null);
+});
+test('Sigue sirviendo el flujo de preguntas tradicionales',()=>{
+ const r=conversation('Analizar mi proceso','Respondo consultas por WhatsApp',
+  'Todos los días','Avisos automáticos','Cuando llega una consulta','Mi equipo');
+ assert.equal(r[3].tag,'aion_disparador');
+ assert.equal(r[4].tag,'aion_destinatarios');
+ assert.equal(r[5].tag,'aion_plan');
+});
