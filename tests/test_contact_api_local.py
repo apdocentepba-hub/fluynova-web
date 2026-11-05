@@ -142,3 +142,42 @@ def test_admin_disabled_and_health_public(app_with_isolated_storage):
         assert client.get("/admin").status_code == 404
         assert client.get("/api/health").json() == {"ok": True}
         assert client.get("/api/contact").status_code == 404  # StaticFiles catches unmatched GET; still no contact write
+
+
+def test_chunked_body_over_limit_rejected_without_db_write(app_with_isolated_storage, monkeypatch):
+    mod, delivered = app_with_isolated_storage
+    monkeypatch.setenv("CONTACT_STORAGE_READY", "1")
+
+    def chunks():
+        yield b"{" + b"x" * 9000
+        yield b"y" * 9000 + b"}"
+
+    with TestClient(mod.app) as client:
+        result = client.post("/api/contact", content=chunks(), headers={"content-type": "application/json"})
+        assert result.status_code == 413
+    assert count_leads(mod) == 0
+    assert delivered == []
+
+
+def test_invalid_content_length_is_rejected_without_db_write(app_with_isolated_storage, monkeypatch):
+    mod, delivered = app_with_isolated_storage
+    monkeypatch.setenv("CONTACT_STORAGE_READY", "1")
+    with TestClient(mod.app) as client:
+        result = client.post("/api/contact", content=b"{}", headers={"content-length": "not-a-number"})
+        assert result.status_code == 400
+    assert count_leads(mod) == 0
+    assert delivered == []
+
+
+def test_spoofed_forwarded_ip_cannot_bypass_rate_limit(app_with_isolated_storage, monkeypatch):
+    mod, delivered = app_with_isolated_storage
+    monkeypatch.setenv("CONTACT_STORAGE_READY", "1")
+    monkeypatch.setenv("TRUST_PROXY", "1")  # legacy option must not trust headers
+    with TestClient(mod.app) as client:
+        statuses = []
+        for n in range(6):
+            result = client.post("/api/contact", json=lead(), headers={"x-forwarded-for": f"192.0.2.{n+1}"})
+            statuses.append(result.status_code)
+        assert statuses == [201, 201, 201, 201, 201, 429]
+    assert count_leads(mod) == 5
+    assert len(delivered) == 5
