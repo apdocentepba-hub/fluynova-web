@@ -28,8 +28,18 @@ DATA.mkdir(parents=True, exist_ok=True)
 DB_PATH = DATA / "consultas.db"
 STATUSES = {"Nuevo", "En análisis", "Presupuestado", "En desarrollo", "Cerrado", "Descartado"}
 ALLOWED_CATEGORIES = {
-    "Automatizar tareas", "Desarrollar software", "Conectar herramientas / datos",
-    "Inteligencia artificial", "Otro / no estoy seguro",
+    "Automatizar tareas",
+    "Desarrollar software",
+    "Crear página web / catálogo digital",
+    "Gestionar clientes (CRM)",
+    "Presupuestos y cotizaciones",
+    "Pedidos, ventas y stock",
+    "Turnos, reservas y agenda",
+    "Planillas, reportes y tableros",
+    "WhatsApp, correo y respuestas automáticas",
+    "Conectar herramientas / datos",
+    "Inteligencia artificial",
+    "Otro / no estoy seguro",
 }
 EMAIL = re.compile(r"^[^\s@<>]+@[^\s@<>]+\.[^\s@<>]+$")
 security = HTTPBasic(auto_error=False)
