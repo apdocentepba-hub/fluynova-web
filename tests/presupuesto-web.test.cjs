@@ -6,10 +6,15 @@ const path=require('node:path');
 const {PLANES,PRECIO_SECCION_EXTRA,presupuesto,importe,textoPresupuesto}=require('../scripts/presupuesto-web.cjs');
 test('precio de cada paquete coincide con el cotizador público existente',()=>{
  const landing=fs.readFileSync(path.resolve(__dirname,'../static/webs/index.html'),'utf8');
+ const options=[...landing.matchAll(/<option value="(\\d+)">([^<]+)<\\/option>/g)]
+   .map(match=>({precio:Number(match[1]),etiqueta:match[2]}));
  for(const p of Object.values(PLANES)){
-   assert.ok(landing.includes(`value="${p.precio}"`),`Falta precio ${p.precio} del sitio`);
+   const matched=options.filter(x=>x.etiqueta.startsWith(p.etiqueta+' — '));
+   assert.equal(matched.length,1,`El plan ${p.etiqueta} debe existir exactamente una vez`);
+   assert.equal(matched[0].precio,p.precio,`El precio de ${p.etiqueta} no coincide`);
  }
  assert.ok(landing.includes('desde $70.000 c/u'));
+ assert.match(landing,/id="extra" type="number" min="0" max="3"/);
  assert.equal(PRECIO_SECCION_EXTRA,70000);
 });
 test('catálogo con 2 secciones y 50% anticipo',()=>{
