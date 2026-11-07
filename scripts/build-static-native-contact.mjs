@@ -15,7 +15,7 @@ const MAIL='contacto.fluynova@gmail.com';
 const BANNER_OLD='VISTA PREVIA TÉCNICA · El formulario no envía datos. Para comunicarte, usá el correo manual.';
 const BANNER_NEW='VISTA DE PRUEBA INTERNA · El botón Enviar transmite datos reales a FormSubmit. No uses datos de clientes ni información sensible.';
 const ORIGINAL_ACTION='id="contact-form" method="POST" action="'+DESTINATION+'"';
-const CANDIDATE_ACTION=ORIGINAL_ACTION+' data-native-candidate="true" target="_blank" rel="noopener noreferrer"';
+const CANDIDATE_ACTION=ORIGINAL_ACTION+' data-native-candidate="true" target="_blank" rel="noopener"';
 const SCRIPTS_BLOCKED="// Vista previa sin red: ni FormSubmit ni solicitudes al backend.\n"+
   "form?.addEventListener('submit',event=>{event.preventDefault();feedback('El formulario está deshabilitado. Usá el correo manual.','error');});";
 const SCRIPTS_NATIVE=[
@@ -98,7 +98,8 @@ export async function verifyNativeCandidate(dest){
     !html.includes('data-static-preview="true"')||!html.includes(BANNER_NEW)||
     !html.includes('name="robots" content="noindex,nofollow,noarchive"')||
     html.includes('<fieldset disabled')||html.includes('type="submit" disabled')||
-    !html.includes('target="_blank" rel="noopener noreferrer"')||
+    !html.includes('target="_blank" rel="noopener"')||
+    /data-native-candidate="true"[^>]*rel="[^"]*noreferrer/.test(html)||
     !html.includes('mailto:'+MAIL)||
     !script.includes("form?.addEventListener('submit',event=>")||
     !script.includes("const invalid=leadValidationError(v)")||
