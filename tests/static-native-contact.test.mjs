@@ -22,6 +22,7 @@ test('HTML de main conserva consentimiento y honeypot con un POST nativo exacto'
  assert.match(h,/name="_honey"/);
  assert.match(h,/name="consent" required/);
  assert.match(h,/name="_replyto" value=""/);
+ assert.match(h,/name="_url" value=""/);
  assert.match(h,/name="_subject" value="/);
  assert.match(h,/noindex,nofollow,noarchive/);
  assert.match(h,/data-static-preview="true"/);
@@ -40,20 +41,22 @@ test('código convertido conserva validación local, pero jamás usa AJAX ni API
  assert.match(JS,/const invalid=leadValidationError\(v\)/);
  assert.match(JS,/if\(v.website\|\|invalid\|\|!form.checkValidity\(\)/);
  assert.match(JS,/reply.value=v.email;/);
+ assert.match(JS,/source.value=window.location.origin\+window.location.pathname;/);
  assert.match(JS,/subject.value='FLUYNOVA \| Nueva consulta: '\+v.category;/);
  assert.doesNotMatch(JS,/\bfetch\s*\(/);
  assert.doesNotMatch(JS,/https:\/\/formsubmit.co\/ajax\//);
  assert.doesNotMatch(JS,/HTMLFormElement\.prototype\.submit/);
 });
-function listener({valid=true,honey='',consent=true,destination='https://formsubmit.co/contacto.fluynova@gmail.com'}={}){
+function listener({valid=true,honey='',consent=true,protocol='https:',destination='https://formsubmit.co/contacto.fluynova@gmail.com'}={}){
  const start=JS.indexOf('// Candidato estático: un único POST nativo');
  const end=JS.indexOf('// Compartir de forma voluntaria:',start);
  assert.ok(start>=0&&end>start);
  const subject={value:'Original'};
  const reply={value:''};
+ const source={value:''};
  const checkbox={checked:consent};
  const form={
-  elements:{namedItem:key=>({_subject:subject,_replyto:reply,consent:checkbox})[key]},
+  elements:{namedItem:key=>({_subject:subject,_replyto:reply,_url:source,consent:checkbox})[key]},
   getAttribute:key=>key==='action'?destination:key==='method'?'POST':null,
   checkValidity:()=>valid,
   reportValidity:()=>{},
@@ -64,22 +67,23 @@ function listener({valid=true,honey='',consent=true,destination='https://formsub
   category:'Crear página web / catálogo digital',message:'Contenido totalmente ficticio para una prueba.',
   website:honey,consent:consent};
  runInNewContext(JS.slice(start,end),{
-   form,contactEnabled:true,currentLead:()=>lead,
+   form,window:{location:{protocol,origin:'https://fluynova.example',pathname:'/webs/'}},contactEnabled:true,currentLead:()=>lead,
    leadValidationError:()=>valid?'':'Datos incorrectos',
    feedback:(msg)=>feedbackMessages.push(msg)
  },{timeout:500});
  form.handler({preventDefault:()=>{prevented=true;}});
- return {prevented,subject,reply,feedbackMessages};
+ return {prevented,subject,reply,source,feedbackMessages};
 }
 test('usuario válido genera únicamente intención de POST nativo, sin enviar nada',()=>{
  const r=listener();
  assert.equal(r.prevented,false);
  assert.equal(r.subject.value,'FLUYNOVA | Nueva consulta: Crear página web / catálogo digital');
  assert.equal(r.reply.value,'ficticio@example.invalid');
+ assert.equal(r.source.value,'https://fluynova.example/webs/');
  assert.match(r.feedbackMessages[0],/todavía no acredita/);
 });
 test('sin consentimiento, datos inválidos y trampa de bot no se permite POST',()=>{
- for(const opts of [{consent:false},{valid:false},{honey:'bot-value'}]){
+ for(const opts of [{consent:false},{valid:false},{honey:'bot-value'},{protocol:'http:'}]){
   const r=listener(opts);assert.equal(r.prevented,true,JSON.stringify(opts));
   assert.equal(r.subject.value,'Original');
  }
