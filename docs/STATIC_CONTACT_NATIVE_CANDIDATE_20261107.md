@@ -57,3 +57,13 @@ Fuentes: https://formsubmit.co/documentation y https://formsubmit.co/help.
 6. **Aprobación expresa** para crear o actualizar servicios, desplegar, cambiar dominios o activar recepciones reales.
 
 **Conclusión de ingeniería:** circuito de captación preparado en código y validado OFFLINE; **NO RECEPCIÓN REAL VERIFICADA**. Mantener PR #21 en borrador, sin merge ni deploy.
+
+
+## Regresión real detectada en vista estática anterior (07/11/2026)
+
+- Una prueba voluntaria en el sitio estático existente mostró `Unable to submit form — Make sure you open this page through a web server`. La vista pública anterior tenía `rel="noopener noreferrer"` en el elemento `form` y no incluía `_url` en el HTML servido.
+- FormSubmit explica literalmente este error y recomienda añadir el campo oculto `_url`: https://formsubmit.co/help. El origen HTTPS del usuario sí era una página servida por un servidor.
+- Se corrigió preventivamente **este candidato limpio**, retirando `noreferrer` del elemento `form`, conservando `noopener`, y manteniendo `_url` dinámico sin parámetros UTM o fragmentos. La prueba de regresión ahora inspecciona exclusivamente el elemento `form` (no otros enlaces externos que legítimamente pueden usar `noreferrer`).
+- GitHub Actions [run 42420646342](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42420646342) **SUCCESS** para el cambio en el código y pruebas, sin deploy ni envío HTTP a FormSubmit. Una ejecución intermedia falló por una aserción que inspeccionaba todos los enlaces en lugar del formulario y fue corregida.
+- La URL de Render usada por el visitante **no** sirve este candidato de PR #21; es otra rama. La corrección de esa vista está también preparada en `feature/web-comercial-estatica-preview-20261105` pero requiere un despliegue manual aislado y aprobado.
+- Nunca declarar entrega real por CI: hace falta prueba desde navegador + correo recibido, luego revisar si FormSubmit solicita activación del formulario.
