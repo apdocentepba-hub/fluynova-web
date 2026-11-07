@@ -64,3 +64,18 @@
 - FormSubmit podría requerir activación específica del origen de vista previa. La prueba de recepción autorizada con datos ficticios propios debe hacerse antes de afirmar «formulario operativo».
 
 **No fusionar en main / no cambios en web oficial.**
+
+## Control automático reproducible de rutas — 07/11/2026
+
+**Avance ejecutado solamente en la rama estática; sin fusión, despliegue de Render ni envíos.**
+
+- Se agregó `scripts/verify-static-routes.mjs`, que lee la salida estática, resuelve referencias locales `href`, `src` y `action`, acepta rutas relativas, parámetros y fragmentos y falla ante destinos internos inexistentes o esquemas de URL inseguros. No hace pedidos de red ni prueba correos.
+- `scripts/build-static-commercial-preview.mjs` llama ahora obligatoriamente a `verifyStaticRoutes(dest)` antes de concluir. Si falta un recurso interno, el proceso de compilación finaliza con error. No altera el directorio fuente.
+- Se agregaron cuatro pruebas de regresión en `tests/verify-static-routes.test.mjs` y el workflow de GitHub Actions `.github/workflows/fluynova-static-preview-qa.yml`: solo tests, build estático y validación offline.
+- **Evidencia de GitHub Actions:** [run 42367074975](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42367074975), commit `8994c0df8e1e1f501d04b13d9d7b9e4b819d3efb`, **SUCCESS**. Etapa de tests: **16/16 PASS** (12 del compilador + 4 nuevas); etapa de build reejecutó **12/12 PASS**. La compilación reportó **14 páginas**, y el verificador en la salida produjo **262 referencias inspeccionadas**, **145 internas**, **73 externas**, **44 omitidas por ser anclas/esquemas no navegables**, y **0 referencias internas inválidas**.
+- Los checks de **Cloudflare Pages** para compilaciones de la rama en `fluynova-demo-pasteleria` y `fluynova-demo-distribuidora` marcaron `failure` en ese commit; las causas no están acreditadas por los datos disponibles. **Los dos sitios públicos existentes respondieron HTTP 200** después del fallo, con sus contenidos ficticios esperados. No interpretar un check fallido como caída comprobada del sitio actual ni como una compilación exitosa.
+- Comparación GitHub: la rama de vista previa está **65 commits por delante de `main`** e incluye cambios experimentales de laboratorio. **NO fusionarla directamente a producción**: antes hay que aislar únicamente los archivos necesarios para la arquitectura aprobada, comparar contra `main` y verificar todas las dependencias.
+
+**Límites críticos:** no se ejecutó envío controlado de FormSubmit ni recepción actual en Gmail. La prueba no valida páginas externas, accesibilidad móvil completa, rendimiento, disponibilidad sostenida o legalidad del tratamiento de datos. El build de vista previa conserva `noindex`, aviso de laboratorio y dirección canónica de la web oficial; **no es un artefacto listo para sustituir producción**.
+
+**Próxima puerta de aceptación:** recepción end-to-end de un mensaje ficticio autorizado, auditoría visual/teclado en navegador real, decisiones de dominio y SEO, reversión y autorización específica antes de publicar.
