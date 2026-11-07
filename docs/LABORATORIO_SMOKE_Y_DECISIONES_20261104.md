@@ -73,3 +73,40 @@ No se modificó `main`, no se ejecutó una automatización, no se desplegó el v
 **Pruebas:** `node --test tests/*.test.js` desde el laboratorio local completo: **22/22 PASS, 0 FAIL**. De las pruebas, cinco son nuevas de atribución y conservan la compatibilidad del flujo de Instagram existente. `static/diagnostico/attribution.js` no se modifica; en el ensayo se usó una copia equivalente de su implementación, por lo que sigue pendiente una regresión sobre el árbol completo actualizado en un checkout del repositorio antes de merge.
 
 **No publicar todavía:** validar navegación real por páginas web, diagnóstico y formulario, revisar mensajes legales/privacidad, aprobar diseño comercial y enlaces. No se ha ejecutado ningún envío de prueba a un buzón real ni se ha modificado producción.
+
+## Seguimiento 07/11/2026 — 503 recurrente y comparación de alternativas estáticas
+
+**Auditoría de solo lectura; no se cambió producción ni se enviaron formularios.**
+
+### Evidencia de acceso público
+
+- El 07/11/2026, dos consultas externas independientes a la portada y a `/diagnostico/` devolvieron **HTTP 503 — Render Application loading**.
+- En una nueva comprobación, `/diagnostico/` devolvió HTTP **200** con el contenido comercial esperado; después, la portada, `/instagram/` y `/api/config` devolvieron **HTTP 200**.
+- `/api/config` declaró `{"contact_enabled":true,"contact_method":"formsubmit"}`. Esto verifica la bandera de configuración expuesta por el backend, **NO** que una consulta llegue al correo.
+- El servicio principal `fluynova-web` es de tipo `web_service`, plan `free`, región `virginia`; Render lo marca `not_suspended`, con último despliegue principal `live` del 03/11/2026 (`8549828b53f4c2890888ca7db9777a04fefc5ae7`). Los registros leídos no mostraron un despliegue nuevo ese día.
+- Las vistas públicas `https://fluynova-comercial-estatica-preview.onrender.com/` y `https://fluynova-contacto-sin-formsubmit-preview.onrender.com/` devolvieron **HTTP 200**. Ambas son vistas previas y **no sustituyen** la web oficial ni constituyen validación del envío comercial.
+
+### Explicación contrastada y riesgo
+
+Render documenta que un servicio web gratuito puede suspenderse después de **15 minutos de inactividad**, y que reactivarlo puede tardar cerca de **un minuto**. Su documentación reconoce expresamente que una respuesta **503** puede deberse al arranque en frío. La secuencia observada es **consistente con ese comportamiento**; sin trazas específicas no se atribuye cada 503 de manera concluyente a una única causa.
+
+Fuentes oficiales consultadas:
+- https://render.com/docs/free
+- https://render.com/docs/troubleshooting-deploys
+- https://render.com/docs/faq
+
+**Riesgo comercial:** el primer acceso a la web puede encontrar una página de carga en vez del formulario. Programar consultas artificiales para mantener el servicio despierto no elimina la limitación arquitectónica, consume recursos y no representa una solución robusta.
+
+### Evidencia de recepción y límites
+
+La cuenta comercial recibió el 30/10/2026 dos envíos de prueba vía FormSubmit; esto demuestra recepción histórica, no entrega en fecha 07/11. No se detectó una nueva consulta genuina en la revisión de entrada y no se generó una nueva consulta ficticia. Evitar exponer en archivos públicos información personal de correos o potenciales clientes.
+
+### Criterios exigidos antes de una eventual migración a sitio estático
+
+1. Comparar portada, `/diagnostico/`, `/instagram/`, `/webs/` y demos con la web actual (incluyendo enlaces, accesibilidad móvil y SEO).
+2. Mantener un solo flujo claro de contacto y preservar la aceptación informada del usuario; la vista previa sin FormSubmit requiere envío **manual** desde el cliente de correo, por lo que no es equivalente.
+3. Ejecutar una prueba end-to-end de formulario con datos ficticios **solo con aprobación expresa**, y comprobar recepción en Gmail, no solo una respuesta HTTP.
+4. Definir reversión, enlaces de campaña y ruta de transición sin cambios sorpresivos a la biografía de Instagram; contrastar el contenido del PR con `main` inmediatamente antes de cualquier merge.
+5. Obtener autorización antes de cambiar producción, contratar servicios o publicar novedades. Este informe por sí solo **NO AUTORIZA** una migración.
+
+**Decisión actual:** mantener el entorno real intacto y utilizar los dos laboratorios estáticos únicamente para evaluar una salida sin arranque en frío. No declarar uptime ni conversiones por estos chequeos.
