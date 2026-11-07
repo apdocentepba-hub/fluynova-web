@@ -1,0 +1,38 @@
+# FLUYNOVA — receptor propio (CANDIDATO NO DESPLEGADO)
+
+Estado: código probado offline; SIN base D1 creada, SIN Turnstile configurado y SIN URL pública. La web oficial mantiene el contacto visible contacto.fluynova@gmail.com.
+
+## Propósito
+Recibir formularios de clientes con persistencia propia antes de confirmar éxito. FormSubmit mostró éxito en pantalla, pero su correo no fue comprobado en Gmail. Nunca afirmar entrega por la aceptación de un tercero.
+
+## Aislamiento
+Prohibido reutilizar bases de APDocentePBA, alerta-amba u otros proyectos. Se necesita Cloudflare D1 exclusiva de FLUYNOVA. El archivo schema.sql es solo la propuesta de esquema; no se aplicó a ningún recurso.
+
+## Contrato de la API
+- POST /api/contact exclusivamente para los orígenes HTTPS permitidos; OPTIONS con CORS restringido.
+- Campos nombre, email, categoría (incluye página web / catálogo), mensaje y consentimiento obligatorio; opcionales y atribución acotada.
+- Máximo 16 KiB, honeypot, límites de longitud, categoría cerrada; errores sin persistencia.
+- Turnstile validado del lado servidor con Siteverify: token, action=contact y hostname correcto. Sin secreto o fallo: se rechaza.
+- Límite 5 intentos/hora por fingerprint HMAC de IP; nunca se guarda IP en claro.
+- D1 guarda primero; solo tras confirmación de escritura se devuelve HTTP 201, ok:true, stored:true e id.
+- Sin endpoint de consulta pública, sin email automático ni acceso administrativo público.
+- Pruebas Node de D1 y Turnstile son simuladas; no equivalen a una inserción real.
+
+## Habilitación pendiente (requiere aprobación específica)
+1. Confirmar cuotas, límites y costos; crear D1 staging exclusiva de FLUYNOVA.
+2. Crear migración con Wrangler oficial, revisando schema.sql y aplicando primero local. Jamás sobre otra base.
+3. Crear Worker de staging con binding DB, ALLOWED_ORIGINS y TURNSTILE_HOSTNAMES exactos.
+4. Guardar TURNSTILE_SECRET_KEY y RATE_HASH_SECRET como secretos del Worker; no incluirlos en Git.
+5. Configurar Turnstile del hostname de staging; verificar token real, rechazo de bots, 5/h e indisponibilidad D1.
+6. Implementar panel con autenticación, política de retención y borrado; limpiar huellas de rate-limit periódicamente.
+7. Revisar política de privacidad y consentimiento; entonces conectar la web estática al Worker.
+8. Comprobar desde navegador que un formulario ficticio reaparece en D1 antes de declarar éxito.
+
+## Fuentes oficiales
+- Cloudflare D1: https://developers.cloudflare.com/d1/get-started/
+- Migraciones D1: https://developers.cloudflare.com/d1/reference/migrations/
+- Turnstile: https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
+- Pages: https://developers.cloudflare.com/pages/configuration/git-integration/
+
+## Reversión
+Esta rama no se fusionó ni desplegó. No afecta al formulario y web oficiales, ni a otras bases de datos. El correo directo seguirá publicado durante toda la migración.
