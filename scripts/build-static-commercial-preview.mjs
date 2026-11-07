@@ -45,13 +45,13 @@ export function transformHtml(html, isHome = false) {
     if (!html.includes(action)) throw new Error('Acción de formulario no autorizada');
     html = replaceOnce(html,
       action,
-      action + ' data-contact-provider="formsubmit" target="_blank" rel="noopener noreferrer"', 'acción del formulario');
+      action + ' data-contact-provider="formsubmit" target="_blank" rel="noopener"', 'acción del formulario');
     if (!html.includes('class="btn btn-primary submit-btn" type="submit"') ||
         !html.includes('name="consent"')) throw new Error('Falta envío o consentimiento');
     html = replaceOnce(html,
       '<input type="hidden" name="_template" value="table">',
-      '<input type="hidden" name="_template" value="table"><input type="hidden" name="_replyto" value="">',
-      'Reply-To de contacto');
+      '<input type="hidden" name="_template" value="table"><input type="hidden" name="_replyto" value=""><input type="hidden" name="_url" value="https://fluynova-comercial-estatica-preview.onrender.com/">',
+      'Reply-To y URL de contacto');
     // El botón AJAX alternativo no debe existir: es una única acción HTML nativa.
     html = html.replace(/<button id="alternate-send"[^>]*>[^<]*<\/button>/, '');
     if (html.includes('id="alternate-send"')) throw new Error('Falló retiro del botón duplicado');
@@ -91,9 +91,12 @@ form?.addEventListener('submit',event=>{
  }
  const subject=form.querySelector('input[name="_subject"]');
  const reply=form.querySelector('input[name="_replyto"]');
- if(!subject||!reply){event.preventDefault();feedback('Faltan campos de entrega.','error');return;}
+ const source=form.querySelector('input[name="_url"]');
+ if(!subject||!reply||!source){event.preventDefault();feedback('Faltan campos de entrega.','error');return;}
+ if(window.location.protocol!=='https:'){event.preventDefault();feedback('La página de contacto debe utilizar HTTPS.','error');return;}
  subject.value='FLUYNOVA | Nueva consulta: '+v.category;
  reply.value=v.email;
+ source.value=window.location.origin+window.location.pathname;
  feedback('FormSubmit se abre en otra pestaña. Verificá su confirmación; el envío todavía no está comprobado.','');
  // No preventDefault: navegación POST nativa, sin CORS, en otra pestaña.
 });
@@ -158,9 +161,12 @@ export async function verifyOutput(dest) {
   const guardian=await readFile(join(dest,'guardian','guardian.js'),'utf8');
   const robots=await readFile(join(dest,'robots.txt'),'utf8');
   if (!/id="contact-form"[^>]*method="POST"[^>]*action="https:\/\/formsubmit\.co\/contacto\.fluynova@gmail\.com"/.test(index) ||
-      !/data-contact-provider="formsubmit"[^>]*target="_blank"/.test(index) ||
+      !/data-contact-provider="formsubmit"[^>]*target="_blank" rel="noopener"/.test(index) ||
+      /data-contact-provider="formsubmit"[^>]*rel="[^"]*noreferrer/.test(index) ||
       !/name="consent"[^>]*required/.test(index) ||
       !/name="_replyto"/.test(index) ||
+      !/name="_url" value="https:\/\/fluynova-comercial-estatica-preview\.onrender\.com\/"/.test(index) ||
+      !js.includes("source.value=window.location.origin+window.location.pathname;") ||
       !js.includes("form?.addEventListener('submit',event=>") ||
       !js.includes("const error=leadValidationError(v);") ||
       !js.includes("No preventDefault: navegación POST nativa") ||
