@@ -7,6 +7,7 @@ import {cp, mkdir, readdir, readFile, rm, writeFile} from 'node:fs/promises';
 import {resolve, relative, join, extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
+import {verifyStaticRoutes} from './verify-static-routes.mjs';
 
 function replaceOnce(source, match, replacement, label) {
   const first = source.indexOf(match);
@@ -199,7 +200,8 @@ export async function build({sourceDir, outputDir}={}) {
   await writeFile(join(dest,'robots.txt'),'User-agent: *\nDisallow: /\n','utf8');
   await rm(join(dest,'sitemap.xml'),{force:true});
   const verification=await verifyOutput(dest);
-  return {pages,verifiedPages:verification.verifiedPages,destination:dest,externalSubmissions:true,nativePost:true,deliveryVerified:false,backendRequired:false};
+  const routes=await verifyStaticRoutes(dest);
+  return {pages,verifiedPages:verification.verifiedPages,verifiedInternalReferences:routes.internal,destination:dest,externalSubmissions:true,nativePost:true,deliveryVerified:false,backendRequired:false};
 }
 
 const ownFile=process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url);
