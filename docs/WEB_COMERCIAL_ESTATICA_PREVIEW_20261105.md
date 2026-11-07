@@ -91,3 +91,16 @@
 - La búsqueda posterior en Gmail FLUYNOVA de mensajes FormSubmit recientes del 07/11 devolvió **0 coincidencias**. Esto no demuestra que no haya mensajes en cualquier momento, pero es consistente con el rechazo mostrado.
 - La URL pública **continúa sirviendo el formulario viejo** hasta que se autorice y ejecute un despliegue manual de esa vista de Render, que tiene `autoDeploy=no`. **NO afirmar que el formulario público quedó reparado**, ni enviar enlaces de reintento como si hubiera cambiado.
 - Antes de considerar el incidente resuelto: aprobar despliegue **solo del sitio de prueba**, verificar el HTML servido y realizar una única consulta ficticia voluntaria para comprobar FormSubmit y recepción en Gmail. No fusionar `main` ni cambiar la web pública oficial.
+
+
+## Confirmación de aceptación y entrega pendiente — 07/11/2026
+
+**Este registro reemplaza el estado de despliegue pendiente descrito en la sección anterior.**
+
+- **Despliegue autorizado y ejecutado solo en la vista previa:** Render `dep-dbnqk3tg1s2s73ddqugg`, commit `270436174d6016425cef999f7923c9c58e9a8a49`, estado `live`, 14 páginas y 15 pruebas Node del build aprobadas. La web oficial FastAPI y `main` permanecieron intactos.
+- El HTML público de la vista previa fue comprobado con HTTP 200 y `<form ... target="_blank" rel="noopener">` (sin `noreferrer`); el `main.js` publicado incluye actualización de `_url` al origen HTTPS y ruta. El extractor de HTML puede omitir campos ocultos; el build y las pruebas verifican los campos, pero esa inspección del extractor no certifica su visualización.
+- **Prueba real voluntaria del usuario:** captura de la página de respuesta de FormSubmit mostrando `Thanks! The form was submitted successfully. Return to original site: https://fluynova-comercial-estatica-preview.onrender.com/`. Esto confirma **aceptación por FormSubmit**; no demuestra por sí solo entrega al correo destinatario.
+- **Búsqueda inmediata en Gmail conectado `contacto.fluynova@gmail.com`:** `in:anywhere after:2026/11/07`, bandeja, spam, papelera y búsquedas específicas de FormSubmit: **ningún correo nuevo visible**. Una búsqueda sin filtro devolvió como últimos mensajes de FormSubmit dos pruebas anteriores del 30/10/2026 en la papelera, más un mensaje de activación antiguo correspondiente a la web oficial. No apareció una activación reciente para la vista previa.
+- La documentación del proveedor explica que los envíos de un formulario aún no activado pueden quedar retenidos hasta la activación del destinatario, con retención limitada a 30 días: https://formsubmit.co/help. **No está demostrado que esa sea la causa aquí**; también son posibles demora, filtrado o fallo de entrega del proveedor.
+- **Estado de aceptación:** formulario cliente→FormSubmit **PASS**, entrega FormSubmit→Gmail **NO COMPROBADA**. No marcar como circuito comercial operativo ni migrar producción hasta ver una consulta realmente recibida y revisar cómo funciona la activación en este origen.
+- No se enviaron mensajes desde herramientas durante la verificación del buzón ni se contactó soporte de FormSubmit.
