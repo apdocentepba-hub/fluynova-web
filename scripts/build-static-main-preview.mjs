@@ -41,6 +41,14 @@ export function transformHtml(html,{home=false}={}){
   html=html.replace(/<body\b([^>]*)>/i,(_m,a)=>'<body'+a+'>\n'+BANNER);
   if(!home)return html;
 
+  // Evitar mensajes engañosos heredados de la versión dinámica.
+  for(const [oldValue,newValue] of [
+    ['Acepto el uso de mis datos para responder a esta consulta y su transmisión mediante FormSubmit como proveedor del formulario.',
+     'Vista de revisión: el formulario está deshabilitado y no envía información. Podés escribir voluntariamente desde tu aplicación de correo.'],
+    ['El formulario utiliza FormSubmit como intermediario del envío. No compartas contraseñas ni datos personales sensibles.',
+     'Esta vista técnica no envía formularios. No compartas contraseñas ni datos sensibles.'],
+  ]) if(html.includes(oldValue))html=one(html,oldValue,newValue,'aviso de contacto de ensayo');
+
   const disabledAction='id="contact-form" method="POST" action="/#contacto"';
   html=one(html,FORM_ACTION,disabledAction+' data-preview-contact="disabled"','form action');
   // Con el fieldset deshabilitado tampoco se envían campos mediante Enter sin JavaScript.
