@@ -131,6 +131,19 @@ export async function verifyOutput(dest){
       throw Error('Página sin protecciones: '+relative(dest,p));
     }
   }
+  // Control de paridad: una vista puramente estática no debe conservar APIs ocultas
+  // en scripts secundarios ni formularios POST accidentales en páginas interiores.
+  for(const path of paths.filter(p=>extname(p)==='.js')){
+    const jsSource=await readFile(path,'utf8');
+    if(/\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\s*\(|\bEventSource\s*\(/.test(jsSource)){
+      throw Error('Dependencia de red no aprobada: '+relative(dest,path));
+    }
+  }
+  for(const page of htmlPaths){
+    if(page===join(dest,'index.html'))continue;
+    const html=await readFile(page,'utf8');
+    if(/<form\b/i.test(html))throw Error('Formulario secundario no auditado: '+relative(dest,page));
+  }
   const refs=await verifyStaticRoutes(dest);
   return Object.freeze({pages:htmlPaths.length,internalLinks:refs.internal,externalReferences:refs.external,failures:refs.failures.length,contact:'manual-only; automatic disabled',guardian:'offline guided'});
 }
