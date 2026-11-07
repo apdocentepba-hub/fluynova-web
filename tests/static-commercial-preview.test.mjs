@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp, mkdir, writeFile, readFile, rm} from 'node:fs/promises';
 import {join} from 'node:path';
+import {runInNewContext} from 'node:vm';
 import {tmpdir} from 'node:os';
 import {transformHtml, transformMainJs, transformGuardianJs, build, verifyOutput} from '../scripts/build-static-commercial-preview.mjs';
 
@@ -53,6 +54,62 @@ test('homepage provides native POST in new tab, explicit consent and replyto',()
  assert.doesNotMatch(x,/id="alternate-send"/);
  assert.doesNotMatch(x,/type="submit" disabled/);
 });
+test('FormSubmit error regression: sends origin using _url and never suppresses Referrer',()=>{
+ const h=transformHtml(home,true);
+ assert.match(h,/target="_blank" rel="noopener"/);
+ assert.doesNotMatch(h,/rel="[^"]*noreferrer/);
+ assert.match(h,/name="_url" value="https:\/\/fluynova-comercial-estatica-preview\.onrender\.com\/"/);
+ assert.match(h,/name="_replyto" value=""/);
+ const js=transformMainJs(main);
+ assert.match(js,/source.value=window.location.origin\+window.location.pathname/);
+ assert.match(js,/window.location.protocol!=='https:'/);
+ assert.doesNotMatch(js,/window.location.search|window.location.hash/);
+});
+
+function simulateNativeSubmit({protocol='https:',honeypot='',valid=true,action='https://formsubmit.co/contacto.fluynova@gmail.com',sourcePresent=true}={}){
+ const code=transformMainJs(main);
+ const begin=code.indexOf("form?.addEventListener('submit',event=>{");
+ const finish=code.indexOf('// Respaldo manual:',begin);
+ assert.ok(begin>=0&&finish>begin);
+ const subject={value:'original'}, reply={value:''}, source={value:'default'};
+ const input=key=>({_subject:subject,_replyto:reply,_url:sourcePresent?source:null})[key];
+ let callback;
+ const form={
+  addEventListener:(_name,cb)=>{callback=cb},
+  getAttribute:key=>key==='method'?'POST':key==='action'?action:null,
+  querySelector:selector=>selector.includes('_subject')?input('_subject'):
+   selector.includes('_replyto')?input('_replyto'):selector.includes('_url')?input('_url'):null,
+  reportValidity:()=>{}
+ };
+ const alerts=[];let cancelled=false;
+ runInNewContext(code.slice(begin,finish),{
+  form,
+  window:{location:{protocol,origin:'https://fluynova-comercial-estatica-preview.onrender.com',
+   pathname:'/webs/',search:'?utm_source=test',hash:'#contacto'}},
+  currentLead:()=>({website:honeypot,category:'Automatizar tareas',email:'ficticio@example.invalid'}),
+  leadValidationError:()=>valid?'':'Datos inválidos',
+  feedback:msg=>alerts.push(msg)
+ },{timeout:500});
+ assert.equal(typeof callback,'function');
+ callback({preventDefault:()=>{cancelled=true}});
+ return {cancelled,subject,reply,source,alerts};
+}
+test('POST nativo validado incluye URL sin UTM, Reply-To y asunto antes de navegar',()=>{
+ const result=simulateNativeSubmit();
+ assert.equal(result.cancelled,false);
+ assert.equal(result.source.value,'https://fluynova-comercial-estatica-preview.onrender.com/webs/');
+ assert.equal(result.reply.value,'ficticio@example.invalid');
+ assert.equal(result.subject.value,'FLUYNOVA | Nueva consulta: Automatizar tareas');
+});
+test('el formulario aborta si no tiene _url, usa HTTP, cambia destino o contiene honeypot',()=>{
+ for(const scenario of [{sourcePresent:false},{protocol:'http:'},{action:'https://evil.invalid'},
+   {honeypot:'spam'},{valid:false}]){
+  const r=simulateNativeSubmit(scenario);
+  assert.equal(r.cancelled,true,JSON.stringify(scenario));
+  assert.equal(r.subject.value,'original');
+ }
+});
+
 test('invalid home changes cause a fail-closed build',()=>{
  assert.throws(()=>transformHtml('<html><head></head><body></body></html>',true),/Acción de formulario no autorizada/);
 });
