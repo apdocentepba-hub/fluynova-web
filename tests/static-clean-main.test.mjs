@@ -84,6 +84,13 @@ test('build real en fixture aislado, sin tocar origen y detectando 9 páginas',a
   assert.match(headers,/X-Robots-Tag: noindex, nofollow/);
   assert.match(headers,/X-Content-Type-Options: nosniff/);
   await verifyOutput(dest);
+  const unexpectedScript=join(dest,'unapproved.js');
+  await writeFile(unexpectedScript,"fetch('/api/hidden').then(()=>{});");
+  await assert.rejects(verifyOutput(dest),/Dependencia de red no aprobada/);
+  await rm(unexpectedScript);
+  const rogueForm=join(dest,'pagina0','index.html');
+  await writeFile(rogueForm,'<html><head><meta name="robots" content="noindex,nofollow,noarchive"></head><body><div data-static-preview="true"></div><form action="https://third-party.invalid" method="POST"></form></body></html>');
+  await assert.rejects(verifyOutput(dest),/Formulario secundario no auditado/);
  }finally{await rm(root,{recursive:true,force:true})}
 });
 test('el build no puede borrar el código fuente ni construir en un subdirectorio',async()=>{
