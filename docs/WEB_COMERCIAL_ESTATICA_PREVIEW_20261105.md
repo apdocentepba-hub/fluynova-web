@@ -79,3 +79,15 @@
 **Límites críticos:** no se ejecutó envío controlado de FormSubmit ni recepción actual en Gmail. La prueba no valida páginas externas, accesibilidad móvil completa, rendimiento, disponibilidad sostenida o legalidad del tratamiento de datos. El build de vista previa conserva `noindex`, aviso de laboratorio y dirección canónica de la web oficial; **no es un artefacto listo para sustituir producción**.
 
 **Próxima puerta de aceptación:** recepción end-to-end de un mensaje ficticio autorizado, auditoría visual/teclado en navegador real, decisiones de dominio y SEO, reversión y autorización específica antes de publicar.
+
+
+## Incidente real de formulario — 07/11/2026, captura del visitante
+
+- Al pulsar **Enviar mi consulta** desde la vista `https://fluynova-comercial-estatica-preview.onrender.com/`, el proveedor abrió una pestaña `https://formsubmit.co/contacto.fluynova@gmail.com` y respondió **“Unable to submit form — Make sure you open this page through a web server”**. No hubo confirmación de recepción.
+- El HTML publicado tenía `<form ... target="_blank" rel="noopener noreferrer">` y carecía de un campo `_url`. Esto elimina la referencia de origen y está alineado con la causa documentada oficialmente por FormSubmit: https://formsubmit.co/help, sección “Why am I always getting an error Unable to submit form?” La FAQ recomienda `<input type="hidden" name="_url" value="https://...">`.
+- **Corrección implementada en rama de desarrollo, NO en la URL pública**: conservar `rel="noopener"` sin `noreferrer`, incorporar `_url` con valor por defecto de la URL HTTPS exacta de esta vista y actualizarla con `window.location.origin + window.location.pathname` en el evento de envío, sin parámetros UTM ni fragmentos. Se verifica el protocolo HTTPS y la existencia del campo antes de permitir el `POST`.
+- Nuevas pruebas de regresión: control de presencia de campo, no supresión de la cabecera Referer en el formulario y simulación real del manejador `submit`, incluyendo rechazo por honeypot, datos inválidos, destino alterado, HTTP y ausencia de `_url`.
+- GitHub Actions: https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42420542283 — **SUCCESS**, **19/19 tests PASS**, 14 páginas compiladas y 145 referencias internas válidas. No se envió correo ni formulario para ejecutar esa prueba.
+- La búsqueda posterior en Gmail FLUYNOVA de mensajes FormSubmit recientes del 07/11 devolvió **0 coincidencias**. Esto no demuestra que no haya mensajes en cualquier momento, pero es consistente con el rechazo mostrado.
+- La URL pública **continúa sirviendo el formulario viejo** hasta que se autorice y ejecute un despliegue manual de esa vista de Render, que tiene `autoDeploy=no`. **NO afirmar que el formulario público quedó reparado**, ni enviar enlaces de reintento como si hubiera cambiado.
+- Antes de considerar el incidente resuelto: aprobar despliegue **solo del sitio de prueba**, verificar el HTML servido y realizar una única consulta ficticia voluntaria para comprobar FormSubmit y recepción en Gmail. No fusionar `main` ni cambiar la web pública oficial.
