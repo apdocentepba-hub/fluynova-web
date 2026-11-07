@@ -6,6 +6,7 @@ import {tmpdir} from 'node:os';
 import {transformHtml,transformMainJs,transformGuardianJs,build,verifyOutput} from '../scripts/build-static-main-preview.mjs';
 
 const html='<html><head><meta name="robots" content="index,follow"></head><body>'+
+  '<div>También podés contactarnos por correo</div>'+
   '<form id="contact-form" method="POST" action="https://formsubmit.co/contacto.fluynova@gmail.com">'+
   '<input type="hidden" name="_subject" value="Test">'+
   '<label><input name="email" type="email"></label>'+
@@ -31,6 +32,7 @@ test('el formulario no puede emitir un POST real aunque el visitante pulse Enter
   assert.match(out,/action="\/#contacto"/);
   assert.match(out,/data-preview-manual-contact="true"/);
   assert.match(out,/mailto:contacto\.fluynova@gmail\.com/);
+  assert.match(out,/También podés contactarnos por correo/);
   assert.match(out,/href="\/privacidad.html"/);
 });
 test('todas las páginas quedan noindex y con aviso de vista previa',()=>{
@@ -77,6 +79,10 @@ test('build real en fixture aislado, sin tocar origen y detectando 9 páginas',a
   assert.equal(await readFile(join(src,'index.html'),'utf8'),original);
   await assert.rejects(readFile(join(dest,'sitemap.xml'),'utf8'));
   assert.match(await readFile(join(dest,'robots.txt'),'utf8'),/Disallow: \//);
+  assert.match(await readFile(join(dest,'_redirects'),'utf8'),/^\/privacidad \/privacidad\.html 200/m);
+  const headers=await readFile(join(dest,'_headers'),'utf8');
+  assert.match(headers,/X-Robots-Tag: noindex, nofollow/);
+  assert.match(headers,/X-Content-Type-Options: nosniff/);
   await verifyOutput(dest);
  }finally{await rm(root,{recursive:true,force:true})}
 });
