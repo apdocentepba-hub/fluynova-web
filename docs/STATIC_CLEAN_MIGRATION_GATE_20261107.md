@@ -43,3 +43,16 @@
 - No crear ni activar servicios pagos sin aprobación.
 
 **Decisión actual: APTO PARA REVISIÓN TÉCNICA OFFLINE; NO APTO PARA PRODUCCIÓN.**
+
+
+## Actualización de migración — 07/11/2026
+
+- Se incorporó a esta rama la versión exacta del `static/index.html` de `main` correspondiente al commit `1504e396a2e490b52d15932f9ad1a5fc389dc53b`. **El contacto directo `contacto.fluynova@gmail.com` queda visible también en la versión estática candidata.**
+- El compilador de ensayo no modifica el formulario en producción. En el artefacto generado el envío automático queda deshabilitado y el enlace `mailto:` queda disponible. Todas las páginas siguen **noindex**, sin sitemap.
+- Se generan archivos propios de Cloudflare Pages: `_redirects` con compatibilidad `/privacidad` → `/privacidad.html` y `_headers` con exclusión de indexación, nosniff, Referrer-Policy y restricciones de permisos. Estos ficheros **no afectan a Render** mientras no se publique esta rama.
+- GitHub Actions [run 42427433316](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42427433316): **SUCCESS**; el build validó 12 HTML y 128 enlaces internos sin referencias rotas.
+- El control de formulario del repositorio [run 42427425020](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42427425020) también volvió a **SUCCESS** tras separar por completo el backend: no modificar backend/infra dentro del PR web.
+- El receptor persistente Cloudflare Worker+D1 está aislado en el **[PR #22](https://github.com/apdocentepba-hub/fluynova-web/pull/22)**, con pruebas offline. Ninguna D1 propia fue creada, ningún Turnstile real configurado ni endpoint publicado.
+- Las rutas dinámicas del servidor original `/api/config`, `/api/contact`, `/api/health`, `/admin` y `/api/guardian/*` **no quedan automáticamente migradas por un exportador HTML**. El administrador y los mensajes deben tener backend privado y almacenamiento propio antes de retirar FastAPI.
+
+**Decisión:** apto para seguir las pruebas de migración estática; no apto para redirigir tráfico o desactivar el servicio actual. Prioridad: GUARDIÁN guiado, contacto visible y receptor D1 independiente con persistencia real comprobada.
