@@ -31,7 +31,12 @@ if(form){
  const fromWebSales=referral.get('utm_source')==='webs' && referral.get('utm_campaign')==='webs_202611';
  const fromInstagramWebs=referral.get('utm_source')==='instagram' &&
    referral.get('utm_content')==='webs' && referral.get('utm_campaign')==='perfil_ig_202611';
- if(fromWebSales||fromInstagramWebs){
+ // Solo demos de diseño web propias; no confiamos en UTMs arbitrarias de terceros.
+ const fromLaboratorioWebs=referral.get('utm_source')==='laboratorio' &&
+   referral.get('utm_medium')==='portfolio' &&
+   referral.get('utm_campaign')==='demostraciones_202611' &&
+   ['pasteleria','distribuidora'].includes(referral.get('utm_content'));
+ if(fromWebSales||fromInstagramWebs||fromLaboratorioWebs){
   const cat=form.elements.namedItem('category');
   if(cat)cat.value='Crear página web / catálogo digital';
  }
@@ -202,6 +207,68 @@ form?.addEventListener('submit',async event=>{
   sendButton.innerHTML='Enviar mi consulta <span aria-hidden="true">↗</span>';
  }
 });
+// Respaldo manual: solo genera texto en esta pestaña. Sin almacenamiento ni envío externo.
+const prepareEmail=document.getElementById('prepare-email');
+const manualEmailPanel=document.getElementById('manual-email-panel');
+const manualEmailText=document.getElementById('manual-email-text');
+const manualEmailHelp=document.getElementById('manual-email-help');
+const manualEmailLink=document.getElementById('open-email-client');
+const manualEmailStatus=document.getElementById('manual-email-status');
+const copyEmailText=document.getElementById('copy-email-text');
+function draftTextForEmail(v){
+ const lines=['Hola, equipo de FLUYNOVA:','','Quiero consultar por una solución digital.','',
+  'Nombre: '+v.name,'Correo para responder: '+v.email,
+  'Servicio: '+v.category];
+ if(v.organization)lines.push('Empresa o institución: '+v.organization);
+ if(v.deadline)lines.push('Plazo orientativo: '+v.deadline);
+ if(v.stage)lines.push('Estado del proyecto: '+v.stage);
+ if(v.budget)lines.push('Presupuesto: '+v.budget);
+ lines.push('','Necesidad:',v.message);
+ if(v.source)lines.push('','Origen de la consulta: '+[v.source,v.medium,v.campaign,v.creative].filter(Boolean).join(' / '));
+ lines.push('','Este mensaje fue preparado por mí desde la web de FLUYNOVA y lo enviaré voluntariamente desde mi correo.');
+ return lines.join('\n');
+}
+function clearManualDraft(){
+ if(manualEmailPanel)manualEmailPanel.hidden=true;
+ if(manualEmailText)manualEmailText.value='';
+ if(manualEmailStatus)manualEmailStatus.textContent='';
+ if(manualEmailLink)manualEmailLink.href='mailto:'+CONTACT_EMAIL+'?subject=Consulta%20FLUYNOVA';
+}
+form?.addEventListener('input',clearManualDraft);
+form?.addEventListener('change',clearManualDraft);
+form?.addEventListener('reset',clearManualDraft);
+prepareEmail?.addEventListener('click',()=>{
+ if(!form||!manualEmailPanel||!manualEmailText||!manualEmailLink)return;
+ const v=currentLead();
+ if(v.website){feedback('Revisá los campos del formulario.','error');return;}
+ const error=leadValidationError(v);
+ if(error){feedback(error,'error');form.reportValidity?.();return;}
+ const content=draftTextForEmail(v);
+ manualEmailText.value=content;
+ const subject=encodeURIComponent('FLUYNOVA | Consulta: '+v.category);
+ const encoded=encodeURIComponent(content);
+ // Para cuerpos largos, evitar enlaces mailto que distintos clientes de correo truncan.
+ const canPrefill=encoded.length<=1700;
+ manualEmailLink.href='mailto:'+CONTACT_EMAIL+'?subject='+subject+(canPrefill?'&body='+encoded:'');
+ if(manualEmailHelp)manualEmailHelp.textContent=canPrefill?
+   'Tu aplicación de correo abrirá un borrador. Revisalo y elegí vos si enviarlo. También podés copiar el texto.':
+   'El mensaje es largo: copiá todo el texto y pegalo en tu correo para evitar que se corte. Abrir el correo no lo envía automáticamente.';
+ manualEmailPanel.hidden=false;
+ if(manualEmailStatus)manualEmailStatus.textContent='Consulta preparada, todavía no enviada.';
+ manualEmailText.focus({preventScroll:true});
+});
+copyEmailText?.addEventListener('click',async()=>{
+ if(!manualEmailPanel||manualEmailPanel.hidden||!manualEmailText?.value)return;
+ try{
+  if(!navigator.clipboard?.writeText)throw new Error('Sin acceso al portapapeles');
+  await navigator.clipboard.writeText(manualEmailText.value);
+  manualEmailStatus.textContent='Texto copiado. Pegalo en un correo y elegí enviarlo vos.';
+ }catch{
+  manualEmailText.focus();manualEmailText.select();
+  manualEmailStatus.textContent='Seleccioné el texto. Copialo con Ctrl+C y pegalo en tu correo.';
+ }
+});
+
 // Respaldo sin AJAX: un POST HTML normal a FormSubmit, con confirmación de su página.
 alternateSend?.addEventListener('click',()=>{
  if(!pendingLead||!form||!contactEnabled)return;

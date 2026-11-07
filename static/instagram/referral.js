@@ -1,4 +1,5 @@
-/* FLUYNOVA: preserve explicit Instagram campaign tags across service CTAs.
+/* FLUYNOVA: preserve explicit campaign tags across service CTAs.
+   Supports Instagram and our own portfolio /laboratorio/ only.
    No storage, cookies, analytics beacon, network calls or browser redirects.
    Only updates same-origin links to /#contacto and /diagnostico/.
 */
@@ -7,39 +8,35 @@
 
   const PARAMS=["utm_source","utm_medium","utm_campaign","utm_content"];
   const SAFE=/^[A-Za-z0-9_.-]{1,90}$/;
+  const SOURCE_CAMPAIGNS=Object.freeze({
+    instagram:null,
+    laboratorio:"demostraciones_202611"
+  });
 
-  function rewriteReferralLink(href, search, origin){
-    if(typeof href!=="string"||typeof search!=="string"||typeof origin!=="string"){
-      return href;
-    }
+  function rewriteReferralLink(href,search,origin){
+    if(typeof href!=="string"||typeof search!=="string"||typeof origin!=="string")return href;
     const inbound=new URLSearchParams(search);
-    if(inbound.get("utm_source")!=="instagram")return href;
+    const source=inbound.get("utm_source");
+    if(!Object.prototype.hasOwnProperty.call(SOURCE_CAMPAIGNS,source))return href;
     const values=new URLSearchParams();
     for(const key of PARAMS){
       const value=inbound.get(key);
-      if(value && SAFE.test(value))values.set(key,value);
+      if(value&&SAFE.test(value))values.set(key,value);
     }
-    if(values.get("utm_source")!=="instagram" || !values.has("utm_campaign")){
-      return href;
-    }
+    if(values.get("utm_source")!==source || !values.has("utm_campaign"))return href;
+    const requiredCampaign=SOURCE_CAMPAIGNS[source];
+    if(requiredCampaign&&values.get("utm_campaign")!==requiredCampaign)return href;
 
     let original;
-    try{original=new URL(href,origin);}
-    catch(_){return href;}
+    try{original=new URL(href,origin);}catch{return href;}
     if(original.origin!==origin)return href;
-
-    const contact = original.pathname==="/" && original.hash==="#contacto";
-    const diagnostic = original.pathname==="/diagnostico/";
+    const contact=original.pathname==="/"&&original.hash==="#contacto";
+    const diagnostic=original.pathname==="/diagnostico/";
     if(!contact&&!diagnostic)return href;
-
-    // Preserve campaign provenance; never auto-submit any contact form.
-    const query=values.toString();
-    return original.pathname+"?"+query+(original.hash||"");
+    return original.pathname+"?"+values.toString()+(original.hash||"");
   }
 
-  if(typeof module!=="undefined"&&module.exports){
-    module.exports={rewriteReferralLink};
-  }
+  if(typeof module!=="undefined"&&module.exports)module.exports={rewriteReferralLink};
   if(root&&root.document&&root.location){
     for(const anchor of root.document.querySelectorAll("a[href]")){
       const previous=anchor.getAttribute("href");
