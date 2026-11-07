@@ -107,14 +107,20 @@ export async function verifyOutput(dest){
   const js=await readFile(join(dest,'main.js'),'utf8');
   const guardian=await readFile(join(dest,'guardian','guardian.js'),'utf8');
   const robots=await readFile(join(dest,'robots.txt'),'utf8');
+  const redirects=await readFile(join(dest,'_redirects'),'utf8');
+  const headers=await readFile(join(dest,'_headers'),'utf8');
   if(htmlPaths.length<9||!root.includes('data-preview-contact="disabled"')||
      !root.includes('<fieldset disabled')||!root.includes('data-preview-manual-contact="true"')||
      !root.includes('type="submit" disabled aria-disabled="true"')||
      /action=["']https:\/\/formsubmit\.co/i.test(root)||
      !root.includes('action="/#contacto"')||!root.includes('mailto:'+MAIL)||
+     !root.includes('También podés contactarnos por correo')||
      !js.includes('contactEnabled=false;')||
      /\bfetch\s*\(/.test(js)||/\bfetch\s*\(/.test(guardian)||
-     !/Disallow: \//.test(robots)||paths.some(p=>p.endsWith('/sitemap.xml'))){
+     !/Disallow: \//.test(robots)||!redirects.includes('/privacidad /privacidad.html 200')||
+     !headers.includes('X-Robots-Tag: noindex, nofollow')||
+     !headers.includes('X-Content-Type-Options: nosniff')||
+     paths.some(p=>p.endsWith('/sitemap.xml'))){
     throw Error('Falló validación de aislamiento estático');
   }
   for(const p of htmlPaths){
@@ -146,6 +152,18 @@ export async function build({sourceDir,outputDir}={}){
   }
   await rm(join(dest,'sitemap.xml'),{force:true});
   await writeFile(join(dest,'robots.txt'),'User-agent: *\nDisallow: /\n','utf8');
+  // Compatibilidad de rutas y cabeceras para la futura publicación en Cloudflare Pages.
+  // Solo se producen dentro del artefacto noindex: no afectan al sitio actual.
+  await writeFile(join(dest,'_redirects'),'/privacidad /privacidad.html 200\n','utf8');
+  await writeFile(join(dest,'_headers'),[
+    '/*',
+    '  X-Robots-Tag: noindex, nofollow',
+    '  X-Content-Type-Options: nosniff',
+    '  Referrer-Policy: strict-origin-when-cross-origin',
+    '  Permissions-Policy: camera=(), microphone=(), geolocation=()',
+    '  X-Frame-Options: DENY',
+    '',
+  ].join('\n'),'utf8');
   return verifyOutput(dest);
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
