@@ -30,10 +30,12 @@ const SCRIPTS_NATIVE=[
 " const invalid=leadValidationError(v);",
 " const subject=form.elements.namedItem('_subject');",
 " const reply=form.elements.namedItem('_replyto');",
+" const source=form.elements.namedItem('_url');",
 " if(v.website||invalid||!form.checkValidity()||",
 "    form.getAttribute('action')!=='https://formsubmit.co/contacto.fluynova@gmail.com'||",
 "    form.getAttribute('method')?.toUpperCase()!=='POST'||",
-"    !subject||!reply||!form.elements.namedItem('consent')?.checked){",
+"    !subject||!reply||!source||!form.elements.namedItem('consent')?.checked||",
+"    window.location.protocol!=='https:'){",
 "  event.preventDefault();",
 "  feedback(invalid||'No se pudo validar el formulario. Revisá los datos.','error');",
 "  form.reportValidity?.();",
@@ -41,6 +43,7 @@ const SCRIPTS_NATIVE=[
 " }",
 " subject.value='FLUYNOVA | Nueva consulta: '+v.category;",
 " reply.value=v.email;",
+" source.value=window.location.origin+window.location.pathname;",
 " // Se abre una pestaña del proveedor. Solo su confirmación y Gmail prueban entrega.",
 " feedback('Se abrirá FormSubmit. Revisá su confirmación; esto todavía no acredita la llegada a Gmail.','');",
 "});",
@@ -57,7 +60,7 @@ export function makeNativeHtml(originalHtml){
  out=replaceExactly(out,BANNER_OLD,BANNER_NEW,'banner de entorno interno');
  out=replaceExactly(out,ORIGINAL_ACTION,CANDIDATE_ACTION,'acción única POST');
  out=replaceExactly(out,'<input type="hidden" name="_template" value="table">',
-   '<input type="hidden" name="_template" value="table"><input type="hidden" name="_replyto" value="">','Reply-To');
+   '<input type="hidden" name="_template" value="table"><input type="hidden" name="_replyto" value=""><input type="hidden" name="_url" value="">','Reply-To y URL de origen');
  const oldNote='El formulario utiliza FormSubmit como intermediario del envío. No compartas contraseñas ni datos personales sensibles.';
  if(out.includes(oldNote))
   out=replaceExactly(out,oldNote,
@@ -89,6 +92,7 @@ export async function verifyNativeCandidate(dest){
  if(count(/data-native-candidate="true"/g,html)!==1||
     count(/action="https:\/\/formsubmit\.co\/contacto\.fluynova@gmail\.com"/g,html)!==1||
     !html.includes('method="POST"')||!html.includes('name="_replyto"')||
+    !html.includes('name="_url" value=""')||
     !html.includes('name="_honey"')||!html.includes('name="consent" required')||
     !html.includes('name="_template" value="table"')||
     !html.includes('data-static-preview="true"')||!html.includes(BANNER_NEW)||
@@ -98,7 +102,9 @@ export async function verifyNativeCandidate(dest){
     !html.includes('mailto:'+MAIL)||
     !script.includes("form?.addEventListener('submit',event=>")||
     !script.includes("const invalid=leadValidationError(v)")||
-    !script.includes("reply.value=v.email;")||!script.includes("contactEnabled=true;")||
+    !script.includes("reply.value=v.email;")||
+    !script.includes("source.value=window.location.origin+window.location.pathname;")||
+    !script.includes("contactEnabled=true;")||
     /\bfetch\s*\(/.test(script)||/\bfetch\s*\(/.test(guardian)||
     !/Disallow: \//.test(robots))
   throw new Error('El artefacto no cumple la puerta de entrega estática de laboratorio');
