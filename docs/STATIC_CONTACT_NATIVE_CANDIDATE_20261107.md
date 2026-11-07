@@ -6,7 +6,7 @@
 
 La web comercial actual usa Python FastAPI para entregar archivos y para `/api/config`. Como el plan gratuito de Render puede presentar arranques en frío (HTTP 503 observado), se preparó un archivo estático que no depende de ese servidor para mostrar las páginas.
 
-Para recibir consultas sin montar otro backend, FormSubmit documenta `POST` HTML nativo, correo de activación y opciones `_subject`, `_replyto`, `_honey`, `_template` y reCAPTCHA. El resultado de un POST o de un GET de configuración no demuestra entrega a Gmail.
+Para recibir consultas sin montar otro backend, FormSubmit documenta `POST` HTML nativo, correo de activación y opciones `_subject`, `_replyto`, `_honey`, `_template` y reCAPTCHA. El resultado de un POST o de un GET de configuración no demuestra entrega a Gmail. La FAQ oficial recomienda el campo `_url` para identificar la ruta de origen cuando el navegador no transmite una referencia completa.
 
 Fuentes: https://formsubmit.co/documentation y https://formsubmit.co/help.
 
@@ -28,16 +28,16 @@ Fuentes: https://formsubmit.co/documentation y https://formsubmit.co/help.
 - Genera `dist-static-native-contact-candidate/` en el equipo que ejecuta el comando.
 - **No crea ni despliega un sitio.** Advertencia: si alguien sirve ese directorio y pulsa Enviar, se podrían transmitir datos reales a FormSubmit. No distribuirlo ni alojarlo antes de las autorizaciones.
 - `<form method="POST" action="https://formsubmit.co/contacto.fluynova@gmail.com">` a través del HTML nativo, abriendo la respuesta del proveedor en otra pestaña. No usa `fetch`, AJAX ni API de FastAPI.
-- `_subject` toma la categoría validada, `_replyto` el correo indicado. `_template=table`; `_honey` queda activo. No se desactiva el CAPTCHA predeterminado del proveedor.
+- `_subject` toma la categoría validada, `_replyto` el correo indicado y `_url` guarda exclusivamente origen HTTPS y ruta, sin parámetros de seguimiento ni fragmentos. `_template=table`; `_honey` queda activo. No se desactiva el CAPTCHA predeterminado del proveedor.
 - Nombre, correo, categoría, mensaje y consentimiento se validan en navegador; el formulario no se presenta como enviado antes de recibir confirmación. El enlace `mailto:` permanece disponible.
 - Ambas variantes conservan el contenido de `static/` sin modificarlo. GUARDIÁN no transfiere conversaciones a proveedores de IA.
 - El banner visible aclara que es un ambiente interno. Todas las páginas siguen `noindex,nofollow,noarchive`; el artefacto no publica sitemap.
 
 ## Evidencia automática verificada
 
-- GitHub Actions: https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42419539403
-- Commit probado: `f10e1b1830b782fd75718a99468c6032814b79fd`.
-- **19/19 pruebas Node PASS**, 0 FAIL. Ocho pruebas nuevas del formulario nativo: conservación de controles de consentimiento y honeypot, rechazo de campos inválidos, destino modificado y trampa de bot, conformación de asunto/Reply-To, construcción desde el árbol real del repositorio, verificación de rutas y detección de alteraciones.
+- GitHub Actions (última verificación tras el campo `_url`): https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42419772361
+- Commit probado: `fa2b8c83322def3b3910b19d8d325ee0744e6638`.
+- **19/19 pruebas Node PASS**, 0 FAIL. Ocho pruebas nuevas del formulario nativo: conservación de controles de consentimiento y honeypot, rechazo de campos inválidos, destino modificado, HTTP sin TLS y trampa de bot, conformación de asunto/Reply-To/URL de origen sin UTM, construcción desde el árbol real, verificación de rutas y detección de alteraciones.
 - El workflow también compiló la variante bloqueada desde `main` y verificó **12 páginas**, **128 referencias internas válidas** y **0 referencias faltantes**.
 - En las pruebas de envío **NO se hizo tráfico HTTP**: el evento submit se ejecutó en un entorno simulado de JavaScript y se comprobó si habría cancelado o permitido el POST.
 - El build de la variante nativa fue ejecutado en carpeta temporal durante los tests y eliminado. NO existe una URL pública nueva.
