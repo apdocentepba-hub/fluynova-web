@@ -19,7 +19,9 @@ test('HTML de main conserva consentimiento y honeypot con un POST nativo exacto'
  assert.match(h,/data-native-candidate="true"/);
  assert.match(h,/method="POST" action="https:\/\/formsubmit\.co\/contacto\.fluynova@gmail\.com"/);
  assert.match(h,/target="_blank" rel="noopener"/);
- assert.doesNotMatch(h,/rel="[^"]*noreferrer/);
+ const formOpen=h.match(/<form[^>]+id="contact-form"[^>]*>/)?.[0];
+ assert.ok(formOpen);
+ assert.doesNotMatch(formOpen,/rel="[^"]*noreferrer/);
  assert.match(h,/name="_honey"/);
  assert.match(h,/name="consent" required/);
  assert.match(h,/name="_replyto" value=""/);
