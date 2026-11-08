@@ -24,7 +24,7 @@ test('el staging no recibe consultas incluso después de conectarlo a GitHub',()
  assert.equal(config.vars.ALLOWED_ORIGINS,'https://fluynova-staging.invalid');
  assert.equal(config.vars.TURNSTILE_HOSTNAMES,'fluynova-staging.invalid');
  assert.equal(config.observability.enabled,false);
- assert.deepEqual(config.triggers.crons,['0 4 * * *']);
+ assert.equal(config.triggers,undefined,'El cron se difiere hasta resolver el primer deploy; las pruebas locales conservan la cobertura del scheduler');
 });
 test('no se incluyen secretos ni autorización de tráfico en la configuración',()=>{
  const text=JSON.stringify(config);
