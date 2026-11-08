@@ -22,6 +22,8 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Exigir configuración de receptor cerrado — auditor independiente
+        run: node infra/fluynova-public-intake-worker/release-guard.mjs
       - name: Sintaxis y restricciones de despliegue
         run: |
           node --check infra/fluynova-public-intake-worker/index.mjs
