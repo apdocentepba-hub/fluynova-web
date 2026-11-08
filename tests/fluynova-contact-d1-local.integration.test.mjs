@@ -51,7 +51,12 @@ test('D1 local real: POST válido persiste y se recupera; CORS, bot y consentimi
  });
  try{
   const db=await mf.getD1Database('DB');
-  await db.exec(await readFile(SCHEMA,'utf8'));
+  // D1 exec() interpreta líneas SQL independientemente y no admite comentarios
+  // de archivo como sentencias. Aplicar una por una las mismas instrucciones.
+  const statements=(await readFile(SCHEMA,'utf8')).replace(/^--.*$/gm,'')
+    .split(';').map(text=>text.trim()).filter(Boolean);
+  assert.ok(statements.length>=5);
+  for(const sql of statements)await db.prepare(sql).run();
   const initial=await db.prepare('SELECT COUNT(*) AS total FROM leads').first();
   assert.equal(initial.total,0);
   const badOrigin=await mf.dispatchFetch('https://local.test/api/contact',jsonReq(LEAD,'https://other.example'));
