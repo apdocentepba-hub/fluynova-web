@@ -8,6 +8,7 @@ on:
       - 'infra/fluynova-contact-worker/**'
       - 'tests/fluynova-contact-worker.test.mjs'
       - 'tests/fluynova-contact-d1-local.integration.test.mjs'
+      - 'tests/fluynova-browser-worker-d1.e2e.test.mjs'
       - '.github/workflows/fluynova-contact-d1-qa.yml'
   workflow_dispatch:
 
@@ -38,3 +39,30 @@ jobs:
         run: |
           test -f infra/fluynova-contact-worker/schema.sql
           ! grep -Eq 'service_role|SUPABASE_SERVICE_ROLE|BEGIN PRIVATE KEY|password=' infra/fluynova-contact-worker/index.mjs
+
+  browser-worker-d1-local:
+    needs: lead-ingress-offline
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Worker FLUYNOVA de este PR
+        uses: actions/checkout@v4
+      - name: Checkout exacto del candidato estático PR21 (solo ensayos)
+        uses: actions/checkout@v4
+        with:
+          repository: apdocentepba-hub/fluynova-web
+          ref: 19b0e474e3ace0330b824be3d00ef530e66c124b
+          path: frontend-candidate
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Miniflare + Chromium (versiones fijas sin publicar)
+        run: |
+          npm install --no-save --no-package-lock miniflare@4.20260730.0 playwright@1.65.0
+          npx playwright install --with-deps --only-shell chromium
+      - name: E2E local completo, POST por navegador a D1 con Turnstile interceptado
+        run: node --test tests/fluynova-browser-worker-d1.e2e.test.mjs
