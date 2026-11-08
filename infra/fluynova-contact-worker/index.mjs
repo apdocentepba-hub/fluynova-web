@@ -124,7 +124,18 @@ export function createHandler({fetcher=fetch,clock=()=>Date.now(),uuid=()=>crypt
     const url=new URL(request.url),origin=request.headers.get('origin')||'';
     const allowed=allowedOrigins(env).has(origin);
     if(url.pathname==='/health' && request.method==='GET') {
-      return json({ok:!!(env.DB&&env.TURNSTILE_SECRET_KEY&&env.RATE_HASH_SECRET&&env.TURNSTILE_HOSTNAMES&&env.ENABLE_CONTACT_SUBMISSIONS==='true')},200);
+      // Solo lectura. No consulta ni devuelve clientes o secretos.
+      let databaseReady=false;
+      try{
+        const count=await env.DB.prepare(
+          "SELECT COUNT(*) AS total FROM sqlite_master "+
+          "WHERE type='table' AND name IN ('leads','lead_rate_limit')"
+        ).first();
+        databaseReady=Number(count?.total)===2;
+      }catch{}
+      const accepting=databaseReady&&env.ENABLE_CONTACT_SUBMISSIONS==='true'&&
+        !!(env.TURNSTILE_SECRET_KEY&&env.TURNSTILE_HOSTNAMES&&env.RATE_HASH_SECRET);
+      return json({databaseReady,accepting},databaseReady?200:503);
     }
     if(url.pathname!=='/api/contact')return json({ok:false,error:'NOT_FOUND'},404);
     if(!allowed)return json({ok:false,error:'ORIGIN_NOT_ALLOWED'},403);
