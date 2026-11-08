@@ -161,4 +161,16 @@ export function createHandler({fetcher=fetch,clock=()=>Date.now(),uuid=()=>crypt
     }
   };
 }
-export default { fetch:createHandler() };
+export async function scheduled(controller,env) {
+  // No almacenar indefinidamente huellas HMAC de visitantes.
+  // La marca de tiempo viene del scheduler de Cloudflare, no del navegador.
+  if(!env?.DB)throw Error('D1 binding missing for rate-limit cleanup');
+  const when=controller?.scheduledTime;
+  if(!Number.isFinite(when))throw Error('Invalid scheduled time');
+  const cutoff=Math.floor(when/ISO_HOUR)-48; // Retención máxima aproximada: 48-49 horas
+  const result=await env.DB.prepare(
+    'DELETE FROM lead_rate_limit WHERE hour_bucket < ?'
+  ).bind(cutoff).run();
+  if(result?.success!==true)throw Error('Rate-limit cleanup not confirmed');
+}
+export default { fetch:createHandler(), scheduled };
