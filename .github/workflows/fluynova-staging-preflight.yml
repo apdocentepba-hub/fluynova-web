@@ -9,6 +9,8 @@ on:
       - 'tests/fluynova-contact-worker.test.mjs'
       - 'tests/fluynova-staging-config.test.mjs'
       - 'tests/fluynova-staging-deploy.test.mjs'
+      - 'tests/fluynova-contact-d1-local.integration.test.mjs'
+      - 'tests/fluynova-browser-worker-d1.e2e.test.mjs'
       - '.github/workflows/fluynova-staging-preflight.yml'
   workflow_dispatch:
 
@@ -39,3 +41,32 @@ jobs:
         run: |
           test -f infra/fluynova-contact-worker/wrangler.jsonc
           node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('infra/fluynova-contact-worker/wrangler.jsonc','utf8'));if(c.vars.ENABLE_CONTACT_SUBMISSIONS!=='false'||c.name!=='fluynova-contact-staging-only')process.exit(1)"
+
+  fullstack-d1-browser-offline:
+    needs: verify-closed-staging
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout rama exacta que se despliega a Cloudflare
+        uses: actions/checkout@v4
+      - name: Checkout candidato frontend fijo — solo ejecución aislada
+        uses: actions/checkout@v4
+        with:
+          repository: apdocentepba-hub/fluynova-web
+          ref: 19b0e474e3ace0330b824be3d00ef530e66c124b
+          path: frontend-candidate
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar motor D1 y navegador solo en CI
+        run: |
+          npm install --no-save --no-package-lock --no-audit --no-fund miniflare@4.20260730.0 playwright@1.65.0
+          npx playwright install --with-deps --only-shell chromium
+      - name: Probar persistencia SQL real en D1 LOCAL con Turnstile interceptado
+        run: node --test tests/fluynova-contact-d1-local.integration.test.mjs
+      - name: Probar Chromium real, Worker workerd y D1 LOCAL (4 escenarios)
+        run: node --test tests/fluynova-browser-worker-d1.e2e.test.mjs
