@@ -203,3 +203,44 @@
   .flx-ux-2026 .flow-step{transition:none}
   .flx-ux-2026 .solution-card{transition:none}
 }
+
+/* FLUYNOVA visual QA - tablet nav and focus (candidate only) */
+.flx-ux-2026 .mobile-menu:focus-visible,
+.flx-ux-2026 .menu a:focus-visible,
+.flx-ux-2026 .btn:focus-visible,
+.flx-ux-2026 .solution-card a:focus-visible,
+.flx-ux-2026 :is(input,select,textarea,summary,button):focus-visible {
+  outline:3px solid #ffd18c;
+  outline-offset:3px;
+}
+@media (min-width:801px) and (max-width:1100px) {
+  /* El menú de 8 enlaces no entra cómodamente en una sola fila a ancho tablet. */
+  .flx-ux-2026 .site-header{height:70px}
+  .flx-ux-2026 .mobile-menu{
+    display:flex;flex-direction:column;justify-content:center;gap:4px;
+    border:1px solid #789a85;border-radius:9px;
+    width:44px;height:42px;background:#1b302e
+  }
+  .flx-ux-2026 .mobile-menu span{
+    display:block;background:#caff91;width:19px;height:2px;margin:0 auto
+  }
+  .flx-ux-2026 .menu{
+    display:none;position:absolute;top:69px;left:0;right:0;
+    flex-direction:column;align-items:stretch;gap:7px;
+    max-height:calc(100dvh - 70px);overflow-y:auto;
+    padding:15px max(24px,5vw) 22px;
+    background:#132427;border:1px solid #4c7562;
+    border-top:0;border-radius:0 0 13px 13px;
+    box-shadow:0 20px 40px #0007
+  }
+  .flx-ux-2026 .menu.open{display:flex}
+  .flx-ux-2026 .menu>a{padding:9px 11px;min-height:40px}
+  .flx-ux-2026 .menu .nav-cta{align-self:flex-start}
+}
+@media (max-width:800px){
+  .flx-ux-2026 .menu{
+    max-height:calc(100dvh - 70px);overflow-y:auto;
+    box-shadow:0 20px 40px #0007
+  }
+  .flx-ux-2026 .menu>a{padding:8px 7px;min-height:40px}
+}
