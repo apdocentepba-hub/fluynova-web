@@ -14,6 +14,7 @@ on:
       - 'scripts/build-static-d1-contact-candidate.mjs'
       - 'scripts/contact-d1-staging-client.js'
       - 'tests/static-d1-contact.test.mjs'
+      - 'tests/static-d1-chromium.browser.test.mjs'
       - 'static/**'
       - '.github/workflows/fluynova-static-clean-qa.yml'
   workflow_dispatch:
@@ -62,3 +63,23 @@ jobs:
           grep -q 'Disallow: /' dist-static-main-preview/robots.txt
           ! grep -q 'fetch(' dist-static-main-preview/main.js
           ! grep -q 'fetch(' dist-static-main-preview/guardian/guardian.js
+
+  chromium-offline-e2e:
+    needs: offline-only
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Extraer rama de laboratorio
+        uses: actions/checkout@v4
+      - name: Configurar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright en versión fija sin alterar el repositorio
+        run: npm install --no-save --no-package-lock playwright@1.65.0
+      - name: Instalar Chromium Headless Shell para CI
+        run: npx playwright install --with-deps --only-shell chromium
+      - name: Ejecutar navegador real con red bloqueada y D1 simulada
+        run: node --test tests/static-d1-chromium.browser.test.mjs
