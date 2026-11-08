@@ -194,3 +194,28 @@ test('Chromium: renovación del token durante envío NO habilita un segundo POST
   assert.deepEqual(x.browserErrors,[]);
  }finally{await x.context.close()}
 });
+
+test('Chromium: gráficos del flujo renovados y tarjeta legible en móvil, sin envío',async()=>{
+ const x=await visit();
+ try{
+  const desktop=await x.page.locator('.workflow-card').evaluate(element=>{
+   const css=getComputedStyle(element);
+   return {transform:css.transform,background:css.backgroundImage,border:css.borderTopColor};
+  });
+  assert.equal(desktop.transform,'none','El gráfico principal se presenta alineado');
+  assert.match(desktop.background,/linear-gradient/,'El gráfico usa la nueva capa visual');
+  assert.equal(await x.page.locator('.solution-graphic').count(),3);
+  await x.page.setViewportSize({width:390,height:844});
+  const mobile=await x.page.locator('.workflow-card').evaluate(element=>{
+   const rect=element.getBoundingClientRect();
+   return {left:rect.left,right:rect.right,width:rect.width,viewport:innerWidth};
+  });
+  assert.ok(mobile.width>220&&mobile.width<=mobile.viewport,
+   'El gráfico conserva tamaño usable en pantalla angosta');
+  assert.ok(mobile.left>=-2&&mobile.right<=mobile.viewport+2,
+   'El gráfico no se desborda horizontalmente');
+  assert.equal(x.workerRequests.length,0);
+  assert.deepEqual(x.unexpectedPosts,[]);
+  assert.deepEqual(x.browserErrors,[]);
+ }finally{await x.context.close()}
+});
