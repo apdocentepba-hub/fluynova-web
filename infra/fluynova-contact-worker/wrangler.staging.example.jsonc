@@ -8,7 +8,8 @@
   },
   "vars": {
     "ALLOWED_ORIGINS": "https://REPLACE-WITH-FLUYNOVA-STAGING.invalid",
-    "TURNSTILE_HOSTNAMES": "REPLACE-WITH-FLUYNOVA-STAGING.invalid"
+    "TURNSTILE_HOSTNAMES": "REPLACE-WITH-FLUYNOVA-STAGING.invalid",
+    "ENABLE_CONTACT_SUBMISSIONS": "false"
   },
   "d1_databases": [
     {
