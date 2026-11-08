@@ -13,6 +13,7 @@ test('plantilla staging no se despliega públicamente por defecto',()=>{
  assert.equal(cfg.main,'infra/fluynova-contact-worker/index.mjs');
  assert.deepEqual(cfg.triggers.crons,['0 4 * * *']);
  assert.equal(cfg.observability.enabled,false);
+ assert.equal(cfg.vars.ENABLE_CONTACT_SUBMISSIONS,'false', 'El staging se publica sin recibir consultas');
  assert.ok(!('routes' in cfg)&&!('route' in cfg));
 });
 test('la base D1 del staging coincide con la base exclusiva creada en Cloudflare',()=>{
