@@ -13,7 +13,7 @@ import {Miniflare,createFetchMock} from 'miniflare';
 
 const ENTRY=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/index.mjs',import.meta.url));
 const SCHEMA=fileURLToPath(new URL('../infra/fluynova-contact-worker/schema.sql',import.meta.url));
-const URL='https://public-candidate.invalid/api/contact';
+const ENDPOINT='https://public-candidate.invalid/api/contact';
 const ORIGIN='https://fluynova-lab.invalid';
 const fakeLead={
  name:'Consulta Ficticia',email:'intake-test@example.invalid',
@@ -22,7 +22,7 @@ const fakeLead={
  message:'Necesito un catálogo de prueba con datos inexistentes y sin correo.',
  consent:true,website:'',turnstile_token:'fake-ci-turnstile'
 };
-function request(data=fakeLead,{url=URL,method='POST',origin=ORIGIN}={}){
+function request(data=fakeLead,{url=ENDPOINT,method='POST',origin=ORIGIN}={}){
  const headers={origin,'content-type':'application/json','cf-connecting-ip':'203.0.113.53'};
  const request={method,headers};
  if(method==='POST')request.body=JSON.stringify(data);

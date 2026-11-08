@@ -4,7 +4,6 @@ import {readFileSync} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import worker,{createPublicHandler} from '../infra/fluynova-public-intake-worker/index.mjs';
 
-const URL='https://candidate.example.invalid/api/contact';
 const cfg=JSON.parse(readFileSync(
   fileURLToPath(new URL('../infra/fluynova-public-intake-worker/wrangler.jsonc',import.meta.url)),'utf8'));
 const req=(path='/api/contact',method='POST')=>new Request(
