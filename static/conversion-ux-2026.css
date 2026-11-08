@@ -256,3 +256,18 @@
  }
  .flx-ux-2026 .menu .nav-cta{padding:11px 14px}
 }
+
+/* FLUYNOVA 320px viewport overflow corrections */
+@media(max-width:560px){
+ /* Brillos decorativos: no deben agrandar el ancho desplazable del documento. */
+ .flx-ux-2026 .ambient-one{
+  width:min(100vw,490px);right:0;left:auto
+ }
+ .flx-ux-2026 .ambient-two{
+  width:min(100vw,430px);left:0;right:auto
+ }
+ /* El título de la sección puede tener palabras largas: no imponer min-content. */
+ .flx-ux-2026 .section-top{min-width:0}
+ .flx-ux-2026 .section-top>div{width:100%;min-width:0;max-width:100%}
+ .flx-ux-2026 .section-top h2{max-width:100%;overflow-wrap:anywhere}
+}
