@@ -244,3 +244,15 @@
   }
   .flx-ux-2026 .menu>a{padding:8px 7px;min-height:40px}
 }
+
+/* FLUYNOVA visual QA - desktop header spacing */
+@media (min-width:1101px){
+ .flx-ux-2026 .nav-wrap{gap:24px}
+ .flx-ux-2026 .brand{flex-shrink:0}
+ .flx-ux-2026 .menu{
+   flex:1;justify-content:flex-end;
+   gap:clamp(10px,1.15vw,19px);
+   font-size:12px
+ }
+ .flx-ux-2026 .menu .nav-cta{padding:11px 14px}
+}
