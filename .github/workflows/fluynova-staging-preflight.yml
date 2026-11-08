@@ -1,0 +1,34 @@
+name: FLUYNOVA — preflight staging GitHub (sin deploy)
+
+on:
+  push:
+    branches:
+      - deploy/fluynova-contact-staging
+    paths:
+      - 'infra/fluynova-contact-worker/**'
+      - 'tests/fluynova-contact-worker.test.mjs'
+      - 'tests/fluynova-staging-config.test.mjs'
+      - 'tests/fluynova-staging-deploy.test.mjs'
+      - '.github/workflows/fluynova-staging-preflight.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-closed-staging:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Sintaxis del Worker
+        run: node --check infra/fluynova-contact-worker/index.mjs
+      - name: Contrato, D1 exclusiva y recepción deshabilitada
+        run: node --test tests/fluynova-contact-worker.test.mjs tests/fluynova-staging-config.test.mjs tests/fluynova-staging-deploy.test.mjs
+      - name: Verificar URL de D1 y ausencia de rutas ajenas
+        run: |
+          test -f infra/fluynova-contact-worker/wrangler.jsonc
+          node -e "const fs=require('fs');const c=JSON.parse(fs.readFileSync('infra/fluynova-contact-worker/wrangler.jsonc','utf8'));if(c.vars.ENABLE_CONTACT_SUBMISSIONS!=='false'||c.name!=='fluynova-contact-staging-only')process.exit(1)"
