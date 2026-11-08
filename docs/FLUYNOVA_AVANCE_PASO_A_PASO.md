@@ -13,7 +13,7 @@ Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida cons
 - Sitio comercial Render `https://fluynova-web.onrender.com/` y correo alternativo `contacto.fluynova@gmail.com` deben preservarse. Las demos Cloudflare Pages tienen fallos de publicación separados.
 
 ## Pasos verificables (un hito por interacción, registrar evidencias y bloqueos)
-- [ ] **01. Gráficos del candidato y presentación profesional.** Mejorar diagramas de flujo, tarjetas y ejemplos de panel manteniendo texto honesto de simulación, sin afectar formulario ni producción. Cierre: cambios versionados en PR #21, QA Chromium escritorio y móvil sin POST, CI aprobada.
+- [x] **01. Gráficos del candidato y presentación profesional.** Mejorar diagramas de flujo, tarjetas y ejemplos de panel manteniendo texto honesto de simulación, sin afectar formulario ni producción. Cierre: cambios versionados en PR #21, QA Chromium escritorio y móvil sin POST, CI aprobada.
 - [ ] **02. Calidad visual integral.** Verificar accesibilidad (teclado, contraste, reducción de movimiento), móvil y escritorio; revisar enlaces duplicados y demostraciones en contexto real. Cierre: pruebas y capturas del artefacto aislado, informe de defectos corregidos. Ningún deploy.
 - [ ] **03. Auditoría remota de infraestructura, solo lectura.** Revisar el recurso exacto del Worker privado, configuración y alcance real de Access/WAF, D1 y estado de las dos demos, sin cambiar credenciales ni abrir ruta. Cierre: matriz de activos y bloqueos sustentada en evidencia, con límites claros.
 - [ ] **04. Preparar recepción remota segura.** Definir dominio exclusivo, Turnstile real, secretos protegidos y binding D1 exclusivo. Requiere autorización antes de crear recursos, configurar credenciales, conectar endpoints o subir versiones; checklist de seguridad aprobado.
@@ -30,4 +30,10 @@ Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida cons
 - «Gráficos» en este proyecto significa diagramas y presentación visual **de FLUYNOVA**, no el motor gráfico de otros proyectos.
 
 ## Paso actual
-**01** — estilos del candidato incorporados en rama PR #21; prueba Chromium añadida; pendiente verificar resultado de CI y registrar cierre.
+**PASO 01 — COMPLETADO el 08/11/2026.**
+- CSS del candidato: proceso con jerarquía, grilla sutil, bordes mejor definidos, tarjetas y panel ilustrativos más claros, adaptable a pantallas chicas, reducción de movimiento y foco visible. Los dibujos son ejemplos ficticios, no indicadores reales de clientes.
+- Commits: `0f50a0bb533ed8bc9d9a606b74a61292c4e1291a` (CSS) y `39a34d0ec021ca60e9f50e0604b12a8b41bbd189` (prueba Chromium).
+- Evidencia [GitHub Actions #42532753231](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42532753231): **2/2 jobs SUCCESS**, 29/29 pruebas offline y **6/6 Chromium** (35 distintas); 12 páginas, 129 enlaces internos, 0 rotos. La nueva prueba comprueba estilos CSS en escritorio, tarjeta contenida a 390 px, cero POST inesperados y cero errores JS.
+- El formulario continúa en modo cerrado sin configuración, el correo manual visible. **Ningún deploy, merge ni modificación en main.** No hay captura visual revisada por una persona, solo checks técnicos.
+
+**SIGUIENTE PASO — 02.** Auditoría integral de diseño: capturas de escritorio y móvil, legibilidad y contraste, navegación por teclado, controles de formularios, enlaces redundantes y errores de las demostraciones, sin alterar producción.
