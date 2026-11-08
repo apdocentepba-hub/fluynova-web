@@ -28,12 +28,12 @@ function request(data=fakeLead,{url=ENDPOINT,method='POST',origin=ORIGIN}={}){
  if(method==='POST')request.body=JSON.stringify(data);
  return {url,request};
 }
-async function makeRuntime(bundle,flags){
+async function makeRuntime(bundle,flags,{siteverifySuccess=true,createLeads=true}={}){
  const fetchMock=createFetchMock();
  fetchMock.disableNetConnect();
  fetchMock.get('https://challenges.cloudflare.com')
   .intercept({method:'POST',path:'/turnstile/v0/siteverify'})
-  .reply(200,JSON.stringify({success:true,action:'contact',hostname:'fluynova-lab.invalid'}));
+  .reply(200,JSON.stringify({success:siteverifySuccess,action:'contact',hostname:'fluynova-lab.invalid'}));
  const mf=new Miniflare({
   modules:true,scriptPath:bundle,cf:false,fetchMock,
   d1Databases:{DB:'fluynova-public-local-only'},
@@ -49,7 +49,11 @@ async function makeRuntime(bundle,flags){
  const db=await mf.getD1Database('DB');
  const statements=(await readFile(SCHEMA,'utf8')).replace(/^--.*$/gm,'')
   .split(';').map(x=>x.trim()).filter(Boolean);
- for(const sql of statements)await db.prepare(sql).run();
+ for(const sql of statements){
+  if(!createLeads && (/^CREATE TABLE IF NOT EXISTS leads\\b/i.test(sql)||
+     /^CREATE INDEX IF NOT EXISTS leads_/i.test(sql)))continue;
+  await db.prepare(sql).run();
+ }
  return {mf,db};
 }
 test('workerd+D1 real local: puertas cerradas, ninguna API privada y POST confirmado tras SQL',async()=>{
@@ -73,6 +77,36 @@ test('workerd+D1 real local: puertas cerradas, ninguna API privada y POST confir
     assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,0);
     assert.equal((await mf.dispatchFetch('https://public-candidate.invalid/admin')).status,404);
     assert.equal((await mf.dispatchFetch('https://public-candidate.invalid/health')).status,404);
+   }finally{await mf.dispose()}
+  }
+  // CAPTCHA inválido: Siteverify se llama de verdad al mock; no se crea ninguna fila.
+  {
+   const {mf,db}=await makeRuntime(bundle,{public:'true',contact:'true'},
+     {siteverifySuccess:false});
+   try{
+    const {url,request:args}=request();
+    const rejected=await mf.dispatchFetch(url,args);
+    assert.equal(rejected.status,403);
+    assert.equal((await rejected.json()).error,'CAPTCHA_FAILED');
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,0);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM lead_rate_limit').first()).n,0);
+    console.log('PUBLIC_INTAKE_CAPTCHA_REJECT_PASS: stored=false, rate_limit_writes=false');
+   }finally{await mf.dispose()}
+  }
+  // D1 funcional para rate limit pero sin tabla leads: nunca confirmar falsamente.
+  {
+   const {mf,db}=await makeRuntime(bundle,{public:'true',contact:'true'},
+     {createLeads:false});
+   try{
+    const {url,request:args}=request();
+    const rejected=await mf.dispatchFetch(url,args);
+    assert.equal(rejected.status,503);
+    assert.equal((await rejected.json()).error,'PERSISTENCE_UNAVAILABLE');
+    const tables=await db.prepare(
+      "SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table' AND name='leads'"
+    ).first();
+    assert.equal(tables.n,0);
+    console.log('PUBLIC_INTAKE_DB_FAILURE_PASS: confirms=false, leads_table_absent=true');
    }finally{await mf.dispose()}
   }
   const {mf,db}=await makeRuntime(bundle,{public:'true',contact:'true'});

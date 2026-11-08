@@ -5,6 +5,12 @@ El Worker actual `fluynova-contact-staging-only` está protegido por Cloudflare 
 
 Este candidato usa un **nombre diferente**: `fluynova-public-intake-candidate`. No tiene dominios, rutas, bindings D1 ni `workers.dev` público, **no se conecta a GitHub Builds** y no existe ningún despliegue remoto de este componente. Vive solo en una rama feature. No hereda ni concede acceso a funciones privadas de otros Workers.
 
+## Alcance de la desactivación de rutas
+
+`workers_dev=false` impide usar la ruta tradicional `*.workers.dev`, **pero si algún día se desplegara**, Cloudflare puede seguir ofreciendo URLs de versión, vista previa y despliegue. La configuración no debe interpretarse como protección de autenticación ni reemplazo del apagado del código. Este candidato **todavía no está desplegado** y exige ambas variables en `false` en su configuración versionada.
+
+Cloudflare Access configurado para **todos los Workers de la cuenta** podría proteger automáticamente también a este nuevo Worker; una política aplicada al Worker privado no debe quitarse. Antes de cualquier lanzamiento, comprobar por nombre de Worker, dominio, ruta y política efectiva que el endpoint de contacto sea accesible sin inicio de sesión y que el administrativo continúe restringido. CORS es defensa del navegador, no autorización de un cliente HTTP.
+
 ## Superficie HTTP
 - `POST /api/contact` y `OPTIONS /api/contact` **únicamente**.
 - Cualquier otro endpoint (`/health`, `/admin`, `/api/leads`, `/metrics`) responde **404** sin consultar D1.
@@ -29,3 +35,4 @@ Workflow exclusivo de esta rama: pruebas de método/rutas/flags, compilación Wr
 - https://developers.cloudflare.com/workers/wrangler/configuration/
 - https://developers.cloudflare.com/turnstile/get-started/
 - https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
+- https://developers.cloudflare.com/workers/configuration/routing/workers-dev/
