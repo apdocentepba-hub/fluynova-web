@@ -32,7 +32,14 @@ export function auditClosedRelease({candidate,privateWorker,pkg,workflow}) {
   requireSafe(Object.keys(vars).sort().join('|')===
     ['ENABLE_PUBLIC_INTAKE','ENABLE_CONTACT_SUBMISSIONS','ALLOWED_ORIGINS','TURNSTILE_HOSTNAMES'].sort().join('|'),
     'UNREVIEWED_PUBLIC_VARIABLE');
-  const publicText=JSON.stringify(candidate||{});
+  // Wrangler valida los NOMBRES requeridos sin exponer sus valores en Git.
+  // No se admiten otras claves en el bloque ni claves secretas entre vars.
+  const required=['RATE_HASH_SECRET','TURNSTILE_SECRET_KEY'];
+  requireSafe(candidate?.secrets&&Object.keys(candidate.secrets).join('|')==='required'&&
+    Array.isArray(candidate.secrets.required)&&
+    [...candidate.secrets.required].sort().join('|')===required.join('|'),
+    'REQUIRED_SECRETS_DECLARATION_CHANGED');
+  const publicText=JSON.stringify({...candidate,secrets:undefined});
   requireSafe(!/secret|api.token|password|credential|service_role|private.key/i.test(publicText),
     'SECRET_IN_PUBLIC_CONFIG');
   requireSafe(privateWorker?.name==='fluynova-contact-staging-only','PRIVATE_WORKER_CHANGED');

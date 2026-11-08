@@ -51,3 +51,16 @@ test('sin ejecución del auditor en CI falla cerrado',()=>{
  const r=modify(c=>{c.workflow=c.workflow.replace('node --test tests/fluynova-public-intake-release-guard.test.mjs','')});
  assert.ok(r.failures.includes('CI_RELEASE_GUARD_MISSING'));
 });
+test('nombres de secretos obligatorios y sin valores: omisiones o extras fallan',()=>{
+ const omitted=modify(c=>{delete c.candidate.secrets});
+ assert.ok(omitted.failures.includes('REQUIRED_SECRETS_DECLARATION_CHANGED'));
+ const altered=modify(c=>{c.candidate.secrets.required=['TURNSTILE_SECRET_KEY']});
+ assert.ok(altered.failures.includes('REQUIRED_SECRETS_DECLARATION_CHANGED'));
+ const extended=modify(c=>{c.candidate.secrets.required.push('UNREVIEWED_KEY')});
+ assert.ok(extended.failures.includes('REQUIRED_SECRETS_DECLARATION_CHANGED'));
+ const misplaced=modify(c=>{c.candidate.vars.RATE_HASH_SECRET='DUMMY'}); 
+ assert.equal(misplaced.safeClosed,false);
+ const value=modify(c=>{c.candidate.secrets.TURNSTILE_SECRET_KEY='DUMMY'}); 
+ assert.ok(value.failures.includes('REQUIRED_SECRETS_DECLARATION_CHANGED'));
+});
+

@@ -10,7 +10,7 @@ const req=(path='/api/contact',method='POST')=>new Request(
   'https://candidate.example.invalid'+path,{method,body:method==='POST'?'{}':undefined});
 const safe={...cfg.vars};
 
-test('es Worker diferente, sin rutas, sin workers.dev, D1 ni secretos',()=>{
+test('es Worker diferente, sin rutas, sin workers.dev, D1 ni valores de secretos',()=>{
   assert.equal(cfg.name,'fluynova-public-intake-candidate');
   assert.notEqual(cfg.name,'fluynova-contact-staging-only');
   assert.equal(cfg.workers_dev,false);
@@ -20,7 +20,12 @@ test('es Worker diferente, sin rutas, sin workers.dev, D1 ni secretos',()=>{
   assert.equal(cfg.vars.ENABLE_CONTACT_SUBMISSIONS,'false');
   assert.equal(cfg.vars.ALLOWED_ORIGINS,'https://fluynova-staging.invalid');
   assert.equal(cfg.vars.TURNSTILE_HOSTNAMES,'fluynova-staging.invalid');
-  for(const key of ['TURNSTILE_SECRET_KEY','RATE_HASH_SECRET','cf_api_token','service_role'])
+  assert.deepEqual([...cfg.secrets.required].sort(),
+    ['RATE_HASH_SECRET','TURNSTILE_SECRET_KEY']);
+  assert.deepEqual(Object.keys(cfg.secrets),['required']);
+  for(const key of cfg.secrets.required)
+    assert.equal(cfg.vars[key],undefined,'Nunca se guardan valores de secretos en vars');
+  for(const key of ['cf_api_token','service_role'])
     assert.equal(JSON.stringify(cfg).includes(key),false);
   assert.equal(typeof worker.fetch,'function');
   assert.equal(worker.scheduled,undefined,'no exportar cron público');

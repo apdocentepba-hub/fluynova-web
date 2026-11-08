@@ -11,5 +11,11 @@
     "ENABLE_CONTACT_SUBMISSIONS": "false",
     "ALLOWED_ORIGINS": "https://fluynova-staging.invalid",
     "TURNSTILE_HOSTNAMES": "fluynova-staging.invalid"
+  },
+  "secrets": {
+    "required": [
+      "TURNSTILE_SECRET_KEY",
+      "RATE_HASH_SECRET"
+    ]
   }
 }

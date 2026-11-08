@@ -6,6 +6,7 @@ on:
       - feature/fluynova-public-intake-isolated-20261108
     paths:
       - 'infra/fluynova-public-intake-worker/**'
+      - '.gitignore'
       - 'tests/fluynova-public-intake*.mjs'
       - '.github/workflows/fluynova-public-intake-candidate.yml'
   workflow_dispatch:
