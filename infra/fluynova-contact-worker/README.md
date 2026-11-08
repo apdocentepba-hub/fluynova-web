@@ -78,3 +78,13 @@ Se agregó `wrangler.staging.example.jsonc`, **solo plantilla** (Wrangler no la 
 **Todavía no se puede activar el circuito público:** falta una cuenta Cloudflare conectada/autorizada, un D1 exclusivo remoto, un widget Turnstile real, definición de retención y panel autenticado, y una prueba de lectura desde almacenamiento remoto. La plantilla no debe renombrarse ni desplegarse sin esas puertas superadas.
 
 Fuentes oficiales: https://developers.cloudflare.com/workers/wrangler/configuration/ y https://developers.cloudflare.com/turnstile/get-started/server-side-validation/.
+
+
+## Cloudflare remoto — base D1 creada (07/11/2026, Buenos Aires)
+
+- El usuario creó desde el panel de Cloudflare **la base exclusiva de FLUYNOVA**: `fluynova-leads-staging` (`ce8ac477-dd77-4a1c-a42e-6096dcb78768`), verificada por lectura del panel autenticado. La cuenta aloja también otros proyectos que **no se modifican**.
+- Al comprobar la pestaña Métricas de la base recién creada, informó **0 tablas y 0 consultas**. La creación del esquema SQL está **pendiente de ejecutar y verificar**; no declarar la base inicializada.
+- El archivo `wrangler.staging.example.jsonc` ya incluye el UUID real D1 bajo binding `DB`. Sigue siendo una **plantilla inerte**: `workers_dev:false`, sin rutas públicas, origen `.invalid` y sin secretos. No está desplegada.
+- **No crear otra D1**, no compartirla con APDocentePBA y no activar el Worker sin comprobar las tablas, Turnstile real, privacidad y prueba end-to-end de staging.
+- Para inicializar manualmente en el Console D1 se debe ejecutar **el esquema exacto** de `infra/fluynova-contact-worker/schema.sql` (dos tablas `leads`, `lead_rate_limit` y tres índices). D1 permite instrucciones SQL múltiples separadas por punto y coma. Verificar luego: `SELECT name FROM sqlite_master WHERE type='table' AND name IN ('leads','lead_rate_limit') ORDER BY name;`.
+- Los campos de usuario solo se guardarán al activar explícitamente el Worker, actualmente desconectado.
