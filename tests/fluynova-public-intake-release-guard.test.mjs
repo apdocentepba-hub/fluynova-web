@@ -64,3 +64,28 @@ test('nombres de secretos obligatorios y sin valores: omisiones o extras fallan'
  assert.ok(value.failures.includes('REQUIRED_SECRETS_DECLARATION_CHANGED'));
 });
 
+
+test('campos de Wrangler no revisados (env, rutas, bindings, CI) nunca pasan SAFE_CLOSED',()=>{
+ const forbidden={
+  env:{production:{vars:{ENABLE_PUBLIC_INTAKE:'true',ENABLE_CONTACT_SUBMISSIONS:'true'},routes:['fluynova.example/*']}},
+  services:[{binding:'OTHER',service:'private-worker'}],
+  dispatch_namespaces:[{binding:'DISPATCH',namespace:'danger'}],
+  unsafe:{bindings:[{name:'BYPASS',type:'secret_text',text:'unsafe'}]},
+  tail_consumers:[{service:'other-worker'}],
+  kv_namespaces:[{binding:'KV',id:'fake'}],
+  r2_buckets:[{binding:'BUCKET',bucket_name:'fake'}],
+ };
+ for(const [field,value] of Object.entries(forbidden)){
+  const r=modify(c=>{c.candidate[field]=value});
+  assert.equal(r.safeClosed,false,field);
+  assert.ok(r.failures.includes('UNREVIEWED_PUBLIC_CONFIG_'+field.toUpperCase()),field);
+ }
+});
+test('fecha de compatibilidad y observabilidad requieren revisión expresa',()=>{
+ const date=modify(c=>{c.candidate.compatibility_date='2026-11-09'});
+ assert.ok(date.failures.includes('COMPATIBILITY_DATE_UNREVIEWED'));
+ const observable=modify(c=>{c.candidate.observability.enabled=true});
+ assert.ok(observable.failures.includes('OBSERVABILITY_UNREVIEWED'));
+ const extra=modify(c=>{c.candidate.observability.logs={enabled:true}});
+ assert.ok(extra.failures.includes('OBSERVABILITY_UNREVIEWED'));
+});
