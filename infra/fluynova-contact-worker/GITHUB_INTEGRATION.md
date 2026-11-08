@@ -36,3 +36,18 @@ Tras guardar la integración, Cloudflare desplegará al recibir cambios en esa r
 Después de integrar Git, comprobar en el panel de Cloudflare que el último despliegue corresponde a la rama de staging y abrir `/health`. **No** habilitar recepción sin Turnstile auténtico, política de privacidad y prueba de inserción/relectura ficticia desde la nube.
 
 Referencia oficial: https://developers.cloudflare.com/workers/ci-cd/builds/ y https://developers.cloudflare.com/workers/ci-cd/builds/configuration/.
+
+
+## Conexión Cloudflare verificada — 08/11/2026
+
+Se confirmó **en la pestaña autenticada de Cloudflare** la integración entre el Worker **fluynova-contact-staging-only** y GitHub:
+- Repositorio exacto: `apdocentepba-hub/fluynova-web`.
+- Rama de producción del Worker: `deploy/fluynova-contact-staging`.
+- Root directory: `infra/fluynova-contact-worker`.
+- Deploy command: `npx wrangler deploy`.
+- Token de Build: `FLUYNOVA Staging Builds`, independiente de APDocentePBA.
+- Cloudflare indicó: "You can now push a commit to your Git repository to start your first build".
+
+**Este commit de documentación dentro del directorio del Worker es el primer disparador controlado de Cloudflare Builds.** No se modificó `index.mjs` ni `wrangler.jsonc`. La configuración sigue `ENABLE_CONTACT_SUBMISSIONS=false`, origen permitido ficticio `.invalid`, D1 exclusiva y `workers_dev=true`. Este build **no** debe recibir consultas reales ni cambiar la web comercial.
+
+Verificaciones pendientes tras el commit: revisar en el panel la ejecución de Builds y Deployments, confirmar salida `/health` y comprobar que `accepting` permanece `false`. El preflight local de GitHub no certifica por sí solo que Cloudflare desplegó.
