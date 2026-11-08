@@ -53,3 +53,28 @@ Esta rama no se fusionó ni desplegó. No afecta al formulario y web oficiales, 
 Para la siguiente etapa faltan credenciales/permisos de la cuenta Cloudflare adecuada. No hay integración Cloudflare directa conectada en esta conversación, y el navegador de pruebas disponible no tiene sesión registrada en Cloudflare. Por lo tanto se deja **el despliegue remoto bloqueado**, en vez de inventar un ID D1 o activar recursos en una cuenta ajena.
 
 Al configurar D1 remota, documentar ID/entorno en el repositorio **sin secretos**; fijar reglas de privacidad y habilitar el cron `0 4 * * *` (UTC). Verificar primero lectura/escritura con datos ficticios en entorno separado y comprobar el borrado del rate-limit. El correo directo publicado permanece disponible en producción.
+
+
+## Integración completa en laboratorio — Chromium + workerd + D1
+
+Se ejecutó una prueba única que conecta el **frontend compilado del PR #21** (commit fijado `19b0e474e3ace0330b824be3d00ef530e66c124b`) con el **Worker real ejecutado localmente en workerd** y una **base D1 local real**. El navegador usado es Chromium/Playwright 1.65.0. Se bloqueó toda salida externa; únicamente la API de Cloudflare Turnstile fue interceptada con una respuesta sintética del lado servidor. **No se publicó un Worker ni se crearon bases D1 remotas.**
+
+- [GitHub Actions run 42433514764](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42433514764): ambos jobs `lead-ingress-offline` y `browser-worker-d1-local` terminaron **SUCCESS**; **4/4 pruebas de navegación integradas PASS**.
+- El camino normal completó una consulta ficticia, envió HTTP POST con CORS, validó el CAPTCHA simulado del lado servidor, escribió una fila real en D1 local y mostró en el navegador **exactamente el ID** de la fila recuperada con SQL. Log: `E2E_FULL_LOCAL_PASS: chromium=true, workerd=true, d1_persisted=true, mail_sent=false`.
+- Fallo cerrado probado: formulario sin configuración no genera POST; CAPTCHA rechazado no genera filas; D1 sin tabla de consultas devuelve 503 y la interfaz no declara éxito ni pierde los datos ingresados.
+- Los datos usan el dominio reservado `example.invalid`, nunca direcciones de terceros. No hay conexión con APDocentePBA ni con servicios de email.
+
+### Preparación de puesta en marcha sin publicar
+
+Se agregó `wrangler.staging.example.jsonc`, **solo plantilla** (Wrangler no la reconoce automáticamente como configuración activa).
+
+- `workers_dev:false`, sin rutas públicas ni ID real de D1.
+- `database_name:fluynova-leads-staging`, binding `DB` y marcador `REPLACE_WITH_D1_DATABASE_UUID`, para garantizar aislamiento.
+- `ALLOWED_ORIGINS` y `TURNSTILE_HOSTNAMES` apuntan a un dominio `.invalid` que debe reemplazarse al habilitar pruebas.
+- `TURNSTILE_SECRET_KEY` y `RATE_HASH_SECRET` **no aparecen**: deben guardarse con comandos de secretos, nunca en el repositorio ni en variables públicas.
+- Cron `0 4 * * *` (UTC) preparado para invocar la limpieza de huellas HMAC de más de 48 horas.
+- Se incorpora una prueba automática para bloquear archivos de configuración con rutas abiertas o secretos accidentalmente incluidos.
+
+**Todavía no se puede activar el circuito público:** falta una cuenta Cloudflare conectada/autorizada, un D1 exclusivo remoto, un widget Turnstile real, definición de retención y panel autenticado, y una prueba de lectura desde almacenamiento remoto. La plantilla no debe renombrarse ni desplegarse sin esas puertas superadas.
+
+Fuentes oficiales: https://developers.cloudflare.com/workers/wrangler/configuration/ y https://developers.cloudflare.com/turnstile/get-started/server-side-validation/.
