@@ -236,6 +236,19 @@ test('Chromium: visual QA responsive y teclado, con navegación sin duplicados',
     mobileVisible:getComputedStyle(document.querySelector('.mobile-menu')).display!=='none'
    }));
    results.push(metrics);
+   if(metrics.scroll>width+2){
+    const offenders=await page.evaluate(()=>{
+     const vw=innerWidth;
+     return [...document.querySelectorAll('body *')].map(el=>{
+      const r=el.getBoundingClientRect();
+      return {tag:el.tagName,cls:String(el.className||'').slice(0,90),
+       id:el.id,right:Math.round(r.right),left:Math.round(r.left),
+       scrollWidth:el.scrollWidth,clientWidth:el.clientWidth};
+     }).filter(v=>v.right>vw+3||v.left< -3)
+       .sort((a,b)=>b.right-a.right).slice(0,18);
+    });
+    console.log('VISUAL_QA_OVERFLOW_DIAG='+JSON.stringify({width,offenders}));
+   }
    assert.ok(metrics.scroll<=width+2,
     'No debe haber desborde horizontal a '+width+'px: '+JSON.stringify(metrics));
    assert.equal(metrics.mobileVisible,width<=1100,'Breakpoint de navegación '+width);
