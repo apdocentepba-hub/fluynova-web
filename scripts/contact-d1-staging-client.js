@@ -40,9 +40,11 @@
     try{
       widget=window.turnstile.render(captcha,{
         sitekey:cfg.siteKey,action:'contact',
-        callback:value=>{token=String(value||'');send.disabled=!token;},
-        'expired-callback':()=>{token='';send.disabled=true;},
-        'error-callback':()=>{token='';send.disabled=true;notice('CAPTCHA no disponible. Usá el correo.');}
+        callback:value=>{token=String(value||'');send.disabled=pending||!token;},
+        'expired-callback':()=>{token='';send.disabled=true;notice('La verificación venció. Completá el CAPTCHA nuevamente.');},
+        'timeout-callback':()=>{token='';send.disabled=true;notice('Se agotó el tiempo del CAPTCHA. Intentá otra vez.');},
+        'error-callback':()=>{token='';send.disabled=true;notice('CAPTCHA no disponible. Usá el correo.');},
+        'unsupported-callback':()=>{token='';send.disabled=true;notice('Tu navegador no admite el CAPTCHA. Escribinos al correo.');}
       });
       fieldset.disabled=false;
       fieldset.style.opacity='1';
@@ -54,7 +56,8 @@
 
   form.addEventListener('submit',async event=>{
     event.preventDefault();
-    if(pending||!ready||!token||!form.checkValidity()){
+    if(pending)return; // Un envío en progreso no debe dispararse ni reescribir el estado.
+    if(!ready||!token||!form.checkValidity()){
       form.reportValidity?.();
       notice('Completá los datos y verificá el CAPTCHA.');
       return;
