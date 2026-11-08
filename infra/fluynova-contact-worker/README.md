@@ -97,3 +97,12 @@ Fuentes oficiales: https://developers.cloudflare.com/workers/wrangler/configurat
 - El Worker todavía NO está desplegado y el formulario de producción sigue independiente con correo alternativo visible. Se debe verificar esquema e índices sin escritura, luego configurar Turnstile de un dominio de staging, vincular binding `DB` exclusivo y secretos de Worker en Cloudflare (nunca por chat/repositorio).
 - Consulta de auditoría segura, solo lectura: `SELECT type, name, tbl_name FROM sqlite_master WHERE name IN ('leads','lead_rate_limit','leads_received_at','leads_status','lead_rate_limit_hour') ORDER BY type,name;` Debe mostrar dos tablas y tres índices propios. No crear tablas duplicadas ni ejecutar el esquema otra vez.
 - No usar base ni Worker de APDocentePBA; no crear rutas, workers.dev públicos ni habilitar el formulario hasta la prueba integrada remota autorizada.
+
+
+## Worker de ensayo creado en Cloudflare (07/11/2026)
+
+- El usuario creó por la interfaz Cloudflare el Worker **fluynova-contact-staging-only**. Dashboard confirmó despliegue inicial **Ready**, código temporal **Hello World**, URL asignada `https://fluynova-contact-staging-only.apdocentepba.workers.dev/`.
+- Se configuró Cloudflare Access en modalidad **All traffic**, regla `Cloudflare account — Allow` y sesión 24 horas. No se ha realizado una prueba de acceso no autenticado, por lo que no se declara cierre externo demostrado.
+- Lectura verificada de la pestaña de Cloudflare: **Bindings: 0**. No hay conexión D1 ni secreto de Turnstile configurado todavía; la web oficial sigue en Render y no llama a este Worker.
+- **Próximo cambio manual mínimo:** panel del Worker > `Add a binding` > `D1 database` > `Variable name: DB` > elegir `fluynova-leads-staging` (UUID `ce8ac477-dd77-4a1c-a42e-6096dcb78768`) > guardar. No seleccionar bases de APDocentePBA ni publicar código de recepción todavía.
+- **Limitación importante:** un Worker con Cloudflare Access en `All traffic` no podrá recibir POST del formulario de visitantes sin que éstos superen Access. Es correcto durante las pruebas privadas. Antes de pasar a producción se requiere definir cómo publicar solo el endpoint de recepción protegido por Turnstile y rate-limit sin exponer el administrador; nunca quitar Access indiscriminadamente durante esta etapa.
