@@ -1,5 +1,4 @@
 {
-  "$schema": "https://unpkg.com/wrangler/config-schema.json",
   "name": "fluynova-contact-staging-only",
   "main": "infra/fluynova-contact-worker/index.mjs",
   "compatibility_date": "2026-11-07",
