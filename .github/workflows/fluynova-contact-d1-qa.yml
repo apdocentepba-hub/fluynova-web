@@ -7,6 +7,7 @@ on:
     paths:
       - 'infra/fluynova-contact-worker/**'
       - 'tests/fluynova-contact-worker.test.mjs'
+      - 'tests/fluynova-contact-d1-local.integration.test.mjs'
       - '.github/workflows/fluynova-contact-d1-qa.yml'
   workflow_dispatch:
 
@@ -16,7 +17,7 @@ permissions:
 jobs:
   lead-ingress-offline:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -26,8 +27,13 @@ jobs:
         run: |
           node --check infra/fluynova-contact-worker/index.mjs
           node --check tests/fluynova-contact-worker.test.mjs
+          node --check tests/fluynova-contact-d1-local.integration.test.mjs
       - name: Pruebas con D1 y CAPTCHA simulados; sin red ni envíos
         run: node --test tests/fluynova-contact-worker.test.mjs
+      - name: Instalar D1 local basado en workerd (versión fija, sin Cloudflare login)
+        run: npm install --no-save --no-package-lock miniflare@4.20260730.0
+      - name: Prueba HTTP integrada con base D1 local real y CAPTCHA interceptado
+        run: node --test tests/fluynova-contact-d1-local.integration.test.mjs
       - name: Comprobar que no hay secretos o credenciales publicadas
         run: |
           test -f infra/fluynova-contact-worker/schema.sql
