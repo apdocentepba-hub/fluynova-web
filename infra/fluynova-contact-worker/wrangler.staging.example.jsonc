@@ -1,0 +1,26 @@
+{
+  "$schema": "https://unpkg.com/wrangler/config-schema.json",
+  "name": "fluynova-contact-staging-only",
+  "main": "infra/fluynova-contact-worker/index.mjs",
+  "compatibility_date": "2026-11-07",
+  "workers_dev": false,
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "ALLOWED_ORIGINS": "https://REPLACE-WITH-FLUYNOVA-STAGING.invalid",
+    "TURNSTILE_HOSTNAMES": "REPLACE-WITH-FLUYNOVA-STAGING.invalid"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "fluynova-leads-staging",
+      "database_id": "REPLACE_WITH_D1_DATABASE_UUID"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "0 4 * * *"
+    ]
+  }
+}
