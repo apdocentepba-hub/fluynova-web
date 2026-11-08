@@ -41,9 +41,15 @@ export function makeD1Html(original) {
  html=exact(html,'El formulario utiliza FormSubmit como intermediario del envío. No compartas contraseñas ni datos personales sensibles.',
   'La recepción D1 permanece deshabilitada en este laboratorio. No ingreses datos reales; para consultas usá el correo directo.',
   'nota proveedor');
- html=exact(html,'id="alternate-send" type="button" hidden',
-  'id="alternate-send" type="button" hidden disabled',
+ html=exact(html,'id="alternate-send" type="button" hidden class="btn btn-ghost"',
+  'id="alternate-send" type="button" hidden disabled class="btn btn-ghost"',
   'respaldo anterior deshabilitado');
+ html=exact(html,'Usar formulario tradicional (abre FormSubmit) ↗',
+  'Alternativa automática deshabilitada','texto de respaldo');
+ html=exact(html,'<input type="hidden" name="_subject" value="FLUYNOVA | Consulta desde la web">','',
+  'metadato FormSubmit subject');
+ html=exact(html,'<input type="hidden" name="_template" value="table">','',
+  'metadato FormSubmit template');
  html=exact(html,'<button class="btn btn-primary submit-btn"',
   '<div id="d1-turnstile" data-contact-captcha="not-configured" style="margin:12px 0"></div><button class="btn btn-primary submit-btn"',
   'contenedor de captcha');
@@ -57,6 +63,22 @@ export function makeD1Html(original) {
   throw Error('Formulario o correo directo ausentes');
  return html;
 }
+export function makeD1Privacy(html){
+ const source=transformHtml(html,{home:false});
+ const start=source.indexOf('<h2>Proveedores y transmisión</h2>');
+ const end=source.indexOf('<h2>Conservación</h2>',start);
+ if(start<0||end<=start||source.indexOf('<h2>Proveedores y transmisión</h2>',start+1)>=0)
+  throw Error('Política de privacidad de origen inesperada');
+ const text='<h2>Proveedores y transmisión — candidato D1</h2>'+
+  '<p>Esta página es un laboratorio no publicado: no se reciben consultas mediante el formulario hasta habilitarlo expresamente. '+
+  'Si posteriormente se activa el formulario propio, FLUYNOVA recibirá los datos mediante Cloudflare Workers, '+
+  'los conservará en una base D1 exclusiva y verificará el envío con Cloudflare Turnstile. '+
+  'Ningún envío se considerará confirmado hasta comprobar el registro en la base de datos; una alerta por correo es independiente. '+
+  'No ingreses información personal real en este entorno experimental.</p>'+
+  '<p>La configuración de retención, acceso administrativo y eliminación de consultas requiere aprobación antes de habilitar la recepción. '+
+  'Las huellas anónimas usadas para prevenir spam se eliminan por cron después de aproximadamente 48 horas.</p>';
+ return source.slice(0,start)+text+source.slice(end);
+}
 export function makeD1MainJs(blocked){
  const output=exact(blocked,BLOCK,
   '// Cliente D1 separado: la página queda cerrada hasta configurar entorno de staging.',
@@ -66,11 +88,12 @@ export function makeD1MainJs(blocked){
  return output;
 }
 export async function verifyD1Candidate(dest){
- const [html,main,client,robots]=await Promise.all([
+ const [html,main,client,robots,privacy]=await Promise.all([
   readFile(join(dest,'index.html'),'utf8'),
   readFile(join(dest,'main.js'),'utf8'),
   readFile(join(dest,'contact-d1-staging.js'),'utf8'),
-  readFile(join(dest,'robots.txt'),'utf8')
+  readFile(join(dest,'robots.txt'),'utf8'),
+  readFile(join(dest,'privacidad.html'),'utf8')
  ]);
  const form=html.match(/<form\b[^>]*id="contact-form"[^>]*>/)?.[0]||'';
  if(!form.includes('action="/#contacto"')||
@@ -85,7 +108,8 @@ export async function verifyD1Candidate(dest){
     !client.includes("endpoint:''")||!client.includes("siteKey:''")||
     !client.includes('result?.stored!==true')||
     !client.includes('event.preventDefault()')||
-    /\bfetch\s*\(/.test(main)||/formsubmit\.co/.test(main)||
+    !privacy.includes('Cloudflare Workers')||!privacy.includes('Cloudflare Turnstile')||
+    /formsubmit\.co/i.test(privacy)||/\bfetch\s*\(/.test(main)||/formsubmit\.co/.test(main)||
     !/Disallow: \//.test(robots))
   throw Error('Puerta de integración D1 cerrada incorrectamente');
  const refs=await verifyStaticRoutes(dest);
@@ -98,14 +122,16 @@ export async function buildD1Candidate({sourceDir,outputDir}={}){
   throw TypeError('Origen y destino explícitos requeridos');
  await buildBlocked({sourceDir,outputDir});
  const src=resolve(sourceDir),dest=resolve(outputDir);
- const [original,blocked,client]=await Promise.all([
+ const [original,blocked,client,privacy]=await Promise.all([
   readFile(join(src,'index.html'),'utf8'),
   readFile(join(dest,'main.js'),'utf8'),
-  readFile(fileURLToPath(new URL('./contact-d1-staging-client.js',import.meta.url)),'utf8')
+  readFile(fileURLToPath(new URL('./contact-d1-staging-client.js',import.meta.url)),'utf8'),
+  readFile(join(src,'privacidad.html'),'utf8')
  ]);
  await writeFile(join(dest,'index.html'),makeD1Html(original),'utf8');
  await writeFile(join(dest,'main.js'),makeD1MainJs(blocked),'utf8');
  await writeFile(join(dest,'contact-d1-staging.js'),client,'utf8');
+ await writeFile(join(dest,'privacidad.html'),makeD1Privacy(privacy),'utf8');
  return verifyD1Candidate(dest);
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
