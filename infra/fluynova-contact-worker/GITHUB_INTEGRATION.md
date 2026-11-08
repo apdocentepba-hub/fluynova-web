@@ -51,3 +51,10 @@ Se confirmó **en la pestaña autenticada de Cloudflare** la integración entre 
 **Este commit de documentación dentro del directorio del Worker es el primer disparador controlado de Cloudflare Builds.** No se modificó `index.mjs` ni `wrangler.jsonc`. La configuración sigue `ENABLE_CONTACT_SUBMISSIONS=false`, origen permitido ficticio `.invalid`, D1 exclusiva y `workers_dev=true`. Este build **no** debe recibir consultas reales ni cambiar la web comercial.
 
 Verificaciones pendientes tras el commit: revisar en el panel la ejecución de Builds y Deployments, confirmar salida `/health` y comprobar que `accepting` permanece `false`. El preflight local de GitHub no certifica por sí solo que Cloudflare desplegó.
+
+
+## Turnstile: timeout y fallos cerrados — 08/11/2026
+
+El Worker implementa un timeout de **5 segundos** para Siteverify, y trata respuestas HTTP no exitosas, timeouts y excepciones como **\`CAPTCHA_TEMPORARILY_UNAVAILABLE\` (503)**. Solo un resultado \`success:true\` acompañado por \`action:'contact'\` y hostname permitido permite persistir una consulta. Las pruebas agregadas cubren el \`AbortSignal\`, HTTP 503, interrupción de la llamada y ausencia de metadatos en respuestas dummy. Las claves de prueba que Cloudflare publica **no certifican** la validación de host/action: los dummy test secrets devuelven una respuesta genérica. No poner claves de prueba en Cloudflare y no activar \`ENABLE_CONTACT_SUBMISSIONS\` todavía.
+
+Conexión de producción de la web **sin cambios**. La rama de staging conserva D1 exclusiva, Cloudflare Access y recepción \`false\`. El cron permanece diferido hasta resolver sus permisos de publicación.

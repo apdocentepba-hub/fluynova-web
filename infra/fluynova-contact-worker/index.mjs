@@ -92,8 +92,12 @@ async function verifyTurnstile(token,ip,env,fetcher){
   form.set('secret',env.TURNSTILE_SECRET_KEY);
   form.set('response',token);
   form.set('remoteip',ip);
-  const response=await fetcher(SITEVERIFY,{method:'POST',body:form});
-  if(!response.ok)return false;
+  // La verificación remota debe finalizar: falla cerrado ante demoras o caída de Siteverify.
+  // AbortSignal.timeout se crea dentro del handler para respetar Workers runtime.
+  const response=await fetcher(SITEVERIFY,{
+    method:'POST',body:form,signal:AbortSignal.timeout(5_000)
+  });
+  if(!response.ok)throw Error('SITEVERIFY_UNAVAILABLE');
   const result=await response.json();
   if(result.success!==true || result.action!=='contact')return false;
   const acceptedHostnames=String(env.TURNSTILE_HOSTNAMES||'').split(',')

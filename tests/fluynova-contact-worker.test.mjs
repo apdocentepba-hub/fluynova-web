@@ -143,6 +143,53 @@ test('sin consentimiento/categoría correcta o cuerpo válido no llama al provee
  }
  assert.equal(x.verifications(),0);assert.equal(x.db.leads.length,0);
 });
+test('Siteverify recibe señal de expiración de 5 segundos y solo datos del CAPTCHA',async()=>{
+ const db=makeDb();
+ let verified=0;
+ const handler=createHandler({fetcher:async(url,opts)=>{
+  verified++;
+  assert.equal(url,'https://challenges.cloudflare.com/turnstile/v0/siteverify');
+  assert.equal(opts.method,'POST');
+  assert.ok(opts.signal instanceof AbortSignal);
+  assert.equal(opts.signal.aborted,false);
+  assert.equal(opts.body.get('secret'),ENV.TURNSTILE_SECRET_KEY);
+  assert.equal(opts.body.get('response'),'valid-token');
+  assert.equal(opts.body.get('remoteip'),'203.0.113.8');
+  return new Response(JSON.stringify({success:true,action:'contact',hostname:'fluynova.example'}),{status:200});
+ }});
+ const response=await handler(makeReq(),{...ENV,DB:db});
+ assert.equal(response.status,201);
+ assert.equal(verified,1);
+ assert.equal(db.leads.length,1);
+});
+test('Siteverify con HTTP 5xx falla cerrado como indisponibilidad temporal',async()=>{
+ const db=makeDb();
+ const handler=createHandler({fetcher:async()=>new Response('No disponible',{status:503})});
+ const r=await handler(makeReq(),{...ENV,DB:db});
+ assert.equal(r.status,503);
+ assert.equal((await r.json()).error,'CAPTCHA_TEMPORARILY_UNAVAILABLE');
+ assert.equal(db.leads.length,0);
+ assert.equal(db.rateKeys.length,0);
+});
+test('Siteverify abortado nunca genera filas ni confirma recepción',async()=>{
+ const db=makeDb();
+ const handler=createHandler({fetcher:async (_url,opts)=>{
+  assert.ok(opts.signal instanceof AbortSignal);
+  throw new DOMException('Timeout','TimeoutError');
+ }});
+ const r=await handler(makeReq(),{...ENV,DB:db});
+ assert.equal(r.status,503);
+ assert.equal((await r.json()).ok,false);
+ assert.equal(db.leads.length,0);
+});
+test('la respuesta de Turnstile con claves de ensayo no suple action y hostname reales',async()=>{
+ // Las claves dummy oficiales devuelven success=true pero sin action.
+ const x=setup({validation:{success:true,hostname:'example.com'}});
+ const r=await x.handler(makeReq(),x.env);
+ assert.equal(r.status,403);
+ assert.equal((await r.json()).error,'CAPTCHA_FAILED');
+ assert.equal(x.db.leads.length,0);
+});
 test('Turnstile expira o rechaza acción/hostname incorrecto: no se guarda',async()=>{
  for(const validation of [
   {success:false},{success:true,action:'otro',hostname:'fluynova.example'},
