@@ -271,3 +271,7 @@
  .flx-ux-2026 .section-top>div{width:100%;min-width:0;max-width:100%}
  .flx-ux-2026 .section-top h2{max-width:100%;overflow-wrap:anywhere}
 }
+
+/* Brillos limitados al viewport en tablet y escritorio: sin scroll lateral. */
+.flx-ux-2026 .ambient-one{right:0;width:min(490px,100vw)}
+.flx-ux-2026 .ambient-two{left:0;width:min(430px,100vw)}
