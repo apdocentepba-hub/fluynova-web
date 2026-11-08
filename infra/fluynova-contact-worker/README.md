@@ -36,3 +36,20 @@ Prohibido reutilizar bases de APDocentePBA, alerta-amba u otros proyectos. Se ne
 
 ## Reversión
 Esta rama no se fusionó ni desplegó. No afecta al formulario y web oficiales, ni a otras bases de datos. El correo directo seguirá publicado durante toda la migración.
+
+
+## Evidencia de integración local real (07/11/2026)
+
+- Integración Cloudflare **Miniflare 4.20260730.0** fijada para CI: el Worker se ejecuta en `workerd`, con D1 LOCAL real, sin Cloudflare login.
+- [GitHub Actions #42428907226](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42428907226): **16 pruebas aprobadas (15 unitarias + 1 integración local), 0 fallos**. Confirmado en logs un POST ficticio que devolvió `201` tras persistir en D1 y lectura SQL por ID con categoría y correo `example.invalid`.
+- La prueba confirma que orígenes no permitidos y consentimientos faltantes no crean filas, que el HMAC no guarda IP en claro, y que `/admin` no permite lectura pública.
+- Se implementó `scheduled()` para borrar huellas HMAC antiguas de `lead_rate_limit`: ventana de más de 48 horas. Comprobado en D1 local: huella de 72 horas borrada y huella reciente conservada.
+- **Límite de evidencia:** la validación de Turnstile fue interceptada por un mock que bloquea la red; no hubo verificación CAPTCHA contra el proveedor, ni creación de D1 remota, ni prueba desde navegador público, ni correo enviado.
+- La primera ejecución integrada falló por el parser de comentarios en `D1.exec()`. Se corrigió aplicando instrucciones SQL individualmente; la ejecución final quedó verde.
+- El `schema.sql` no se aplicó a Supabase ni bases reales. Las pruebas locales son efímeras y usan un ID de base exclusiva de CI.
+
+### Tareas de puesta en marcha verificable
+
+Para la siguiente etapa faltan credenciales/permisos de la cuenta Cloudflare adecuada. No hay integración Cloudflare directa conectada en esta conversación, y el navegador de pruebas disponible no tiene sesión registrada en Cloudflare. Por lo tanto se deja **el despliegue remoto bloqueado**, en vez de inventar un ID D1 o activar recursos en una cuenta ajena.
+
+Al configurar D1 remota, documentar ID/entorno en el repositorio **sin secretos**; fijar reglas de privacidad y habilitar el cron `0 4 * * *` (UTC). Verificar primero lectura/escritura con datos ficticios en entorno separado y comprobar el borrado del rate-limit. El correo directo publicado permanece disponible en producción.
