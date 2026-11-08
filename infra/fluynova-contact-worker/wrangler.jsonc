@@ -17,10 +17,5 @@
       "database_name": "fluynova-leads-staging",
       "database_id": "ce8ac477-dd77-4a1c-a42e-6096dcb78768"
     }
-  ],
-  "triggers": {
-    "crons": [
-      "0 4 * * *"
-    ]
-  }
+  ]
 }
