@@ -1,0 +1,13 @@
+{
+  "name": "fluynova-public-intake-candidate",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check index.mjs",
+    "dryrun": "wrangler deploy --dry-run"
+  },
+  "devDependencies": {
+    "wrangler": "4.136.3"
+  }
+}
