@@ -31,8 +31,28 @@ jobs:
       - name: Instalar runtime D1 local y bundler SIN tokens
         run: npm install --no-save --no-package-lock --no-audit --no-fund miniflare@4.20260730.0 esbuild@0.25.12
       - name: Probar Worker público en workerd con D1 LOCAL real, Siteverify interceptado
-        run: node --test tests/fluynova-public-intake.integration.test.mjs
+        run: timeout --signal=TERM --kill-after=3s 60s node --test tests/fluynova-public-intake.integration.test.mjs
       - name: Compilar Wrangler candidato (dry-run solamente, sin publicación)
+        working-directory: infra/fluynova-public-intake-worker
+        run: |
+          npm install --no-audit --no-fund
+          npm run dryrun
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+
+  public-intake-compile-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prueba unitaria de aislamiento y dos puertas
+        run: node --test tests/fluynova-public-intake.test.mjs
+      - name: Compilación independiente Wrangler, sin deploy
         working-directory: infra/fluynova-public-intake-worker
         run: |
           npm install --no-audit --no-fund
