@@ -32,7 +32,7 @@ after(async()=>{
  if(dir)await rm(dir,{recursive:true,force:true});
 });
 
-async function visit({configured=false,workerStatus=201,workerBody={ok:true,stored:true,delivery:'database',id:UUID}}={}){
+async function visit({configured=false,workerStatus=201,workerDelayMs=0,workerBody={ok:true,stored:true,delivery:'database',id:UUID}}={}){
  const context=await browser.newContext({ignoreHTTPSErrors:true});
  const browserErrors=[],workerRequests=[],unexpectedPosts=[];
  const page=await context.newPage();
@@ -42,6 +42,7 @@ async function visit({configured=false,workerStatus=201,workerBody={ok:true,stor
   if(request.method()==='POST' && url.hostname!==WORKER)unexpectedPosts.push(url.href);
   if(url.hostname===WORKER){
    workerRequests.push({method:request.method(),url:url.href,body:request.postDataJSON()});
+   if(workerDelayMs>0)await new Promise(done=>setTimeout(done,workerDelayMs));
    await route.fulfill({status:workerStatus,contentType:'application/json',
     headers:{'Access-Control-Allow-Origin':SITE.slice(0,-1)},
     body:JSON.stringify(workerBody)});
@@ -144,6 +145,51 @@ test('Chromium real: HTTP 200 sin stored no simula éxito ni borra el formulario
   assert.equal(await x.page.locator('#contact-form input[name="email"]').inputValue(),
     'prueba@example.invalid');
   assert.doesNotMatch(await x.page.locator('#form-status').innerText(),/Consulta guardada/);
+  assert.deepEqual(x.unexpectedPosts,[]);
+  assert.deepEqual(x.browserErrors,[]);
+ }finally{await x.context.close()}
+});
+
+test('Chromium: caducidad, timeout y navegador no compatible nunca dejan enviar',async()=>{
+ const x=await visit({configured:true});
+ try{
+  await x.page.waitForFunction(()=>window.__turnstileOpts?.action==='contact');
+  await fillForm(x.page);
+  for(const [callback,expected] of [
+   ['expired-callback',/verificación venció/],
+   ['timeout-callback',/Se agotó el tiempo/],
+   ['unsupported-callback',/navegador no admite/]
+  ]){
+   await x.page.evaluate(()=>window.__turnstileOpts.callback('token-que-vencerá'));
+   assert.equal(await x.page.locator('#contact-form button[type="submit"]').isEnabled(),true);
+   await x.page.evaluate(name=>window.__turnstileOpts[name](),callback);
+   assert.equal(await x.page.locator('#contact-form button[type="submit"]').isDisabled(),true);
+   assert.match(await x.page.locator('#form-status').innerText(),expected);
+  }
+  assert.equal(x.workerRequests.length,0);
+  assert.deepEqual(x.unexpectedPosts,[]);
+  assert.deepEqual(x.browserErrors,[]);
+ }finally{await x.context.close()}
+});
+test('Chromium: renovación del token durante envío NO habilita un segundo POST',async()=>{
+ const x=await visit({configured:true,workerDelayMs:550});
+ try{
+  await x.page.waitForFunction(()=>window.__turnstileOpts?.action==='contact');
+  await fillForm(x.page);
+  await x.page.evaluate(()=>window.__turnstileOpts.callback('token-inicial'));
+  assert.equal(await x.page.locator('#contact-form button[type="submit"]').isEnabled(),true);
+  await x.page.locator('#contact-form button[type="submit"]').click();
+  assert.equal(await x.page.locator('#contact-form button[type="submit"]').isDisabled(),true);
+  await x.page.evaluate(()=>{
+   window.__turnstileOpts.callback('token-renovado');
+   document.querySelector('#contact-form').dispatchEvent(
+      new Event('submit',{bubbles:true,cancelable:true}));
+  });
+  assert.equal(await x.page.locator('#contact-form button[type="submit"]').isDisabled(),true);
+  await x.page.waitForFunction(()=>document.querySelector('#form-status')
+   ?.textContent?.includes('Consulta guardada con código'),null,{timeout:6500});
+  assert.equal(x.workerRequests.filter(r=>r.method==='POST').length,1);
+  assert.equal(await x.page.locator('#contact-form button[type="submit"]').isDisabled(),true);
   assert.deepEqual(x.unexpectedPosts,[]);
   assert.deepEqual(x.browserErrors,[]);
  }finally{await x.context.close()}
