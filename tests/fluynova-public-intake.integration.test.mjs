@@ -50,7 +50,7 @@ async function makeRuntime(bundle,flags,{siteverifySuccess=true,createLeads=true
  const statements=(await readFile(SCHEMA,'utf8')).replace(/^--.*$/gm,'')
   .split(';').map(x=>x.trim()).filter(Boolean);
  for(const sql of statements){
-  if(!createLeads && (/^CREATE TABLE IF NOT EXISTS leads\\b/i.test(sql)||
+  if(!createLeads && (/^CREATE TABLE IF NOT EXISTS leads\b/i.test(sql)||
      /^CREATE INDEX IF NOT EXISTS leads_/i.test(sql)))continue;
   await db.prepare(sql).run();
  }
