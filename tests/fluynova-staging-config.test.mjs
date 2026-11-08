@@ -15,11 +15,11 @@ test('plantilla staging no se despliega públicamente por defecto',()=>{
  assert.equal(cfg.observability.enabled,false);
  assert.ok(!('routes' in cfg)&&!('route' in cfg));
 });
-test('la base D1 está aislada y su UUID es un marcador, no una base ajena',()=>{
+test('la base D1 del staging coincide con la base exclusiva creada en Cloudflare',()=>{
  assert.equal(cfg.d1_databases.length,1);
  assert.equal(cfg.d1_databases[0].binding,'DB');
  assert.equal(cfg.d1_databases[0].database_name,'fluynova-leads-staging');
- assert.equal(cfg.d1_databases[0].database_id,'REPLACE_WITH_D1_DATABASE_UUID');
+ assert.equal(cfg.d1_databases[0].database_id,'ce8ac477-dd77-4a1c-a42e-6096dcb78768');
  assert.match(cfg.vars.ALLOWED_ORIGINS,/^https:\/\/REPLACE-WITH-FLUYNOVA-STAGING\.invalid$/);
  assert.equal(cfg.vars.TURNSTILE_HOSTNAMES,'REPLACE-WITH-FLUYNOVA-STAGING.invalid');
  assert.doesNotMatch(source,/apdocentepba|alerta-amba|supabase/i);
