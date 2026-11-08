@@ -5,7 +5,7 @@
  */
 import test,{before,after} from 'node:test';
 import assert from 'node:assert/strict';
-import {mkdtemp,rm,readFile} from 'node:fs/promises';
+import {mkdtemp,rm,readFile,mkdir,writeFile} from 'node:fs/promises';
 import {join,resolve,sep,extname} from 'node:path';
 import {tmpdir} from 'node:os';
 import {fileURLToPath} from 'node:url';
@@ -214,6 +214,85 @@ test('Chromium: gráficos del flujo renovados y tarjeta legible en móvil, sin e
    'El gráfico conserva tamaño usable en pantalla angosta');
   assert.ok(mobile.left>=-2&&mobile.right<=mobile.viewport+2,
    'El gráfico no se desborda horizontalmente');
+  assert.equal(x.workerRequests.length,0);
+  assert.deepEqual(x.unexpectedPosts,[]);
+  assert.deepEqual(x.browserErrors,[]);
+ }finally{await x.context.close()}
+});
+
+test('Chromium: visual QA responsive y teclado, con navegación sin duplicados',async()=>{
+ const x=await visit();
+ try{
+  const page=x.page;
+  assert.equal(await page.locator('#site-menu a[href="/webs/"]').count(),1,
+   'No duplicar accesos a Páginas web en el menú');
+  const widths=[320,390,768,900,1024,1366];
+  const results=[];
+  for(const width of widths){
+   await page.setViewportSize({width,height:850});
+   const metrics=await page.evaluate(()=>({
+    width:innerWidth,scroll:document.documentElement.scrollWidth,
+    menuVisible:getComputedStyle(document.querySelector('#site-menu')).display!=='none',
+    mobileVisible:getComputedStyle(document.querySelector('.mobile-menu')).display!=='none'
+   }));
+   results.push(metrics);
+   assert.ok(metrics.scroll<=width+2,
+    'No debe haber desborde horizontal a '+width+'px: '+JSON.stringify(metrics));
+   assert.equal(metrics.mobileVisible,width<=1100,'Breakpoint de navegación '+width);
+   assert.equal(metrics.menuVisible,width>1100,'El menú cerrado no se muestra en '+width);
+   if(width<=1100){
+    const toggle=page.locator('.mobile-menu');
+    await toggle.click();
+    assert.equal(await toggle.getAttribute('aria-expanded'),'true');
+    assert.equal(await page.locator('#site-menu').isVisible(),true);
+    await page.keyboard.press('Escape');
+    assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+    assert.equal(await page.locator('#site-menu').isVisible(),false);
+    assert.equal(await toggle.evaluate(el=>document.activeElement===el),true,
+     'Escape devuelve el foco al botón de menú');
+   }
+  }
+  assert.deepEqual(x.browserErrors,[]);
+  assert.deepEqual(x.unexpectedPosts,[]);
+  assert.equal(x.workerRequests.length,0);
+  console.log('VISUAL_QA_BREAKPOINTS='+JSON.stringify(results));
+ }finally{await x.context.close()}
+});
+
+test('Chromium: contraste de texto esencial, movimiento reducido y capturas sin datos reales',async()=>{
+ const x=await visit();
+ try{
+  const page=x.page;
+  // Contraste WCAG 2.x de texto simple sobre tarjeta blanca de la sección de problemas.
+  const contrast=await page.locator('.flx-problem-card .flx-card-copy>small').first().evaluate(el=>{
+    const rgb=s=>[...s.matchAll(/[0-9.]+/g)].slice(0,3).map(x=>Number(x[0]));
+    const L=arr=>{
+     const [r,g,b]=arr.map(v=>{
+      const x=v/255;return x<=0.04045?x/12.92:((x+0.055)/1.055)**2.4;
+     });return .2126*r+.7152*g+.0722*b;
+    };
+    const fore=L(rgb(getComputedStyle(el).color));
+    const back=L(rgb(getComputedStyle(el.closest('.flx-problem-card')).backgroundColor));
+    return (Math.max(fore,back)+.05)/(Math.min(fore,back)+.05);
+  });
+  assert.ok(contrast>=4.5,'Texto pequeño de la tarjeta requiere contraste >=4.5, actual '+contrast);
+  await page.emulateMedia({reducedMotion:'reduce'});
+  assert.equal(await page.evaluate(()=>getComputedStyle(document.documentElement).scrollBehavior),'auto');
+  const evidence='artifacts/fluynova-ui';
+  await mkdir(evidence,{recursive:true});
+  for(const [width,height,name] of [[1366,900,'desktop-1366.png'],[900,768,'tablet-900.png'],[390,844,'mobile-390.png']]){
+   await page.setViewportSize({width,height});
+   await page.evaluate(()=>scrollTo(0,0));
+   await page.screenshot({path:join(evidence,name),animations:'disabled'});
+  }
+  await page.setViewportSize({width:390,height:844});
+  await page.locator('#contacto').screenshot({path:join(evidence,'contacto-mobile.png'),
+    animations:'disabled'});
+  await writeFile(join(evidence,'manifest.json'),JSON.stringify({
+   project:'FLUYNOVA',environment:'isolated offline candidate',published:false,
+   viewports:[1366,900,390],contrastSmallText:Number(contrast.toFixed(2)),
+   containsRealLeads:false,formEnabled:false
+  },null,2));
   assert.equal(x.workerRequests.length,0);
   assert.deepEqual(x.unexpectedPosts,[]);
   assert.deepEqual(x.browserErrors,[]);
