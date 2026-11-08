@@ -124,12 +124,16 @@ export function createHandler({fetcher=fetch,clock=()=>Date.now(),uuid=()=>crypt
     const url=new URL(request.url),origin=request.headers.get('origin')||'';
     const allowed=allowedOrigins(env).has(origin);
     if(url.pathname==='/health' && request.method==='GET') {
-      return json({ok:!!(env.DB&&env.TURNSTILE_SECRET_KEY&&env.RATE_HASH_SECRET)},200);
+      return json({ok:!!(env.DB&&env.TURNSTILE_SECRET_KEY&&env.RATE_HASH_SECRET&&env.TURNSTILE_HOSTNAMES&&env.ENABLE_CONTACT_SUBMISSIONS==='true')},200);
     }
     if(url.pathname!=='/api/contact')return json({ok:false,error:'NOT_FOUND'},404);
     if(!allowed)return json({ok:false,error:'ORIGIN_NOT_ALLOWED'},403);
     if(request.method==='OPTIONS')return new Response(null,{status:204,headers:headers(origin)});
     if(request.method!=='POST')return json({ok:false,error:'METHOD_NOT_ALLOWED'},405,origin);
+    // Puerta de activación: aun con D1 y secretos presentes no recibe solicitudes
+    // reales hasta que se habilite explícitamente esta variable en Cloudflare.
+    if(env.ENABLE_CONTACT_SUBMISSIONS!=='true')
+      return json({ok:false,error:'CONTACT_UNAVAILABLE'},503,origin);
     if(!env.DB||!env.TURNSTILE_SECRET_KEY||!env.RATE_HASH_SECRET||!env.TURNSTILE_HOSTNAMES)
       return json({ok:false,error:'CONTACT_UNAVAILABLE'},503,origin);
     if(!/^application\/json(?:\s*;|$)/i.test(request.headers.get('content-type')||''))
