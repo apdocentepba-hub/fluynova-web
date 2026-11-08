@@ -75,3 +75,20 @@ La web estática candidata del PR #21 dispone ahora de un **cliente D1+Turnstile
 - **Limitaciones:** sin test desde navegador real del candidato D1, sin endpoint remoto, sin secreto de Turnstile, sin D1 Cloudflare remota, sin almacenamiento real de consultas del público y sin panel privado autenticado. Todo esto debe quedar cerrado antes de activar envíos.
 
 **Puerta de aceptación:** nunca fusionar/publicar el PR #21 ni retirar Render mientras el receptor de PR #22 no esté autorizado, configurado, probado con base remota propia y auditado en privacidad y seguridad.
+
+
+## Navegador Chromium E2E aislado
+
+Se incorporó una segunda fase independiente en el workflow de la rama, `chromium-offline-e2e`. El navegador **Chromium Headless Shell real** carga las doce páginas compiladas desde interceptaciones HTTPS locales con Playwright **1.65.0**. Toda solicitud externa se intercepta o bloquea; **ningún dato se envía a Cloudflare, FormSubmit, Gmail ni otros servidores**.
+
+- Se prueba la variante D1 con `endpoint` y `siteKey` vacíos: tanto el `fieldset` como el botón de envío permanecen bloqueados y el correo de contacto sigue visible.
+- En un escenario configurado **solo dentro del test**, se simula la carga de Turnstile, se completa el formulario con `example.invalid`, se verifica la aparición del botón tras recibir un token ficticio y se intercepta el POST hacia una API ficticia.
+- Un HTTP `201` con `ok:true, stored:true, delivery:"database"` e ID UUID muestra confirmación de base guardada; nunca presenta eso como correo entregado.
+- Un HTTP `200` con `success:true, stored:false` no muestra éxito y conserva los datos para su corrección.
+- El navegador comprueba que no se generen POST no autorizados ni errores de ejecución JavaScript.
+
+**Evidencia final:** [GitHub Actions #42432858645](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42432858645): trabajo `offline-only` SUCCESS (29/29) y `chromium-offline-e2e` SUCCESS (**3/3** en navegador). Primera ejecución #42432784375 tuvo un fallo del *test* al usar `isDisabled()` en `fieldset`; corregido usando la propiedad DOM `HTMLFieldSetElement.disabled`, sin alterar la web.
+
+**Límite:** aunque el navegador es real, CAPTCHA y API de almacenamiento permanecen simulados; D1 local real sí fue comprobada en el PR #22. El circuito HTTPS público + Turnstile auténtico + D1 remota sigue pendiente de Cloudflare y autorización de despliegue.
+
+La web oficial y el correo directo están intactos. **No merge / no despliegue.**
