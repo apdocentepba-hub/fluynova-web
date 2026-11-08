@@ -299,6 +299,9 @@ test('Chromium: contraste de texto esencial, movimiento reducido y capturas sin 
    await page.screenshot({path:join(evidence,name),animations:'disabled'});
   }
   await page.setViewportSize({width:390,height:844});
+  await page.locator('#fg-launcher').waitFor({state:'attached'});
+  assert.equal(await page.locator('#fg-launcher').isVisible(),false,
+   'El botón flotante no puede tapar el formulario en teléfonos pequeños');
   await page.locator('#contacto').screenshot({path:join(evidence,'contacto-mobile.png'),
     animations:'disabled'});
   await writeFile(join(evidence,'manifest.json'),JSON.stringify({
