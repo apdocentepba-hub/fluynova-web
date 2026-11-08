@@ -6,7 +6,7 @@ import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {runInNewContext} from 'node:vm';
 import {fileURLToPath} from 'node:url';
-import {makeD1Html,makeD1MainJs,buildD1Candidate,verifyD1Candidate} from '../scripts/build-static-d1-contact-candidate.mjs';
+import {makeD1Html,makeD1Privacy,makeD1MainJs,buildD1Candidate,verifyD1Candidate} from '../scripts/build-static-d1-contact-candidate.mjs';
 import {transformMainJs} from '../scripts/build-static-main-preview.mjs';
 
 const ROOT=fileURLToPath(new URL('../',import.meta.url));
@@ -27,12 +27,24 @@ test('candidato D1 conserva correo, privacidad, formulario cerrado y NO FormSubm
  assert.match(h,/mailto:contacto\.fluynova@gmail\.com/);
  assert.match(h,/almacenamiento de pruebas en FLUYNOVA/);
  assert.doesNotMatch(h,/action="https:\/\/formsubmit\.co/);
+ assert.doesNotMatch(h,/name="_subject"|name="_template"|Usar formulario tradicional \(abre FormSubmit\)/);
  assert.match(h,/noindex,nofollow,noarchive/);
 });
 test('un HTML distinto aborta el build, nunca reabre el formulario',()=>{
  assert.throws(()=>makeD1Html(HTML.replace('name="_honey"','name="unknown"')),/ausentes/);
  assert.throws(()=>makeD1Html(HTML.replace('name="consent" required','name="consent"')),/Cambio no único/);
  assert.throws(()=>makeD1Html(HTML.replace('https://formsubmit.co/contacto.fluynova@gmail.com','https://other.invalid')),/Cambio no único/);
+});
+test('política generada describe D1 y Turnstile, no conserva FormSubmit',()=>{
+ const base=readFileSync(join(ROOT,'static/privacidad.html'),'utf8');
+ const html=makeD1Privacy(base);
+ assert.match(html,/Cloudflare Workers/);
+ assert.match(html,/base D1 exclusiva/);
+ assert.match(html,/Cloudflare Turnstile/);
+ assert.match(html,/no se reciben consultas mediante el formulario/);
+ assert.match(html,/noindex,nofollow,noarchive/);
+ assert.doesNotMatch(html,/formsubmit\.co/i);
+ assert.throws(()=>makeD1Privacy(base.replace('Proveedores y transmisión','Otro título')),/inesperada/);
 });
 test('JavaScript principal elimina el listener bloqueante y las APIs anteriores',()=>{
  const result=makeD1MainJs(transformMainJs(JS));
@@ -147,6 +159,12 @@ test('artefacto real aislado conserva 12 páginas, enlaces y modo bloqueado',asy
   assert.match(cli,/endpoint:''/);
   assert.match(cli,/siteKey:''/);
   await verifyD1Candidate(dest);
+  const privacy=await readFile(join(dest,'privacidad.html'),'utf8');
+  assert.match(privacy,/Cloudflare Workers/);
+  assert.doesNotMatch(privacy,/formsubmit\.co/i);
+  await writeFile(join(dest,'privacidad.html'),privacy.replace('Cloudflare Turnstile','captcha sin identificar'));
+  await assert.rejects(verifyD1Candidate(dest),/Puerta de integración/);
+  await writeFile(join(dest,'privacidad.html'),privacy);
   await writeFile(join(dest,'index.html'),html.replace('data-d1-contact="staging-disabled"','data-d1-contact="staging-enabled"'));
   await assert.rejects(verifyD1Candidate(dest),/Puerta de integración/);
  }finally{await rm(temp,{recursive:true,force:true})}
