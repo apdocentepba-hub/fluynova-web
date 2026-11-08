@@ -71,7 +71,7 @@ async function makeD1({siteverify=true,createLeads=true}={}){
   }
   return {mf,db};
 }
-async function scene({configured=true,siteverify=true,createLeads=true}={}){
+async function scene({configured=true,siteverify=true,createLeads=true,workerDelayMs=0}={}){
   const {mf,db}=await makeD1({siteverify,createLeads});
   const context=await browser.newContext({ignoreHTTPSErrors:true});
   const page=await context.newPage();
@@ -88,6 +88,8 @@ async function scene({configured=true,siteverify=true,createLeads=true}={}){
       if(method!=='GET'&&method!=='HEAD'&&method!=='OPTIONS')
         init.body=req.postData()||'';
       const r=await mf.dispatchFetch('https://workerd.test/api/contact',init);
+      if(workerDelayMs>0 && method==='POST')
+        await new Promise(resolve=>setTimeout(resolve,workerDelayMs));
       const body=await r.text();
       apiResponses.push({method,status:r.status,body});
       const exposed={};
@@ -207,6 +209,54 @@ test('D1 local sin tabla de consultas: el formulario NO dice recibido',async()=>
     assert.equal(s.apiResponses.filter(r=>r.method==='POST'&&r.status===503).length,1);
     assert.equal(await s.page.locator('#contact-form input[name=email]').inputValue(),EMAIL);
     assert.doesNotMatch(await s.page.locator('#form-status').innerText(),/Consulta guardada/);
+    assert.deepEqual(s.unexpectedPosts,[]);
+    assert.deepEqual(s.pageErrors,[]);
+  }finally{await s.close()}
+});
+
+test('CAPTCHA vencido o con timeout antes de enviar: D1 LOCAL no recibe filas',async()=>{
+  const s=await scene();
+  try{
+    await s.page.waitForFunction(()=>window.__turnstileOpts?.action==='contact');
+    await s.page.evaluate(()=>window.__turnstileOpts.callback('ci-token-before-expiry'));
+    assert.equal(await s.page.locator('#contact-form button[type=submit]').isEnabled(),true);
+    await s.page.evaluate(()=>window.__turnstileOpts['expired-callback']());
+    assert.equal(await s.page.locator('#contact-form button[type=submit]').isDisabled(),true);
+    assert.match(await s.page.locator('#form-status').innerText(),/verificación venció/);
+    await s.page.evaluate(()=>window.__turnstileOpts.callback('ci-token-before-timeout'));
+    await s.page.evaluate(()=>window.__turnstileOpts['timeout-callback']());
+    assert.equal(await s.page.locator('#contact-form button[type=submit]').isDisabled(),true);
+    assert.match(await s.page.locator('#form-status').innerText(),/agotó el tiempo/);
+    assert.equal((await s.db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,0);
+    assert.equal(s.apiResponses.filter(r=>r.method==='POST').length,0);
+    assert.deepEqual(s.pageErrors,[]);
+  }finally{await s.close()}
+});
+test('Renovación del token durante envío: solo un POST, una fila D1 LOCAL',async()=>{
+  const s=await scene({workerDelayMs:650});
+  try{
+    await s.page.waitForFunction(()=>window.__turnstileOpts?.action==='contact');
+    await s.page.locator('#contact-form input[name="name"]').fill('Cliente ficticio concurrente');
+    await s.page.locator('#contact-form input[name="email"]').fill(EMAIL);
+    await s.page.locator('#contact-form select[name="category"]')
+      .selectOption({label:'Crear página web / catálogo digital'});
+    await s.page.locator('#contact-form textarea[name="message"]')
+      .fill('Consulta de prueba para verificar que no haya doble registro de clientes.');
+    await s.page.locator('#contact-form input[name="consent"]').check();
+    await s.page.evaluate(()=>window.__turnstileOpts.callback('ci-token-original'));
+    await s.page.locator('#contact-form button[type=submit]').click();
+    assert.equal(await s.page.locator('#contact-form button[type=submit]').isDisabled(),true);
+    await s.page.evaluate(()=>{
+      window.__turnstileOpts.callback('ci-token-renovado');
+      document.querySelector('#contact-form').dispatchEvent(
+        new Event('submit',{bubbles:true,cancelable:true}));
+    });
+    assert.equal(await s.page.locator('#contact-form button[type=submit]').isDisabled(),true);
+    await s.page.waitForFunction(()=>document.querySelector('#form-status')
+      ?.textContent?.includes('Consulta guardada con código'),null,{timeout:15000});
+    assert.equal(s.apiResponses.filter(r=>r.method==='POST').length,1);
+    assert.equal((await s.db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,1);
+    assert.equal(await s.page.locator('#contact-form button[type=submit]').isDisabled(),true);
     assert.deepEqual(s.unexpectedPosts,[]);
     assert.deepEqual(s.pageErrors,[]);
   }finally{await s.close()}

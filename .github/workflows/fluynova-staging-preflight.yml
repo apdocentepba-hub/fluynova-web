@@ -55,7 +55,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: apdocentepba-hub/fluynova-web
-          ref: 19b0e474e3ace0330b824be3d00ef530e66c124b
+          ref: 06af3d1422cdba7bb5bbee8da877af091d5ad798
           path: frontend-candidate
           persist-credentials: false
       - name: Node 22
@@ -68,5 +68,5 @@ jobs:
           npx playwright install --with-deps --only-shell chromium
       - name: Probar persistencia SQL real en D1 LOCAL con Turnstile interceptado
         run: node --test tests/fluynova-contact-d1-local.integration.test.mjs
-      - name: Probar Chromium real, Worker workerd y D1 LOCAL (4 escenarios)
+      - name: Probar Chromium real, Worker workerd y D1 LOCAL (6 escenarios)
         run: node --test tests/fluynova-browser-worker-d1.e2e.test.mjs
