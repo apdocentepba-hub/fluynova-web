@@ -83,3 +83,11 @@ jobs:
         run: npx playwright install --with-deps --only-shell chromium
       - name: Ejecutar navegador real con red bloqueada y D1 simulada
         run: node --test tests/static-d1-chromium.browser.test.mjs
+      - name: Guardar capturas del laboratorio visual (sin datos de clientes)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluynova-qa-visual-candidato
+          path: artifacts/fluynova-ui/
+          if-no-files-found: warn
+          retention-days: 7
