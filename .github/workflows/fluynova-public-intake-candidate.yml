@@ -1,0 +1,41 @@
+name: FLUYNOVA — receptor público aislado (NO publicar)
+
+on:
+  push:
+    branches:
+      - feature/fluynova-public-intake-isolated-20261108
+    paths:
+      - 'infra/fluynova-public-intake-worker/**'
+      - 'tests/fluynova-public-intake*.mjs'
+      - '.github/workflows/fluynova-public-intake-candidate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-intake-offline-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Sintaxis y restricciones de despliegue
+        run: |
+          node --check infra/fluynova-public-intake-worker/index.mjs
+          node --check tests/fluynova-public-intake.test.mjs
+          node --check tests/fluynova-public-intake.integration.test.mjs
+          node --test tests/fluynova-public-intake.test.mjs
+      - name: Instalar runtime D1 local y bundler SIN tokens
+        run: npm install --no-save --no-package-lock --no-audit --no-fund miniflare@4.20260730.0 esbuild@0.25.12
+      - name: Probar Worker público en workerd con D1 LOCAL real, Siteverify interceptado
+        run: node --test tests/fluynova-public-intake.integration.test.mjs
+      - name: Compilar Wrangler candidato (dry-run solamente, sin publicación)
+        working-directory: infra/fluynova-public-intake-worker
+        run: |
+          npm install --no-audit --no-fund
+          npm run dryrun
+        env:
+          WRANGLER_SEND_METRICS: 'false'
