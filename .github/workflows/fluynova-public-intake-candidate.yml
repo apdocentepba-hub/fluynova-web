@@ -59,3 +59,31 @@ jobs:
           npm run dryrun
         env:
           WRANGLER_SEND_METRICS: 'false'
+
+  public-intake-browser-workerd-d1-offline:
+    needs: public-intake-offline-only
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout rama feature del receptor
+        uses: actions/checkout@v4
+      - name: Checkout frontend aprobado en versión fija (sin publicar)
+        uses: actions/checkout@v4
+        with:
+          repository: apdocentepba-hub/fluynova-web
+          ref: 06af3d1422cdba7bb5bbee8da877af091d5ad798
+          path: frontend-candidate
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar D1 local, empaquetador y Chromium CI
+        run: |
+          npm install --no-save --no-package-lock --no-audit --no-fund miniflare@4.20260730.0 esbuild@0.25.12 playwright@1.65.0
+          npx playwright install --with-deps --only-shell chromium
+      - name: Probar formulario completo Chromium + Worker PUBLICO workerd + D1 local
+        run: timeout --signal=TERM --kill-after=3s 150s node --test tests/fluynova-public-intake-browser.e2e.test.mjs
+
