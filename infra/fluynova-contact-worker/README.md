@@ -88,3 +88,12 @@ Fuentes oficiales: https://developers.cloudflare.com/workers/wrangler/configurat
 - **No crear otra D1**, no compartirla con APDocentePBA y no activar el Worker sin comprobar las tablas, Turnstile real, privacidad y prueba end-to-end de staging.
 - Para inicializar manualmente en el Console D1 se debe ejecutar **el esquema exacto** de `infra/fluynova-contact-worker/schema.sql` (dos tablas `leads`, `lead_rate_limit` y tres índices). D1 permite instrucciones SQL múltiples separadas por punto y coma. Verificar luego: `SELECT name FROM sqlite_master WHERE type='table' AND name IN ('leads','lead_rate_limit') ORDER BY name;`.
 - Los campos de usuario solo se guardarán al activar explícitamente el Worker, actualmente desconectado.
+
+
+## D1 remota inicializada: verificación por consola
+
+- En Cloudflare D1 `fluynova-leads-staging` (UUID `ce8ac477-dd77-4a1c-a42e-6096dcb78768`) el usuario ejecutó el SQL de `schema.sql`. La consola respondió **This query successfully executed**.
+- Comprobación SQL observada desde la pestaña autenticada: `SELECT name FROM sqlite_master WHERE type = 'table' AND name IN ('leads','lead_rate_limit') ORDER BY name;` devolvió **`lead_rate_limit` y `leads`**. Se verificaron las tablas remotamente; no se ha confirmado el resultado de cada índice por separado ni se realizaron inserciones remotas.
+- El Worker todavía NO está desplegado y el formulario de producción sigue independiente con correo alternativo visible. Se debe verificar esquema e índices sin escritura, luego configurar Turnstile de un dominio de staging, vincular binding `DB` exclusivo y secretos de Worker en Cloudflare (nunca por chat/repositorio).
+- Consulta de auditoría segura, solo lectura: `SELECT type, name, tbl_name FROM sqlite_master WHERE name IN ('leads','lead_rate_limit','leads_received_at','leads_status','lead_rate_limit_hour') ORDER BY type,name;` Debe mostrar dos tablas y tres índices propios. No crear tablas duplicadas ni ejecutar el esquema otra vez.
+- No usar base ni Worker de APDocentePBA; no crear rutas, workers.dev públicos ni habilitar el formulario hasta la prueba integrada remota autorizada.
