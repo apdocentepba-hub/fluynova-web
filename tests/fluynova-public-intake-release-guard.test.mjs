@@ -1,0 +1,53 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {auditClosedRelease,readReleaseInputs} from '../infra/fluynova-public-intake-worker/release-guard.mjs';
+const baseline=readReleaseInputs();
+const modify=(fn)=>{
+ const c=structuredClone(baseline);
+ fn(c);
+ return auditClosedRelease(c);
+};
+test('candidate safe-closed, jamás declarado listo para tráfico real',()=>{
+ const report=auditClosedRelease(baseline);
+ assert.deepEqual(report.failures,[]);
+ assert.equal(report.safeClosed,true);
+ assert.equal(report.readyForPublicTraffic,false);
+ assert.ok(report.outstanding.length>=5);
+});
+test('encender cualquiera de las compuertas detiene la preparación',()=>{
+ for(const field of ['ENABLE_PUBLIC_INTAKE','ENABLE_CONTACT_SUBMISSIONS']){
+  assert.equal(modify(c=>{c.candidate.vars[field]='true'}).safeClosed,false,field);
+ }
+});
+test('rutas y workers.dev impiden certificar candidato cerrado',()=>{
+ for(const field of ['workers_dev','routes','route','assets']){
+  const report=modify(c=>{c.candidate[field]=field==='workers_dev'?true:[]});
+  assert.equal(report.safeClosed,false,field);
+ }
+});
+test('binding D1 remoto exige revisión independiente',()=>{
+ const r=modify(c=>{c.candidate.d1_databases=[{binding:'DB',database_name:'fluynova-leads-staging'}]});
+ assert.ok(r.failures.includes('REMOTE_CONFIG_PRESENT_D1_DATABASES'));
+});
+test('dominio real o hostname Turnstile distinto no se abre desde este PR',()=>{
+ assert.equal(modify(c=>{c.candidate.vars.ALLOWED_ORIGINS='https://fluynova-web.onrender.com'}).safeClosed,false);
+ assert.equal(modify(c=>{c.candidate.vars.TURNSTILE_HOSTNAMES='fluynova.com.ar'}).safeClosed,false);
+});
+test('variables y secretos extra no pasan el gate',()=>{
+ assert.equal(modify(c=>{c.candidate.vars.TURNSTILE_SECRET_KEY='DUMMY'}).safeClosed,false);
+ assert.equal(modify(c=>{c.candidate.vars.NEW_FLAG='value'}).safeClosed,false);
+});
+test('cambio de nombre o D1 del Worker privado detiene el gate',()=>{
+ assert.equal(modify(c=>{c.privateWorker.name='unknown'}).safeClosed,false);
+ assert.equal(modify(c=>{c.privateWorker.d1_databases[0].database_name='other-db'}).safeClosed,false);
+ assert.equal(modify(c=>{c.privateWorker.vars.ENABLE_CONTACT_SUBMISSIONS='true'}).safeClosed,false);
+});
+test('sin dry-run en package o con deploy en CI se rechaza',()=>{
+ assert.equal(modify(c=>{c.pkg.scripts.dryrun='wrangler deploy'}).safeClosed,false);
+ const r=modify(c=>{c.workflow+='\n      - name: PUBLICAR\n        run: npx wrangler deploy\n'});
+ assert.ok(r.failures.includes('LIVE_DEPLOY_COMMAND_IN_CI'));
+});
+test('sin ejecución del auditor en CI falla cerrado',()=>{
+ const r=modify(c=>{c.workflow=c.workflow.replace('node --test tests/fluynova-public-intake-release-guard.test.mjs','')});
+ assert.ok(r.failures.includes('CI_RELEASE_GUARD_MISSING'));
+});

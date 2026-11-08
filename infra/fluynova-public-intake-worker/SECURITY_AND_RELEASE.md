@@ -19,6 +19,10 @@ Cloudflare Access configurado para **todos los Workers de la cuenta** podría pr
 - Al habilitarse en una prueba local aislada, delega al receptor existente: validación de origen exacto, límite de 16 KiB, consentimiento, honeypot, Turnstile Siteverify (`action=contact` y hostname permitido), límite por IP anonimizada y confirmación solo después de D1.
 - No incluye endpoints de administración, listado, borrado, consulta de leads ni registro de mensajes; no incluye cron.
 
+## Auditoría de liberación cerrada
+
+El guardián `node infra/fluynova-public-intake-worker/release-guard.mjs` se ejecuta sin red y su resultado **SAFE_CLOSED** solo significa que el candidato sigue sin publicar. **Nunca** representa `readyForPublicTraffic=true`. En cada cambio, GitHub ejecuta las pruebas negativas: activación prematura, D1/rutas, dominios no revisados, secretos en configuración, acceso al Worker privado y comandos de despliegue sin dry-run deben fallar. Esta auditoría no puede sustituir una revisión de políticas reales de Cloudflare ni confirmar secretos privados.
+
 ## Condiciones obligatorias ANTES de una eventual publicación (requieren autorización)
 1. **No desplegar este candidato** hasta crear una estrategia de publicación pública segregada y revisar costos/permisos. No conectarlo al Worker protegido ni desactivar Access del Worker privado. Ante Access global, revisar una excepción específica SOLO para el nuevo Worker, nunca una excepción de cuenta.
 2. Elegir y verificar un dominio/ruta pública exclusiva (preferible Custom Domain de Cloudflare) y confirmar que se controla realmente. Evitar conectar la web oficial en Render durante esta etapa.

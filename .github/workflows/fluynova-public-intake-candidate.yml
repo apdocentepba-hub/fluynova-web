@@ -28,6 +28,7 @@ jobs:
           node --check tests/fluynova-public-intake.test.mjs
           node --check tests/fluynova-public-intake.integration.test.mjs
           node --test tests/fluynova-public-intake.test.mjs
+          node --test tests/fluynova-public-intake-release-guard.test.mjs
       - name: Instalar runtime D1 local y bundler SIN tokens
         run: npm install --no-save --no-package-lock --no-audit --no-fund miniflare@4.20260730.0 esbuild@0.25.12
       - name: Probar Worker público en workerd con D1 LOCAL real, Siteverify interceptado
