@@ -20,6 +20,19 @@ export function auditClosedRelease({candidate,privateWorker,pkg,workflow}) {
   const requireSafe=(ok,code)=>{if(!ok)failures.push(code)};
   requireSafe(candidate?.name==='fluynova-public-intake-candidate','WRONG_PUBLIC_WORKER');
   requireSafe(candidate?.main==='./index.mjs','UNEXPECTED_ENTRYPOINT');
+  // Allowlist cerrada: Wrangler admite env.<nombre>, bindings y rutas que podrían
+  // sobrescribir el modo apagado si en el futuro se invoca --env.
+  // Cualquier campo nuevo exige una revisión explícita antes de incorporarlo.
+  const approvedConfigFields=new Set([
+    'name','main','compatibility_date','workers_dev','preview_urls',
+    'observability','vars','secrets'
+  ]);
+  for(const field of Object.keys(candidate||{})){
+    requireSafe(approvedConfigFields.has(field),'UNREVIEWED_PUBLIC_CONFIG_'+field.toUpperCase());
+  }
+  requireSafe(candidate?.compatibility_date==='2026-11-08','COMPATIBILITY_DATE_UNREVIEWED');
+  requireSafe(candidate?.observability?.enabled===false&&
+    Object.keys(candidate.observability).length===1,'OBSERVABILITY_UNREVIEWED');
   requireSafe(candidate?.workers_dev===false,'WORKERS_DEV_EXPOSED');
   requireSafe(candidate?.preview_urls===false,'PREVIEW_URLS_MUST_BE_OFF');
   for(const field of ['route','routes','d1_databases','triggers','account_id','assets','zone_id','site']){
