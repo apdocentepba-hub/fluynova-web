@@ -13,6 +13,7 @@ const LEAD=Object.freeze({
  origen_campania:'webs_202611',origen_mensaje:'webs',
 });
 const ENV={
+ ENABLE_CONTACT_SUBMISSIONS:'true',
  ALLOWED_ORIGINS:ORIGIN,
  TURNSTILE_SECRET_KEY:'secret_only_in_test',
  TURNSTILE_HOSTNAMES:'fluynova.example',
@@ -96,6 +97,16 @@ test('preflight está limitado al origen exacto y método POST',async()=>{
  assert.equal(r.status,204);
  assert.equal(r.headers.get('Access-Control-Allow-Methods'),'POST, OPTIONS');
  assert.equal((await x.handler(makeReq(undefined,{method:'OPTIONS',origin:'https://other.example'}),x.env)).status,403);
+});
+test('flag de activación ausente o false: nunca procesa consultas reales',async()=>{
+ for(const flag of [undefined,'false','TRUE','1']){
+   const x=setup({env:{ENABLE_CONTACT_SUBMISSIONS:flag}});
+   const r=await x.handler(makeReq(),x.env);
+   assert.equal(r.status,503);
+   assert.equal((await r.json()).error,'CONTACT_UNAVAILABLE');
+   assert.equal(x.verifications(),0);
+   assert.equal(x.db.leads.length,0);
+ }
 });
 test('se cierra si faltan DB, CAPTCHA o secreto sin que haya envíos simulados',async()=>{
  for(const data of [{DB:null},{TURNSTILE_SECRET_KEY:''},{RATE_HASH_SECRET:''},{TURNSTILE_HOSTNAMES:''}]){
