@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {createHandler,allowedOrigins,validateLead} from '../infra/fluynova-contact-worker/index.mjs';
+import {createHandler,allowedOrigins,validateLead,scheduled} from '../infra/fluynova-contact-worker/index.mjs';
 
 const ORIGIN='https://fluynova.example';
 const ENDPOINT='https://contact-fluynova.example.workers.dev/api/contact';
@@ -158,4 +158,27 @@ test('no hay API pública para ver correos o consultas',async()=>{
  const r=await x.handler(new Request('https://contact-fluynova.example.workers.dev/admin'),x.env);
  assert.equal(r.status,404);
  assert.equal(x.db.leads.length,0);
+});
+
+
+test('el cron elimina solo las huellas de rate-limit previas a 48 horas',async()=>{
+ const queries=[],values=[];
+ const db={prepare(sql){
+  queries.push(sql);
+  return {bind(...params){
+   values.push(params);
+   return {async run(){return {success:true}}};
+  }};
+ }};
+ const hour=1762550000000;
+ await scheduled({scheduledTime:hour},{DB:db});
+ assert.match(queries[0],/^DELETE FROM lead_rate_limit WHERE hour_bucket < \?$/);
+ assert.deepEqual(values[0],[Math.floor(hour/3_600_000)-48]);
+});
+test('el cron no oculta errores de D1 o reloj inválido',async()=>{
+ await assert.rejects(scheduled({scheduledTime:Date.now()},{}),/D1 binding missing/);
+ await assert.rejects(scheduled({scheduledTime:NaN},{DB:{}}),/Invalid scheduled time/);
+ await assert.rejects(scheduled({scheduledTime:Date.now()},{DB:{
+  prepare:()=>({bind:()=>({run:async()=>({success:false})})})
+ }}),/cleanup not confirmed/);
 });
