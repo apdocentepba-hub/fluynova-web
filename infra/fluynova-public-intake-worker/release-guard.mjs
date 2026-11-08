@@ -49,7 +49,8 @@ export function auditClosedRelease({candidate,privateWorker,pkg,workflow}) {
     workflow.includes("feature/fluynova-public-intake-isolated-20261108")&&
     workflow.includes('npm run dryrun')&&
     workflow.includes('node --test tests/fluynova-public-intake-release-guard.test.mjs')&&
-    workflow.includes('node infra/fluynova-public-intake-worker/release-guard.mjs'),
+    workflow.includes('node infra/fluynova-public-intake-worker/release-guard.mjs')&&
+    workflow.includes('node --test tests/fluynova-public-intake-release-readiness.test.mjs'),
     'CI_RELEASE_GUARD_MISSING');
   return {
     safeClosed:failures.length===0,

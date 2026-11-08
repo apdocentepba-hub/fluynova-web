@@ -24,6 +24,10 @@ jobs:
           node-version: '22'
       - name: Exigir configuración de receptor cerrado — auditor independiente
         run: node infra/fluynova-public-intake-worker/release-guard.mjs
+      - name: Informe de preparación y reversión (read-only, sin Cloudflare)
+        run: |
+          node infra/fluynova-public-intake-worker/release-readiness.mjs
+          node --test tests/fluynova-public-intake-release-readiness.test.mjs
       - name: Sintaxis y restricciones de despliegue
         run: |
           node --check infra/fluynova-public-intake-worker/index.mjs
