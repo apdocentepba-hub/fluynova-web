@@ -28,6 +28,13 @@ jobs:
         run: node --check infra/fluynova-contact-worker/index.mjs
       - name: Contrato, D1 exclusiva y recepción deshabilitada
         run: node --test tests/fluynova-contact-worker.test.mjs tests/fluynova-staging-config.test.mjs tests/fluynova-staging-deploy.test.mjs
+      - name: Compilar Worker REAL con Wrangler (sin credenciales, sin deploy)
+        working-directory: infra/fluynova-contact-worker
+        run: |
+          npm install --no-audit --no-fund
+          npm run dryrun
+        env:
+          WRANGLER_SEND_METRICS: 'false'
       - name: Verificar URL de D1 y ausencia de rutas ajenas
         run: |
           test -f infra/fluynova-contact-worker/wrangler.jsonc
