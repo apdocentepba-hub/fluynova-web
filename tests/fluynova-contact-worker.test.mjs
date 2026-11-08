@@ -98,6 +98,26 @@ test('preflight está limitado al origen exacto y método POST',async()=>{
  assert.equal(r.headers.get('Access-Control-Allow-Methods'),'POST, OPTIONS');
  assert.equal((await x.handler(makeReq(undefined,{method:'OPTIONS',origin:'https://other.example'}),x.env)).status,403);
 });
+test('health comprueba D1 solo lectura e informa que no recibe sin flag',async()=>{
+ const history=[];
+ const db={prepare(sql){
+   history.push(sql);
+   assert.match(sql,/SELECT COUNT\(\*\) AS total FROM sqlite_master/);
+   return {first:async()=>({total:2})};
+ }};
+ const x=setup({env:{DB:db,ENABLE_CONTACT_SUBMISSIONS:'false'}});
+ const result=await x.handler(new Request('https://example.invalid/health'),x.env);
+ assert.equal(result.status,200);
+ assert.deepEqual(await result.json(),{databaseReady:true,accepting:false});
+ assert.equal(history.length,1);
+ assert.equal(x.verifications(),0);
+});
+test('health detecta DB rota sin escribir ni exponer detalles',async()=>{
+ const x=setup({env:{DB:{prepare(){throw Error('Simulated DB failure')}}}});
+ const result=await x.handler(new Request('https://example.invalid/health'),x.env);
+ assert.equal(result.status,503);
+ assert.deepEqual(await result.json(),{databaseReady:false,accepting:false});
+});
 test('flag de activación ausente o false: nunca procesa consultas reales',async()=>{
  for(const flag of [undefined,'false','TRUE','1']){
    const x=setup({env:{ENABLE_CONTACT_SUBMISSIONS:flag}});
