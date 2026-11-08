@@ -215,7 +215,11 @@ test('D1 local sin tabla de consultas: el formulario NO dice recibido',async()=>
     await fillAndSubmit(s.page);
     await s.page.waitForFunction(()=>document.querySelector('#form-status')
       ?.textContent?.includes('No quedó guardada la consulta'),null,{timeout:10000});
-    assert.equal(s.apiResponses.filter(r=>r.method==='POST'&&r.status===503).length,1);
+
+   assert.equal(s.apiResponses.filter(r=>r.method==='OPTIONS'&&r.status===503).length,1,
+     'Preflight cerrado antes de permitir POST');
+   assert.equal(s.apiResponses.filter(r=>r.method==='POST').length,0,
+     'No hay POST si preflight está cerrado');
     assert.equal(await s.page.locator('#contact-form input[name=email]').inputValue(),EMAIL);
     assert.doesNotMatch(await s.page.locator('#form-status').innerText(),/Consulta guardada/);
     assert.deepEqual(s.unexpectedPosts,[]);
