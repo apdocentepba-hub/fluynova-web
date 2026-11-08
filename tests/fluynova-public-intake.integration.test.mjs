@@ -5,13 +5,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {mkdtemp,readFile,rm} from 'node:fs/promises';
-import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {build} from 'esbuild';
 import {Miniflare,createFetchMock} from 'miniflare';
 
 const ENTRY=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/index.mjs',import.meta.url));
+const WORKER_DIR=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/',import.meta.url));
 const SCHEMA=fileURLToPath(new URL('../infra/fluynova-contact-worker/schema.sql',import.meta.url));
 const ENDPOINT='https://public-candidate.invalid/api/contact';
 const ORIGIN='https://fluynova-lab.invalid';
@@ -53,7 +53,8 @@ async function makeRuntime(bundle,flags){
  return {mf,db};
 }
 test('workerd+D1 real local: puertas cerradas, ninguna API privada y POST confirmado tras SQL',async()=>{
- const dir=await mkdtemp(join(tmpdir(),'fluynova-public-intake-'));
+ // workerd rechaza módulos ubicados fuera del directorio base (por ejemplo /tmp).
+ const dir=await mkdtemp(join(WORKER_DIR,'.fluynova-ci-intake-'));
  try{
   const bundle=join(dir,'worker.mjs');
   await build({entryPoints:[ENTRY],outfile:bundle,bundle:true,format:'esm',
