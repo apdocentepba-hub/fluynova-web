@@ -14,7 +14,7 @@
     {
       "binding": "DB",
       "database_name": "fluynova-leads-staging",
-      "database_id": "REPLACE_WITH_D1_DATABASE_UUID"
+      "database_id": "ce8ac477-dd77-4a1c-a42e-6096dcb78768"
     }
   ],
   "triggers": {
