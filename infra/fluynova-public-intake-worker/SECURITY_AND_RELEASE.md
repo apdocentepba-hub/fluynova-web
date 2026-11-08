@@ -23,6 +23,10 @@ Cloudflare Access configurado para **todos los Workers de la cuenta** podría pr
 
 El guardián `node infra/fluynova-public-intake-worker/release-guard.mjs` se ejecuta sin red y su resultado **SAFE_CLOSED** solo significa que el candidato sigue sin publicar. **Nunca** representa `readyForPublicTraffic=true`. En cada cambio, GitHub ejecuta las pruebas negativas: activación prematura, D1/rutas, dominios no revisados, secretos en configuración, acceso al Worker privado y comandos de despliegue sin dry-run deben fallar. Esta auditoría no puede sustituir una revisión de políticas reales de Cloudflare ni confirmar secretos privados.
 
+## Configuración cerrada sin excepciones
+
+El auditor aplica una **allowlist estricta** de campos de `wrangler.jsonc`. Rechaza cualquier clave nueva no revisada, incluidos `env`, bindings de servicios, colas, KV, R2, `unsafe` o rutas anidadas. También fija la fecha de compatibilidad y exige observabilidad desactivada. Esto impide que una configuración alternativa con `wrangler --env` evite silenciosamente las dos compuertas apagadas. Un cambio legítimo de configuración requiere modificar el auditor, agregar una prueba de regresión y revisar el PR; **ningún PASS de CI autoriza desplegar**.
+
 ## Condiciones obligatorias ANTES de una eventual publicación (requieren autorización)
 1. **No desplegar este candidato** hasta crear una estrategia de publicación pública segregada y revisar costos/permisos. No conectarlo al Worker protegido ni desactivar Access del Worker privado. Ante Access global, revisar una excepción específica SOLO para el nuevo Worker, nunca una excepción de cuenta.
 2. Elegir y verificar un dominio/ruta pública exclusiva (preferible Custom Domain de Cloudflare) y confirmar que se controla realmente. Evitar conectar la web oficial en Render durante esta etapa.
