@@ -58,6 +58,9 @@ test('D1 local real: POST válido persiste y se recupera; CORS, bot y consentimi
     .split(';').map(text=>text.trim()).filter(Boolean);
   assert.ok(statements.length>=5);
   for(const sql of statements)await db.prepare(sql).run();
+  const health=await mf.dispatchFetch('https://local.test/health',{method:'GET'});
+  assert.equal(health.status,200);
+  assert.deepEqual(await health.json(),{databaseReady:true,accepting:true});
   const initial=await db.prepare('SELECT COUNT(*) AS total FROM leads').first();
   assert.equal(initial.total,0);
   const badOrigin=await mf.dispatchFetch('https://local.test/api/contact',jsonReq(LEAD,'https://other.example'));
