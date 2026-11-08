@@ -85,6 +85,16 @@ test('D1 local real: POST válido persiste y se recupera; CORS, bot y consentimi
     0,
     'Se anonimiza IP y no se almacena en claro'
   );
+  // Retención real: se conserva la ventana actual y se elimina la de hace 72 h.
+  const currentBucket=Math.floor(Date.now()/3_600_000);
+  await db.prepare('INSERT INTO lead_rate_limit(fingerprint,hour_bucket,hits) VALUES(?,?,1)')
+    .bind('local-old-only',currentBucket-72).run();
+  await db.prepare('INSERT INTO lead_rate_limit(fingerprint,hour_bucket,hits) VALUES(?,?,1)')
+    .bind('local-recent-only',currentBucket-1).run();
+  assert.equal((await db.prepare("SELECT COUNT(*) AS total FROM lead_rate_limit WHERE fingerprint='local-old-only'").first()).total,1);
+  await (await mf.getWorker()).scheduled({scheduledTime:Date.now(),cron:'0 4 * * *'});
+  assert.equal((await db.prepare("SELECT COUNT(*) AS total FROM lead_rate_limit WHERE fingerprint='local-old-only'").first()).total,0);
+  assert.equal((await db.prepare("SELECT COUNT(*) AS total FROM lead_rate_limit WHERE fingerprint='local-recent-only'").first()).total,1);
   const noRead=await mf.dispatchFetch('https://local.test/admin',{method:'GET'});
   assert.equal(noRead.status,404);
   console.log('D1_LOCAL_INTEGRATION_PASS: saved=true; id='+response.id+'; email_is_fictitious=true');
