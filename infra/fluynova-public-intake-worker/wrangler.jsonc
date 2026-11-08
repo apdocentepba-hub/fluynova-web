@@ -17,5 +17,6 @@
       "TURNSTILE_SECRET_KEY",
       "RATE_HASH_SECRET"
     ]
-  }
+  },
+  "preview_urls": false
 }

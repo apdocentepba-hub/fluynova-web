@@ -21,6 +21,7 @@ export function auditClosedRelease({candidate,privateWorker,pkg,workflow}) {
   requireSafe(candidate?.name==='fluynova-public-intake-candidate','WRONG_PUBLIC_WORKER');
   requireSafe(candidate?.main==='./index.mjs','UNEXPECTED_ENTRYPOINT');
   requireSafe(candidate?.workers_dev===false,'WORKERS_DEV_EXPOSED');
+  requireSafe(candidate?.preview_urls===false,'PREVIEW_URLS_MUST_BE_OFF');
   for(const field of ['route','routes','d1_databases','triggers','account_id','assets','zone_id','site']){
     requireSafe(candidate?.[field]===undefined,'REMOTE_CONFIG_PRESENT_'+field.toUpperCase());
   }

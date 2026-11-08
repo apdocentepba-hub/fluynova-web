@@ -7,7 +7,7 @@ Este candidato usa un **nombre diferente**: `fluynova-public-intake-candidate`. 
 
 ## Alcance de la desactivación de rutas
 
-`workers_dev=false` impide usar la ruta tradicional `*.workers.dev`, **pero si algún día se desplegara**, Cloudflare puede seguir ofreciendo URLs de versión, vista previa y despliegue. La configuración no debe interpretarse como protección de autenticación ni reemplazo del apagado del código. Este candidato **todavía no está desplegado** y exige ambas variables en `false` en su configuración versionada.
+`workers_dev=false` y `preview_urls=false` cierran explícitamente la ruta tradicional `*.workers.dev` y las URLs de vista previa de Wrangler. Los flujos especiales de Preview y Deployment pueden tener configuración propia, por lo que **si algún día se desplegara**, hay que comprobar rutas y políticas Access reales antes de declarar ausencia de exposición. La configuración no debe interpretarse como protección de autenticación ni reemplazo del apagado del código. Este candidato **todavía no está desplegado** y exige ambas variables en `false` en su configuración versionada.
 
 Cloudflare Access configurado para **todos los Workers de la cuenta** podría proteger automáticamente también a este nuevo Worker; una política aplicada al Worker privado no debe quitarse. Antes de cualquier lanzamiento, comprobar por nombre de Worker, dominio, ruta y política efectiva que el endpoint de contacto sea accesible sin inicio de sesión y que el administrativo continúe restringido. CORS es defensa del navegador, no autorización de un cliente HTTP.
 
@@ -40,3 +40,4 @@ Workflow exclusivo de esta rama: pruebas de método/rutas/flags, compilación Wr
 - https://developers.cloudflare.com/turnstile/get-started/
 - https://developers.cloudflare.com/turnstile/get-started/server-side-validation/
 - https://developers.cloudflare.com/workers/configuration/routing/workers-dev/
+- https://developers.cloudflare.com/changelog/post/2025-09-17-update-preview-url-setting/

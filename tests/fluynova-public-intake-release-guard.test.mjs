@@ -19,9 +19,9 @@ test('encender cualquiera de las compuertas detiene la preparación',()=>{
   assert.equal(modify(c=>{c.candidate.vars[field]='true'}).safeClosed,false,field);
  }
 });
-test('rutas y workers.dev impiden certificar candidato cerrado',()=>{
- for(const field of ['workers_dev','routes','route','assets']){
-  const report=modify(c=>{c.candidate[field]=field==='workers_dev'?true:[]});
+test('rutas, workers.dev y previews impiden certificar candidato cerrado',()=>{
+ for(const field of ['workers_dev','preview_urls','routes','route','assets']){
+  const report=modify(c=>{c.candidate[field]=['workers_dev','preview_urls'].includes(field)?true:[]});
   assert.equal(report.safeClosed,false,field);
  }
 });

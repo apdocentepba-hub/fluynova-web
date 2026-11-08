@@ -14,6 +14,7 @@ test('es Worker diferente, sin rutas, sin workers.dev, D1 ni valores de secretos
   assert.equal(cfg.name,'fluynova-public-intake-candidate');
   assert.notEqual(cfg.name,'fluynova-contact-staging-only');
   assert.equal(cfg.workers_dev,false);
+  assert.equal(cfg.preview_urls,false);
   for(const key of ['routes','route','d1_databases','triggers','account_id'])
     assert.equal(cfg[key],undefined,key+' no debe configurarse');
   assert.equal(cfg.vars.ENABLE_PUBLIC_INTAKE,'false');
