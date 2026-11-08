@@ -54,6 +54,7 @@ async function makeD1({siteverify=true,createLeads=true}={}){
     modules:true,scriptPath:WORKER_SCRIPT,cf:false,fetchMock:mock,
     d1Databases:{DB:'fluynova-only-temporary-e2e'},
     bindings:{
+      ENABLE_CONTACT_SUBMISSIONS:'true',
       ALLOWED_ORIGINS:ORIGIN,
       TURNSTILE_HOSTNAMES:'fluynova-e2e.invalid',
       TURNSTILE_SECRET_KEY:'CI_ONLY_NEVER_REAL',
