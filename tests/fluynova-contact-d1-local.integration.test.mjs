@@ -42,6 +42,7 @@ test('D1 local real: POST válido persiste y se recupera; CORS, bot y consentimi
   scriptPath:SCRIPT,
   d1Databases:{DB:'fluynova-d1-test-exclusive-local'},
   bindings:{
+   ENABLE_CONTACT_SUBMISSIONS:'true',
    ALLOWED_ORIGINS:ORIGIN,
    TURNSTILE_HOSTNAMES:'fluynova.example',
    TURNSTILE_SECRET_KEY:'CI_ONLY_NOT_REAL',
