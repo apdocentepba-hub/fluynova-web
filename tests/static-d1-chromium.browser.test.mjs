@@ -95,7 +95,10 @@ test('Chromium real: vista desconfigurada permanece bloqueada y muestra correo d
  try{
   await x.page.waitForFunction(()=>
    document.querySelector('#form-status')?.textContent?.includes('no está habilitado'));
-  assert.equal(await x.page.locator('fieldset[data-d1-gate="closed"]').isDisabled(),true);
+  // La propiedad HTMLFieldSetElement.disabled es la verificación semántica
+  // correcta: Playwright isDisabled() se orienta a controles interactivos.
+  assert.equal(await x.page.locator('fieldset[data-d1-gate="closed"]')
+    .evaluate(element=>element.disabled),true);
   assert.equal(await x.page.locator('#contact-form button[type="submit"]').isDisabled(),true);
   assert.ok((await x.page.locator('a[href^="mailto:contacto.fluynova@gmail.com"]').count())>=1);
   assert.equal(x.workerRequests.length,0);
