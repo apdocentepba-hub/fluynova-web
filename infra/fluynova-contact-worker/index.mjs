@@ -123,44 +123,6 @@ async function storeLead(db,item,id,at) {
     item.creative,at,'Nuevo').run();
   if(result?.success!==true)throw Error('STORAGE_NOT_CONFIRMED');
 }
-// Solo el Worker PUBLICO usará esta capa de idempotencia.
-// En el Worker privado, ausente ENABLE_PUBLIC_INTAKE, se conserva storeLead().
-// Nunca se debe crear la tabla faltante desde una petición HTTP.
-const REQUEST_ID_V4=/^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i;
-async function macLeadPayload(value,secret) {
- const key=await crypto.subtle.importKey('raw',new TextEncoder().encode(secret),
-   {name:'HMAC',hash:'SHA-256'},false,['sign']);
- const bytes=await crypto.subtle.sign('HMAC',key,
-   new TextEncoder().encode('fluynova-lead-v1:'+JSON.stringify(value)));
- return [...new Uint8Array(bytes)].map(x=>x.toString(16).padStart(2,'0')).join('');
-}
-const DEDUPE_SELECT='SELECT d.lead_id,d.payload_mac,d.fingerprint '+
- 'FROM lead_idempotency d INNER JOIN leads l ON l.id=d.lead_id WHERE d.request_id=?';
-async function persistIdempotentLead(db,item,requestId,mac,fingerprint,id,at) {
- // D1 batch realiza la reserva de clave y el INSERT condicional en UNA
- // transacción. Si la escritura de leads falla, revierte también la clave.
- const out=await db.batch([
-   db.prepare('INSERT INTO lead_idempotency '+
-     '(request_id,payload_mac,fingerprint,lead_id,created_at) VALUES (?,?,?,?,?) '+
-     'ON CONFLICT(request_id) DO NOTHING')
-    .bind(requestId,mac,fingerprint,id,at),
-   db.prepare('INSERT INTO leads (id, received_at, name, email, organization, category, '+
-     'message, deadline, stage, budget, source, medium, campaign, creative, consent_at, status) '+
-     'SELECT ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,? WHERE EXISTS '+
-     '(SELECT 1 FROM lead_idempotency WHERE request_id=? AND lead_id=?)')
-    .bind(id,at,item.name,item.email,item.organization,item.category,item.message,
-      item.deadline,item.stage,item.budget,item.source,item.medium,item.campaign,
-      item.creative,at,'Nuevo',requestId,id),
-   db.prepare(DEDUPE_SELECT).bind(requestId)
- ]);
- if(!Array.isArray(out)||out.length!==3||out.some(x=>x?.success!==true))
-   throw Error('IDEMPOTENCY_BATCH_NOT_CONFIRMED');
- const row=out[2].results?.[0];
- if(!row?.lead_id||typeof row.lead_id!=='string')
-   throw Error('IDEMPOTENCY_NOT_CONFIRMED');
- return row;
-}
-
 export function createHandler({fetcher=fetch,clock=()=>Date.now(),uuid=()=>crypto.randomUUID()}={}) {
   return async function handle(request,env) {
     const url=new URL(request.url),origin=request.headers.get('origin')||'';
@@ -200,10 +162,6 @@ export function createHandler({fetcher=fetch,clock=()=>Date.now(),uuid=()=>crypt
       return json({ok:false,error:'INVALID_REQUEST'},422,origin);
     const v=validateLead(data);
     if(v.error)return json({ok:false,error:v.error},422,origin);
-    const useIdempotency=env.ENABLE_PUBLIC_INTAKE==='true';
-    const requestId=data?.request_id;
-    if(useIdempotency && (typeof requestId!=='string'||!REQUEST_ID_V4.test(requestId)))
-      return json({ok:false,error:'INVALID_REQUEST_ID'},422,origin);
     const ip=request.headers.get('cf-connecting-ip')||'';
     let verified=false;
     try{verified=await verifyTurnstile(data.turnstile_token,ip,env,fetcher)}
@@ -211,27 +169,6 @@ export function createHandler({fetcher=fetch,clock=()=>Date.now(),uuid=()=>crypt
     if(!verified)return json({ok:false,error:'CAPTCHA_FAILED'},403,origin);
     try{
       const fingerprint=await anonymizeIp(request,env.RATE_HASH_SECRET);
-      if(useIdempotency){
-        const mac=await macLeadPayload(v.value,env.RATE_HASH_SECRET);
-        // Reintento tras una respuesta perdida: no consumir otro cupo de rate
-        // limit ni registrar otra consulta si ya se confirmó D1 antes.
-        const old=await env.DB.prepare(DEDUPE_SELECT).bind(requestId).first();
-        if(old){
-          if(old.payload_mac!==mac||old.fingerprint!==fingerprint)
-            return json({ok:false,error:'IDEMPOTENCY_CONFLICT'},409,origin);
-          return json({ok:true,id:old.lead_id,stored:true,
-            delivery:'database',duplicate:true},200,origin);
-        }
-        if(!await consumeRate(env.DB,fingerprint,clock()))
-          return json({ok:false,error:'TOO_MANY_REQUESTS'},429,origin);
-        const id=uuid(),at=new Date(clock()).toISOString();
-        const row=await persistIdempotentLead(env.DB,v.value,requestId,mac,fingerprint,id,at);
-        if(row.payload_mac!==mac||row.fingerprint!==fingerprint)
-          return json({ok:false,error:'IDEMPOTENCY_CONFLICT'},409,origin);
-        const duplicate=row.lead_id!==id;
-        return json({ok:true,id:row.lead_id,stored:true,
-          delivery:'database',...(duplicate?{duplicate:true}:{})},duplicate?200:201,origin);
-      }
       if(!await consumeRate(env.DB,fingerprint,clock()))
         return json({ok:false,error:'TOO_MANY_REQUESTS'},429,origin);
       const id=uuid(),at=new Date(clock()).toISOString();
