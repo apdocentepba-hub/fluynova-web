@@ -1,13 +1,32 @@
 const menuButton=document.querySelector('.mobile-menu');
 const menu=document.querySelector('.menu');
-menuButton?.addEventListener('click',()=>{
- const open=menu.classList.toggle('open');
+// Misma fuente de verdad visual y ARIA para mouse, tacto y teclado.
+function setMobileMenu(open,{restoreFocus=false}={}){
+ if(!menu||!menuButton)return;
+ menu.classList.toggle('open',open);
  menuButton.setAttribute('aria-expanded',String(open));
  menuButton.setAttribute('aria-label',open?'Cerrar menú':'Abrir menú');
+ if(!open&&restoreFocus)menuButton.focus();
+}
+menuButton?.addEventListener('click',()=>{
+ setMobileMenu(!menu.classList.contains('open'));
 });
 menu?.querySelectorAll('a').forEach(a=>a.addEventListener('click',()=>{
- menu.classList.remove('open');menuButton?.setAttribute('aria-expanded','false');
+ setMobileMenu(false);
 }));
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&menu?.classList.contains('open')){
+  event.preventDefault();
+  setMobileMenu(false,{restoreFocus:true});
+ }
+});
+document.addEventListener('pointerdown',event=>{
+ if(menu?.classList.contains('open')&&!menu.contains(event.target)&&
+    !menuButton?.contains(event.target))setMobileMenu(false);
+});
+window.addEventListener('resize',()=>{
+ if(window.innerWidth>1100&&menu?.classList.contains('open'))setMobileMenu(false);
+});
 document.getElementById('year').textContent=new Date().getFullYear();
 
 const CONTACT_EMAIL='contacto.fluynova@gmail.com';

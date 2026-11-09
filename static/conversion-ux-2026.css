@@ -104,3 +104,174 @@
 .flx-ux-2026 .flx-optional-inner{padding:16px}
 .flx-ux-2026 .flx-optional-inner .wide-label{display:block;margin-top:13px}
 @media(max-width:480px){.flx-ux-2026 .flx-optional-details>summary span{margin-left:0}}
+
+/* FLUYNOVA visual lab — polished process graphics (non-production PR #21) */
+/* Los gráficos son representaciones ficticias de procesos, nunca métricas de clientes. */
+.flx-ux-2026 .workflow-card{
+  transform:none;
+  background:linear-gradient(157deg,#1d3436 0%,#132528 74%);
+  border:1px solid #618c7c;
+  box-shadow:0 28px 78px #0009,0 0 0 5px #bfffa909,0 0 66px #6de0b319;
+  isolation:isolate
+}
+.flx-ux-2026 .workflow-card::before{
+  content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;
+  background-image:linear-gradient(#d7ffe607 1px,transparent 1px),
+    linear-gradient(90deg,#d7ffe607 1px,transparent 1px),
+    radial-gradient(ellipse at 94% 13%,#8cf9ae12,transparent 40%);
+  background-size:22px 22px,22px 22px,auto
+}
+.flx-ux-2026 .workflow-head{background:#1125298c}
+.flx-ux-2026 .flow-step{
+  position:relative;
+  background:linear-gradient(105deg,#233a3a,#1b3035);
+  border:1px solid #536f66;
+  box-shadow:0 8px 21px #0002;
+  transition:border-color .2s ease,box-shadow .2s ease
+}
+.flx-ux-2026 .flow-step::before{
+  content:"";position:absolute;left:0;top:12px;bottom:12px;
+  width:3px;border-radius:0 8px 8px 0;background:#88bda0
+}
+.flx-ux-2026 .flow-step.active{
+  background:linear-gradient(102deg,#2b5942,#203d37 70%,#1f343a);
+  border-color:#bbf5a0;
+  box-shadow:inset 0 0 0 1px #c4f5a61a,0 12px 32px #07181170
+}
+.flx-ux-2026 .flow-step.active::before{background:#c6ff83}
+.flx-ux-2026 .flow-line{
+  width:3px;
+  background:repeating-linear-gradient(to bottom,#c0efad 0,#c0efad 4px,transparent 4px,transparent 9px);
+  opacity:.85
+}
+.flx-ux-2026 .solution-graphic{
+  border:1px solid #45635a;
+  background-image:linear-gradient(#dafff208 1px,transparent 1px),
+    linear-gradient(90deg,#dafff208 1px,transparent 1px),
+    radial-gradient(ellipse at center,#365447,#1b3133 76%);
+  background-size:23px 23px,23px 23px,auto
+}
+.flx-ux-2026 .graphic-two{
+  background-image:linear-gradient(#dafff208 1px,transparent 1px),
+    linear-gradient(90deg,#dafff208 1px,transparent 1px),
+    radial-gradient(ellipse at center,#325465,#1b2c3b 78%)
+}
+.flx-ux-2026 .graphic-three{
+  background-image:linear-gradient(#dafff208 1px,transparent 1px),
+    linear-gradient(90deg,#dafff208 1px,transparent 1px),
+    radial-gradient(ellipse at center,#483d62,#242d46 78%)
+}
+.flx-ux-2026 .mini-dashboard{
+  transform:rotate(-2deg);
+  background:linear-gradient(140deg,#2b4251,#172831);
+  border-color:#829fa5;
+  box-shadow:0 15px 37px #0007
+}
+.flx-ux-2026 .mini-dashboard>div span{
+  background:linear-gradient(90deg,#83bdbe,#4b7482);
+  border-radius:6px
+}
+.flx-ux-2026 .mini-dashboard>div span:first-child{
+  background:linear-gradient(90deg,#b8ff82,#66c5ae)
+}
+.flx-ux-2026 .fake-file{
+  border:1px solid #d9ecd5;
+  box-shadow:0 9px 26px #0006
+}
+.flx-ux-2026 .bubble{box-shadow:0 8px 18px #0004}
+.flx-ux-2026 .solution-card{
+  border-color:#48625c;
+  background:linear-gradient(165deg,#1a2a31,#111d23);
+  box-shadow:0 15px 35px #050f172e
+}
+.flx-ux-2026 .solution-card:focus-within{outline:2px solid #c9ff95;outline-offset:3px}
+@media(max-width:820px){
+  .flx-ux-2026 .workflow-card{max-width:515px}
+}
+@media(max-width:480px){
+  .flx-ux-2026 .workflow-card{border-radius:16px}
+  .flx-ux-2026 .workflow-head{gap:9px;padding-inline:12px}
+  .flx-ux-2026 .flow-step{margin-inline:13px;padding:12px;gap:10px}
+  .flx-ux-2026 .flow-step .flow-icon{width:36px;height:36px;flex:none}
+  .flx-ux-2026 .flow-step strong{font-size:12px}
+  .flx-ux-2026 .flow-step div span{font-size:10px}
+  .flx-ux-2026 .flow-line{margin-left:46px}
+  .flx-ux-2026 .flow-label{padding-inline:17px}
+  .flx-ux-2026 .workflow-foot{padding-inline:13px}
+}
+@media(prefers-reduced-motion:reduce){
+  .flx-ux-2026 .flow-step{transition:none}
+  .flx-ux-2026 .solution-card{transition:none}
+}
+
+/* FLUYNOVA visual QA - tablet nav and focus (candidate only) */
+.flx-ux-2026 .mobile-menu:focus-visible,
+.flx-ux-2026 .menu a:focus-visible,
+.flx-ux-2026 .btn:focus-visible,
+.flx-ux-2026 .solution-card a:focus-visible,
+.flx-ux-2026 :is(input,select,textarea,summary,button):focus-visible {
+  outline:3px solid #ffd18c;
+  outline-offset:3px;
+}
+@media (min-width:801px) and (max-width:1100px) {
+  /* El menú de 8 enlaces no entra cómodamente en una sola fila a ancho tablet. */
+  .flx-ux-2026 .site-header{height:70px}
+  .flx-ux-2026 .mobile-menu{
+    display:flex;flex-direction:column;justify-content:center;gap:4px;
+    border:1px solid #789a85;border-radius:9px;
+    width:44px;height:42px;background:#1b302e
+  }
+  .flx-ux-2026 .mobile-menu span{
+    display:block;background:#caff91;width:19px;height:2px;margin:0 auto
+  }
+  .flx-ux-2026 .menu{
+    display:none;position:absolute;top:69px;left:0;right:0;
+    flex-direction:column;align-items:stretch;gap:7px;
+    max-height:calc(100dvh - 70px);overflow-y:auto;
+    padding:15px max(24px,5vw) 22px;
+    background:#132427;border:1px solid #4c7562;
+    border-top:0;border-radius:0 0 13px 13px;
+    box-shadow:0 20px 40px #0007
+  }
+  .flx-ux-2026 .menu.open{display:flex}
+  .flx-ux-2026 .menu>a{padding:9px 11px;min-height:40px}
+  .flx-ux-2026 .menu .nav-cta{align-self:flex-start}
+}
+@media (max-width:800px){
+  .flx-ux-2026 .menu{
+    max-height:calc(100dvh - 70px);overflow-y:auto;
+    box-shadow:0 20px 40px #0007
+  }
+  .flx-ux-2026 .menu>a{padding:8px 7px;min-height:40px}
+}
+
+/* FLUYNOVA visual QA - desktop header spacing */
+@media (min-width:1101px){
+ .flx-ux-2026 .nav-wrap{gap:24px}
+ .flx-ux-2026 .brand{flex-shrink:0}
+ .flx-ux-2026 .menu{
+   flex:1;justify-content:flex-end;
+   gap:clamp(10px,1.15vw,19px);
+   font-size:12px
+ }
+ .flx-ux-2026 .menu .nav-cta{padding:11px 14px}
+}
+
+/* FLUYNOVA 320px viewport overflow corrections */
+@media(max-width:560px){
+ /* Brillos decorativos: no deben agrandar el ancho desplazable del documento. */
+ .flx-ux-2026 .ambient-one{
+  width:min(100vw,490px);right:0;left:auto
+ }
+ .flx-ux-2026 .ambient-two{
+  width:min(100vw,430px);left:0;right:auto
+ }
+ /* El título de la sección puede tener palabras largas: no imponer min-content. */
+ .flx-ux-2026 .section-top{min-width:0}
+ .flx-ux-2026 .section-top>div{width:100%;min-width:0;max-width:100%}
+ .flx-ux-2026 .section-top h2{max-width:100%;overflow-wrap:anywhere}
+}
+
+/* Brillos limitados al viewport en tablet y escritorio: sin scroll lateral. */
+.flx-ux-2026 .ambient-one{right:0;width:min(490px,100vw)}
+.flx-ux-2026 .ambient-two{left:0;width:min(430px,100vw)}

@@ -1,0 +1,98 @@
+name: FLUYNOVA — candidato estático limpio desde main
+
+on:
+  push:
+    branches:
+      - feature/fluynova-static-clean-from-main-20261107
+    paths:
+      - 'scripts/build-static-main-preview.mjs'
+      - 'scripts/verify-static-routes.mjs'
+      - 'tests/static-clean-main.test.mjs'
+      - 'tests/static-native-contact.test.mjs'
+      - 'tests/verify-static-routes.test.mjs'
+      - 'scripts/build-static-native-contact.mjs'
+      - 'scripts/build-static-d1-contact-candidate.mjs'
+      - 'scripts/contact-d1-staging-client.js'
+      - 'tests/static-d1-contact.test.mjs'
+      - 'tests/static-d1-chromium.browser.test.mjs'
+      - 'tests/render-source-layout.browser.test.mjs'
+      - 'static/**'
+      - '.github/workflows/fluynova-static-clean-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  offline-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Checkout rama de origen
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validar sintaxis del constructor y del verificador
+        run: |
+          node --check scripts/build-static-main-preview.mjs
+          node --check scripts/verify-static-routes.mjs
+          node --check scripts/build-static-native-contact.mjs
+          node --check scripts/build-static-d1-contact-candidate.mjs
+          node --check scripts/contact-d1-staging-client.js
+      - name: Pruebas locales, sin solicitudes HTTP
+        run: node --test tests/static-clean-main.test.mjs tests/verify-static-routes.test.mjs tests/static-native-contact.test.mjs tests/static-d1-contact.test.mjs
+      - name: Construir vista estática a partir de static/ de main
+        run: node scripts/build-static-main-preview.mjs
+      - name: Construir puente D1 cerrado por defecto sin credenciales ni envíos
+        run: node scripts/build-static-d1-contact-candidate.mjs --offline-candidate
+      - name: Verificar todas las referencias internas del artefacto resultante
+        run: node scripts/verify-static-routes.mjs dist-static-main-preview
+      - name: Impedir publicaciones y entregas activas en el artefacto
+        run: |
+          test -f dist-static-main-preview/index.html
+          test -f dist-static-d1-staging/contact-d1-staging.js
+          grep -q "data-d1-gate=\"closed\"" dist-static-d1-staging/index.html
+          grep -q "endpoint:''" dist-static-d1-staging/contact-d1-staging.js
+          grep -q "siteKey:''" dist-static-d1-staging/contact-d1-staging.js
+          test ! -e dist-static-main-preview/sitemap.xml
+          grep -q 'data-preview-contact="disabled"' dist-static-main-preview/index.html
+          grep -q 'También podés contactarnos por correo' dist-static-main-preview/index.html
+          grep -q '/privacidad /privacidad.html 200' dist-static-main-preview/_redirects
+          grep -q 'X-Robots-Tag: noindex, nofollow' dist-static-main-preview/_headers
+          grep -q 'Disallow: /' dist-static-main-preview/robots.txt
+          ! grep -q 'fetch(' dist-static-main-preview/main.js
+          ! grep -q 'fetch(' dist-static-main-preview/guardian/guardian.js
+
+  chromium-offline-e2e:
+    needs: offline-only
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Extraer rama de laboratorio
+        uses: actions/checkout@v4
+      - name: Configurar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Playwright en versión fija sin alterar el repositorio
+        run: npm install --no-save --no-package-lock playwright@1.65.0
+      - name: Instalar Chromium Headless Shell para CI
+        run: npx playwright install --with-deps --only-shell chromium
+      - name: Ejecutar navegador real con red bloqueada y D1 simulada
+        run: node --test tests/static-d1-chromium.browser.test.mjs
+      - name: Validar HTML y CSS tal como Render los sirve (sin red ni envíos)
+        run: node --test tests/render-source-layout.browser.test.mjs
+      - name: Guardar capturas del laboratorio visual (sin datos de clientes)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluynova-qa-visual-candidato
+          path: |
+            artifacts/fluynova-ui/
+            artifacts/fluynova-render-source/
+          if-no-files-found: warn
+          retention-days: 7
