@@ -74,7 +74,7 @@ function safeSnapshot(snapshot) {
  return true;
 }
 function identical(a,b){return JSON.stringify(a)===JSON.stringify(b)}
-async function checkedSchema(db){
+export async function checkedSchema(db){
  const status=await inspectD1Schema(db);
  if(!status.baseReady||!status.ledgerReady||status.missing.length)
   fail('BACKUP_BASE_SCHEMA_UNSUPPORTED');
