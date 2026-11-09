@@ -10,7 +10,7 @@ import {resolve,join,sep,extname} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {chromium} from 'playwright';
 
-const ROOT=fileURLToPath(new URL('../static/',import.meta.url));
+const ROOT=resolve(fileURLToPath(new URL('../static/',import.meta.url)));
 const HOST='fluynova-source-local.invalid';
 const SITE='https://'+HOST+'/';
 const MIME={'.html':'text/html','.css':'text/css','.js':'application/javascript',
