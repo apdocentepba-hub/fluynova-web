@@ -48,6 +48,14 @@ jobs:
           node --check backup/encrypted-snapshot.mjs
           node --check backup/encrypted-snapshot.test.mjs
           timeout --signal=TERM --kill-after=3s 100s node --test backup/encrypted-snapshot.test.mjs
+      - name: Paginación cifrada y retención conservadora D1 LOCAL, sin acciones destructivas
+        working-directory: infra/fluynova-admin-readonly-worker
+        run: |
+          node --check backup/paged-encrypted-archive.mjs
+          node --check backup/paged-encrypted-archive.test.mjs
+          node --check backup/retention-plan.mjs
+          node --check backup/retention-plan.test.mjs
+          timeout --signal=TERM --kill-after=3s 125s node --test backup/paged-encrypted-archive.test.mjs backup/retention-plan.test.mjs
       - name: Firmas RS256 y D1 local, red externa completamente interceptada
         working-directory: infra/fluynova-admin-readonly-worker
         run: timeout --signal=TERM --kill-after=3s 120s npm test
