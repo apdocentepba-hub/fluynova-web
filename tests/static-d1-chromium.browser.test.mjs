@@ -262,7 +262,7 @@ test('Chromium: visual QA responsive y teclado, con navegación sin duplicados',
   const page=x.page;
   assert.equal(await page.locator('#site-menu a[href="/webs/"]').count(),1,
    'No duplicar accesos a Páginas web en el menú');
-  const widths=[320,390,768,900,1024,1366];
+  const widths=[320,390,768,900,1024,1366,1920];
   const results=[];
   for(const width of widths){
    await page.setViewportSize({width,height:850});
