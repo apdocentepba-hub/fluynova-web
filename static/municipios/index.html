@@ -56,19 +56,24 @@
         </div>
         <ul class="cases" id="case-list" aria-label="Solicitudes ficticias">
           <li class="case" data-case="DEMO-001" data-state="new" data-area="Servicios públicos">
-            <div><span class="case-id">DEMO-001 · Servicios públicos</span><strong>Consulta sobre luminaria en una plaza</strong><p>Ejemplo inventado; sin ubicación ni datos de personas.</p></div>
+            <div><span class="case-id">DEMO-001 · Servicios públicos</span><strong>Consulta sobre luminaria en una plaza</strong><p>Ejemplo inventado; sin ubicación ni datos de personas.</p><p class="case-owner" hidden></p></div>
             <div class="case-actions"><span class="case-status">Nueva</span><button type="button" data-advance="DEMO-001">Derivar al área</button></div>
           </li>
           <li class="case" data-case="DEMO-002" data-state="new" data-area="Espacios verdes">
-            <div><span class="case-id">DEMO-002 · Espacios verdes</span><strong>Pedido de seguimiento de mantenimiento</strong><p>Ejemplo inventado; sin ubicación ni datos de personas.</p></div>
+            <div><span class="case-id">DEMO-002 · Espacios verdes</span><strong>Pedido de seguimiento de mantenimiento</strong><p>Ejemplo inventado; sin ubicación ni datos de personas.</p><p class="case-owner" hidden></p></div>
             <div class="case-actions"><span class="case-status">Nueva</span><button type="button" data-advance="DEMO-002">Derivar al área</button></div>
           </li>
           <li class="case" data-case="DEMO-003" data-state="new" data-area="Atención ciudadana">
-            <div><span class="case-id">DEMO-003 · Atención ciudadana</span><strong>Consulta por requisitos de un trámite</strong><p>Ejemplo inventado; sin ubicación ni datos de personas.</p></div>
+            <div><span class="case-id">DEMO-003 · Atención ciudadana</span><strong>Consulta por requisitos de un trámite</strong><p>Ejemplo inventado; sin ubicación ni datos de personas.</p><p class="case-owner" hidden></p></div>
             <div class="case-actions"><span class="case-status">Nueva</span><button type="button" data-advance="DEMO-003">Derivar al área</button></div>
           </li>
         </ul>
         <div class="demo-bottom"><p id="demo-notice" role="status" aria-live="polite">Seleccioná «Derivar al área» para ver cómo cambia el seguimiento.</p><button id="reset-demo" class="reset" type="button">Reiniciar ejemplo</button></div>
+        <div class="demo-history-panel" aria-label="Historial ficticio del ejemplo">
+          <h3>Historial de movimientos</h3>
+          <p>Solo se muestra en esta página mientras está abierta. No se guarda ni certifica ninguna actuación administrativa.</p>
+          <ol id="demo-history" aria-live="polite"><li data-placeholder>Sin movimientos todavía. Derivá un caso para comenzar.</li></ol>
+        </div>
       </div>
       <p class="micro">Este prototipo usa reglas locales deterministas, sin modelo de IA, sin API, sin base de datos y sin efectos sobre expedientes, turnos o ciudadanos.</p>
     </section>
