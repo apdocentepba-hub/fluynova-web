@@ -1,0 +1,24 @@
+name: FLUYNOVA Control - validacion offline, SIN PUBLICAR
+on:
+  push:
+    branches: ['feature/fluynova-municipios-piloto-20261109']
+    paths: ['static/control/index.html','tests/fluynova-control-standalone.browser.test.mjs','.github/workflows/fluynova-control-demo-offline.yml']
+  pull_request:
+    paths: ['static/control/index.html','tests/fluynova-control-standalone.browser.test.mjs','.github/workflows/fluynova-control-demo-offline.yml']
+permissions:
+  contents: read
+jobs:
+  chromium-local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar Chromium aislado
+        run: |
+          npm install --no-save --no-package-lock playwright@1.65.0
+          npx playwright install --with-deps --only-shell chromium
+      - name: Probar HTML real sin solicitar datos ni publicar
+        run: node --test tests/fluynova-control-standalone.browser.test.mjs
