@@ -39,7 +39,7 @@ node --test copilot.test.mjs
 
 Estas pruebas son ejecutables sin Ollama, mediante un **modelo de respuesta falsa para validar contratos de software**. No constituyen una prueba de inferencia real ni de exactitud de extracción. Validan casos con éxito, error, timeout, rechazo de orígenes, mensajes mal formados, límites y revisión humana.
 
-Se prepara además una prueba Chromium que recorre la interfaz y bloquea servicios externos. La aprobación de CI debe consultarse en el workflow `fluynova-copilot-offline.yml`.
+**Comprobado en GitHub Actions:** 8/8 pruebas Node y 2/2 pruebas Chromium con analizador simulado y solicitudes externas bloqueadas. Evidencia: https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42708416345 . **No hubo inferencia de un LLM real**, ya que el entorno CI no tiene Ollama instalado.
 
 ## Próximo desarrollo basado en una venta real
 
