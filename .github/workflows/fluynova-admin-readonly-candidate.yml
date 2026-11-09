@@ -1,0 +1,40 @@
+name: FLUYNOVA — API admin aislada (NO publicar)
+
+on:
+  push:
+    branches:
+      - feature/fluynova-public-intake-isolated-20261108
+    paths:
+      - 'infra/fluynova-admin-readonly-worker/**'
+      - 'infra/fluynova-public-intake-worker/mail-admin-report.mjs'
+      - '.github/workflows/fluynova-admin-readonly-candidate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  admin-auth-workerd-local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar ruta y configuración cerradas
+        working-directory: infra/fluynova-admin-readonly-worker
+        run: |
+          node --check index.mjs
+          node --check admin.test.mjs
+      - name: Instalar solo herramientas locales y verificador criptográfico
+        working-directory: infra/fluynova-admin-readonly-worker
+        run: npm install --no-audit --no-fund
+      - name: Firmas RS256 y D1 local, red externa completamente interceptada
+        working-directory: infra/fluynova-admin-readonly-worker
+        run: timeout --signal=TERM --kill-after=3s 120s npm test
+      - name: Construir candidato admin sin desplegarlo
+        working-directory: infra/fluynova-admin-readonly-worker
+        run: npm run dryrun
+        env:
+          WRANGLER_SEND_METRICS: 'false'
