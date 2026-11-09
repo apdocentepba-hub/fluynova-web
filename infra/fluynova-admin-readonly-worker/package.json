@@ -1,0 +1,19 @@
+{
+  "name": "fluynova-admin-readonly-candidate",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check index.mjs",
+    "test": "node --test admin.test.mjs",
+    "dryrun": "wrangler deploy --dry-run"
+  },
+  "dependencies": {
+    "jose": "6.2.15"
+  },
+  "devDependencies": {
+    "wrangler": "4.136.3",
+    "miniflare": "4.20260730.0",
+    "esbuild": "0.25.12"
+  }
+}
