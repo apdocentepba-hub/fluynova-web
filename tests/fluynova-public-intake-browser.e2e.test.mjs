@@ -298,3 +298,38 @@ test('Dos compuertas cerradas: no confirma, D1 vacía y sin APIs privadas',async
   }finally{await s.close()}
  }
 });
+
+test('Chromium: regresión visual PR21 sincronizado, sin POST ni solapamiento móvil',async()=>{
+ const s=await scene({configured:false});
+ try{
+  const page=s.page;
+  assert.equal(await page.locator('#site-menu a[href="/webs/"]').count(),1,
+   'La navegación reciente no debe duplicar el enlace /webs/');
+  for(const width of [320,390,900,1366]){
+   await page.setViewportSize({width,height:844});
+   const metrics=await page.evaluate(()=>({
+    viewport:innerWidth,
+    scroll:document.documentElement.scrollWidth,
+    toggleShown:getComputedStyle(document.querySelector('.mobile-menu')).display!=='none'
+   }));
+   assert.equal(metrics.scroll,width,'Sin scroll horizontal a '+width+' px');
+   assert.equal(metrics.toggleShown,width<=1100,'Menú responsive actualizado a '+width+' px');
+   if(width<=1100){
+    const toggle=page.locator('.mobile-menu');
+    await toggle.click();
+    assert.equal(await toggle.getAttribute('aria-expanded'),'true');
+    await page.keyboard.press('Escape');
+    assert.equal(await toggle.getAttribute('aria-expanded'),'false');
+   }
+  }
+  await page.setViewportSize({width:390,height:844});
+  await page.locator('#fg-launcher').waitFor({state:'attached'});
+  assert.equal(await page.locator('#fg-launcher').isVisible(),false,
+   'El botón flotante no debe cubrir el formulario de contacto');
+  assert.equal(await page.locator('#contact-form button[type=submit]').isDisabled(),true);
+  assert.ok(await page.locator('a[href^="mailto:contacto.fluynova@gmail.com"]').count()>0);
+  assert.equal(s.apiResponses.length,0,'El test visual no realiza contactos a Workerd');
+  assert.deepEqual(s.unexpectedPosts,[]);
+  assert.deepEqual(s.pageErrors,[]);
+ }finally{await s.close()}
+});
