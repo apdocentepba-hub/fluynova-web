@@ -67,3 +67,51 @@ test('control: aprobar, observar, buscar, exportar y reiniciar',async()=>{
   assert.ok(s.requests.every(x=>x.method==='GET'&&x.url==='https://'+HOST+'/control/'));
  }finally{await s.context.close()}
 });
+
+
+test('circuito completo: observar duplicado, subsanar ejemplo y aprobar',async()=>{
+ const s=await start(900);
+ try{
+  assert.equal(await s.page.locator('#count-alerts').textContent(),'4');
+  // El duplicado bloquea la aprobación antes de subsanar.
+  assert.equal(await s.page.locator('[data-action="approve"][data-id="F-1003"]').count(),0);
+  await s.page.locator('[data-action="observe"][data-id="F-1003"]').click();
+  await s.page.locator('#review-note').fill('Factura repetida: solicitar corrección (demo)');
+  await s.page.locator('#save-observation').click();
+  assert.equal(await s.page.locator('#count-observed').textContent(),'1');
+  assert.equal(await s.page.locator('[data-action="approve"][data-id="F-1003"]').count(),0);
+  await s.page.locator('[data-action="fix"][data-id="F-1003"]').click();
+  assert.equal(await s.page.locator('#count-alerts').textContent(),'2');
+  assert.equal(await s.page.locator('#count-observed').textContent(),'0');
+  assert.equal(await s.page.locator('[data-action="approve"][data-id="F-1003"]').count(),1);
+  assert.match(await s.page.locator('#records').innerText(),/A-0001-00000122/);
+  await s.page.locator('[data-action="approve"][data-id="F-1003"]').click();
+  assert.equal(await s.page.locator('#count-approved').textContent(),'1');
+  const history=await s.page.locator('#audit').innerText();
+  assert.match(history,/Aprobación simulada/);
+  assert.match(history,/Subsanación ficticia/);
+  assert.match(history,/Observación registrada/);
+  const p=s.page.waitForEvent('download');
+  await s.page.locator('#export').click();
+  const csv=await readFile(await (await p).path(),'utf8');
+  assert.match(csv,/neto_centavos/);
+  assert.match(csv,/FICTICIO/);
+  assert.match(csv,/A-0001-00000122/);
+  assert.deepEqual(s.errors,[]);
+  assert.ok(s.requests.every(x=>x.method==='GET'&&x.url==='https://'+HOST+'/control/'));
+ }finally{await s.context.close()}
+});
+test('documento sin alertas observado necesita volver a pendiente antes de aprobar',async()=>{
+ const s=await start(900);
+ try{
+  await s.page.locator('[data-action="observe"][data-id="F-1002"]').click();
+  await s.page.locator('#review-note').fill('Revisar condiciones de ejemplo');
+  await s.page.locator('#save-observation').click();
+  assert.equal(await s.page.locator('[data-action="approve"][data-id="F-1002"]').count(),0);
+  assert.equal(await s.page.locator('[data-action="fix"][data-id="F-1002"]').count(),0);
+  await s.page.locator('[data-action="undo"][data-id="F-1002"]').click();
+  await s.page.locator('[data-action="approve"][data-id="F-1002"]').click();
+  assert.equal(await s.page.locator('#count-approved').textContent(),'1');
+  assert.deepEqual(s.errors,[]);
+ }finally{await s.context.close()}
+});
