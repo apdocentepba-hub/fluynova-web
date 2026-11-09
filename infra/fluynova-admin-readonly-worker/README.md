@@ -17,6 +17,18 @@
 - [CI de GitHub #42605843533](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42606154367): **SUCCESS 1/1 job, 11/11 tests, Wrangler `--dry-run`**.
 - La API autorizada responde solamente totales por estado y casos para revisión. Nunca expone PII ni confirma Cloudflare real.
 
+## Paso 06E — interfaz visual conectada a API de solo lectura (sin publicar)
+
+- Se crearon `dashboard.html`, `dashboard.css` y `dashboard.js` **en la carpeta del Worker administrativo, pero sin agregarlos a las rutas del Worker ni a Wrangler**. Son recursos para el laboratorio de Chromium y un futuro host administrativo detrás de Cloudflare Access, no archivos accesibles desde una URL real.
+- La interfaz consulta solamente `GET /api/admin/mail-summary` **en el mismo origen**. No tiene campo de contraseña, no recibe, almacena ni introduce JWT, ni usa localStorage. En el entorno real, el proxy de Cloudflare Access deberá validar sesión e inyectar `Cf-Access-Jwt-Assertion`; el Worker sigue verificando criptográficamente ese JWT y el `sub` autorizado. Una cookie sin proxy no autoriza.
+- Cuatro estados funcionales: carga inicial, respuesta válida con las seis categorías y tres tarjetas, rechazo 401/403, y error 503/red/respuesta inválida. Siempre oculta y vacía las estadísticas antes de volver a solicitar: **no conserva datos anteriores cuando hay error**. Rechaza totales inconsistentes, estados desconocidos, contadores no enteros y datos que no son JSON. Los números se insertan únicamente mediante `textContent` y `createElement`, no mediante HTML interpolado.
+- Responsive 320/390/768/1366 px, etiquetas semánticas y `aria-live`, sin enlaces de envío o acciones que modifiquen D1. CSP de misma procedencia, sin acceso CDN/terceros ni formulario. Los datos en pruebas son ficticios; no se consultaron los de FLUYNOVA.
+- `dashboard.browser.test.mjs` levanta **Chromium real + Workerd real + D1 LOCAL**, genera JWT RS256 firmado con clave de laboratorio, sirve los 3 recursos localmente e intercepta todas las peticiones de navegador. Un puente de prueba reenvía el JWT al Worker, simulando la acción del proxy Access. **Esto no autentica ningún navegador en Cloudflare real**.
+- Ensayos: identidad correcta (200 y estados), visitante anónimo (403), otra identidad (403), respuesta falsificada (sin HTML malicioso), pérdida de la tabla D1 después de ver métricas (503 y limpieza de todos los datos de pantalla). Cero accesos a red externa. Las pruebas se suman a las once ya existentes de autenticación RSA, expiración, algoritmo y rotación de JWKS.
+- El workflow de esta rama instala Chromium en GitHub Actions y ejecuta esos E2E más `wrangler deploy --dry-run`, sin credenciales ni despliegue.
+
+**Límite:** el Worker administrativo continúa con una única ruta JSON y **no sirve `dashboard.html`**. Conectar los archivos a un hostname futuro requiere configurar Access por delante, autorización real, revisión de CSP en headers, verificación de cookies, permisos D1 y aprobación de publicación. No inventar una URL ni presentar este prototipo como panel en vivo.
+
 ## Para activación futura — NO AUTORIZADA
 
 1. Auditar Cloudflare real por una vía autorizada **sin TinyFish**. No depende de esta conexión para avanzar offline.
