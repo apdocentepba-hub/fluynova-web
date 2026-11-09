@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; connect-src 'self'; style-src 'self'; img-src 'none'; font-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+  <title>FLUYNOVA · Estado de avisos (candidato)</title>
+  <link rel="stylesheet" href="./dashboard.css">
+  <script src="./dashboard.js" type="module"></script>
+</head>
+<body>
+  <main class="layout">
+    <header class="mast">
+      <div><p class="eyebrow">FLUYNOVA / Administración</p>
+        <h1>Estado de avisos</h1>
+        <p class="subtitle">Consulta administrativa de solo lectura. Sin datos personales, sin envíos y sin acceso a contactos individuales.</p>
+      </div>
+      <div class="actions"><button id="refresh" type="button">Actualizar estado</button></div>
+    </header>
+    <section class="status" aria-live="polite" aria-atomic="true" role="status" id="status">Comprobando acceso…</section>
+    <section id="results" hidden aria-label="Estadísticas de avisos">
+      <div class="summary">
+        <div class="tile"><p>Total de avisos</p><output id="total">—</output></div>
+        <div class="tile"><p>Requieren revisión</p><output id="review">—</output></div>
+        <div class="tile"><p>Entregados por SMTP</p><output id="delivered">—</output></div>
+      </div>
+      <div class="table-card"><h2>Distribución por estado</h2>
+        <div class="table-scroll"><table><thead><tr><th scope="col">Estado</th><th scope="col">Cantidad</th><th scope="col">Proporción</th><th scope="col">Interpretación</th></tr></thead><tbody id="rows"></tbody></table></div>
+      </div>
+      <p class="timestamp">Datos actualizados: <time id="generated"></time></p>
+      <p class="note"><strong>Importante:</strong> «Aceptado por proveedor» no implica entrega SMTP. «Entregado por SMTP» tampoco confirma lectura ni llegada a la bandeja de entrada.</p>
+    </section>
+    <footer>Vista candidata, no publicada. Acceso únicamente mediante API administrativa autenticada de FLUYNOVA.</footer>
+  </main>
+</body>
+</html>
