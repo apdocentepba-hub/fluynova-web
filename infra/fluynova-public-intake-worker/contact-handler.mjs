@@ -167,7 +167,7 @@ async function persistIdempotentLead(db,item,requestId,mac,fingerprint,id,at,{qu
  const out=await db.batch(statements);
  if(!Array.isArray(out)||out.length!==statements.length||out.some(x=>x?.success!==true))
    throw Error('IDEMPOTENCY_BATCH_NOT_CONFIRMED');
- const row=out[2].results?.[0];
+ const row=out[out.length-1].results?.[0];
  if(!row?.lead_id||typeof row.lead_id!=='string')
    throw Error('IDEMPOTENCY_NOT_CONFIRMED');
  return row;
