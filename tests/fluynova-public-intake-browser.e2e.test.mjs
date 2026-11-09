@@ -83,11 +83,12 @@ async function makeD1({siteverify=true,createLeads=true,publicOn=true,contactOn=
   }
   return {mf,db};
 }
-async function scene({configured=true,siteverify=true,createLeads=true,workerDelayMs=0,publicOn=true,contactOn=true}={}){
+async function scene({configured=true,siteverify=true,createLeads=true,workerDelayMs=0,publicOn=true,contactOn=true,loseFirstResponse=false}={}){
   const {mf,db}=await makeD1({siteverify,createLeads,publicOn,contactOn});
   const context=await browser.newContext({ignoreHTTPSErrors:true});
   const page=await context.newPage();
-  const unexpectedPosts=[],apiResponses=[],pageErrors=[];
+  const unexpectedPosts=[],apiResponses=[],apiRequests=[],pageErrors=[];
+  let lost=false;
   page.on('pageerror',e=>pageErrors.push(e.message));
   await context.route('**/*',async route=>{
     const req=route.request(),url=new URL(req.url());
@@ -99,19 +100,27 @@ async function scene({configured=true,siteverify=true,createLeads=true,workerDel
       const init={method,headers};
       if(method!=='GET'&&method!=='HEAD'&&method!=='OPTIONS')
         init.body=req.postData()||'';
+      if(method==='POST')apiRequests.push(JSON.parse(init.body));
       const r=await mf.dispatchFetch('https://workerd.test/api/contact',init);
       if(workerDelayMs>0 && method==='POST')
         await new Promise(resolve=>setTimeout(resolve,workerDelayMs));
       const body=await r.text();
-      apiResponses.push({method,status:r.status,body});
+      // Simular pérdida de la respuesta DESPUÉS de que Workerd confirmó el
+      // INSERT en D1 LOCAL. El navegador verá 503, D1 conservará la fila.
+      const lostThisTime=loseFirstResponse && method==='POST' && !lost;
+      if(lostThisTime)lost=true;
+      const deliveredStatus=lostThisTime?503:r.status;
+      const deliveredBody=lostThisTime?
+        JSON.stringify({ok:false,error:'PERSISTENCE_UNAVAILABLE'}):body;
+      apiResponses.push({method,status:deliveredStatus,storedStatus:r.status,body:deliveredBody});
       const exposed={};
       for(const key of ['access-control-allow-origin','access-control-allow-methods',
         'access-control-allow-headers','access-control-max-age','vary','cache-control']){
         const v=r.headers.get(key);if(v)exposed[key]=v;
       }
       await route.fulfill({
-        status:r.status,contentType:'application/json; charset=utf-8',
-        headers:exposed,body
+        status:deliveredStatus,contentType:'application/json; charset=utf-8',
+        headers:exposed,body:deliveredBody
       });
       return;
     }
@@ -146,7 +155,7 @@ async function scene({configured=true,siteverify=true,createLeads=true,workerDel
   });
   const response=await page.goto(ORIGIN+'/',{waitUntil:'domcontentloaded',timeout:20000});
   assert.equal(response.status(),200);
-  return {page,db,context,mf,unexpectedPosts,apiResponses,pageErrors,
+  return {page,db,context,mf,unexpectedPosts,apiResponses,apiRequests,pageErrors,
     async close(){await context.close();await mf.dispose()}};
 }
 async function fillAndSubmit(page){
@@ -199,6 +208,37 @@ test('Chromium -> workerd -> D1 LOCAL: muestra éxito solo tras SQL persistido',
     console.log('PUBLIC_INTAKE_CHROMIUM_LOCAL_PASS: chromium=true, workerd=true, d1_persisted=true, mail_sent=false');
   }finally{await s.close()}
 });
+test('Respuesta perdida después de guardar: navegador reintenta y recibe mismo ID sin duplicar D1',async()=>{
+ const s=await scene({loseFirstResponse:true});
+ try{
+  await fillAndSubmit(s.page);
+  await s.page.waitForFunction(()=>document.querySelector('#form-status')
+    ?.textContent?.includes('No quedó guardada la consulta'),null,{timeout:10000});
+  assert.equal(s.apiRequests.length,1);
+  assert.equal(s.apiResponses[0].status,503,'El navegador vio fallo');
+  assert.equal(s.apiResponses[0].storedStatus,201,'D1 realmente guardó antes de la pérdida');
+  const saved=await s.db.prepare('SELECT id FROM leads').first();
+  assert.ok(saved);
+  assert.equal((await s.db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,1);
+  const stableId=s.apiRequests[0].request_id;
+  assert.match(stableId,/^[0-9a-f-]{36}$/i);
+  await s.page.evaluate(()=>window.__turnstileOpts.callback('captcha-token-retry'));
+  assert.equal(await s.page.locator('#contact-form button[type=submit]').isEnabled(),true);
+  await s.page.locator('#contact-form button[type=submit]').click();
+  await s.page.waitForFunction(()=>document.querySelector('#form-status')
+    ?.textContent?.includes('Consulta guardada con código'),null,{timeout:10000});
+  assert.equal(s.apiResponses[1].storedStatus,200,'El servidor identificó reintento');
+  assert.equal(s.apiRequests[1].request_id,stableId,'Clave estable en el mismo borrador');
+  assert.notEqual(s.apiRequests[1].turnstile_token,s.apiRequests[0].turnstile_token);
+  assert.equal((await s.db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,1);
+  assert.equal((await s.db.prepare('SELECT COUNT(*) AS n FROM lead_idempotency').first()).n,1);
+  assert.match(await s.page.locator('#form-status').innerText(),new RegExp(saved.id));
+  assert.deepEqual(s.unexpectedPosts,[]);
+  assert.deepEqual(s.pageErrors,[]);
+  console.log('PUBLIC_INTAKE_BROWSER_IDEMPOTENCY_RETRY_PASS: requests=2, leads=1, same_id=true');
+ }finally{await s.close()}
+});
+
 test('CAPTCHA rechazado por Worker: no crea fila ni confirma recepción',async()=>{
   const s=await scene({siteverify:false});
   try{
