@@ -61,6 +61,17 @@ test('timeout de inferencia es fallo explícito, nunca aprobación',async()=>{
  await assert.rejects(analyzeDocument(SOURCE,{fetchImpl:hung,timeoutMs:15}),
    e=>e.code==='AI_TIMEOUT'&&e.status===504);
 });
+test('timeout también cubre cuerpo de respuesta Ollama colgado',async()=>{
+ const hanging=async(_url,init)=>({
+   ok:true,
+   text:()=>new Promise((_resolve,reject)=>{
+     init.signal.addEventListener('abort',()=>reject(new Error('body interrupted')),{once:true});
+   })
+ });
+ await assert.rejects(analyzeDocument(SOURCE,{fetchImpl:hanging,timeoutMs:15}),
+   e=>e.code==='AI_TIMEOUT'&&e.status===504);
+});
+
 test('entrada inválida bloqueada sin contactar Ollama',async()=>{
  const m=mockModel();
  for(const bad of ['hola','x'.repeat(6001),null]){
