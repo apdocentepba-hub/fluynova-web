@@ -3,7 +3,7 @@
  * Sin dominio, sin ruta ni publicación. No mezclar con APDocentePBA.
  * Ambos flags deben ser literalmente 'true'; siempre cerrados por defecto.
  */
-import {createHandler} from '../fluynova-contact-worker/index.mjs';
+import {createHandler,scheduled as purgeOldRateBuckets} from '../fluynova-contact-worker/index.mjs';
 
 function fail(status,error) {
   return new Response(JSON.stringify({ok:false,error}),{
@@ -32,4 +32,11 @@ export function createPublicHandler({contactHandler=createHandler()}={}) {
   };
 }
 
-export default {fetch:createPublicHandler()};
+// Preparado para una eventual programación explícita y AUTORIZADA del cron.
+ // No existe ningún Cron Trigger en este candidato; Wrangler no declara triggers.
+ // Ejecutarlo manualmente en CI prueba el SQL y NO configura Cloudflare.
+export async function scheduled(controller,env) {
+ return purgeOldRateBuckets(controller,env);
+}
+
+export default {fetch:createPublicHandler(),scheduled};
