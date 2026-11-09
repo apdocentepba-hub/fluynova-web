@@ -42,6 +42,12 @@ jobs:
       - name: Instalar solo herramientas locales y verificador criptográfico
         working-directory: infra/fluynova-admin-readonly-worker
         run: npm install --no-audit --no-fund
+      - name: Respaldo cifrado FLUYNOVA y recuperación verificada en D1 LOCAL
+        working-directory: infra/fluynova-admin-readonly-worker
+        run: |
+          node --check backup/encrypted-snapshot.mjs
+          node --check backup/encrypted-snapshot.test.mjs
+          timeout --signal=TERM --kill-after=3s 100s node --test backup/encrypted-snapshot.test.mjs
       - name: Firmas RS256 y D1 local, red externa completamente interceptada
         working-directory: infra/fluynova-admin-readonly-worker
         run: timeout --signal=TERM --kill-after=3s 120s npm test
