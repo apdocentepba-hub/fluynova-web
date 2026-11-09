@@ -41,6 +41,7 @@
 - `canApplyInIsolatedLab=true` significa **solo compatibilidad técnica del esquema**, jamás permiso de aplicar SQL remoto.
 - Una migración con `CREATE TABLE IF NOT EXISTS` no corrige una tabla incorrecta preexistente: el preflight la rechaza en vez de declararla lista.
 - No usar `wrangler d1 time-travel restore` para un ensayo de laboratorio: es una operación destructiva remota.
+- Según la documentación vigente de Cloudflare, Time Travel solo funciona para D1 con `version: production`; en Workers Free la ventana histórica es **hasta 7 días**, y en Workers Paid es **hasta 30 días**. No se comprobó el plan ni `version` de la D1 remota de FLUYNOVA. Revalidar vigencia y bookmark real antes de cualquier operación. Fuente: https://developers.cloudflare.com/d1/reference/time-travel/ .
 - Durante el ensayo local nunca se conectó a `api.cloudflare.com` ni se manejaron credenciales Cloudflare.
 
 ## Documentación técnica de referencia
