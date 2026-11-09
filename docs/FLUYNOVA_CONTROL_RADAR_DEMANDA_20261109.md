@@ -42,3 +42,24 @@ Archivos: `static/control/index.html` contiene un HTML autocontenido, con seis c
 5. **No contactar, publicar, fusionar o desplegar sin autorización.** Cero clientes pagos constatados y cero ventas atribuidas al prototipo.
 
 **Criterio de oportunidad:** CABA y licitaciones provinciales demuestran demanda y presupuestos institucionales, pero no constituyen ventas actuales accesibles. Priorizar conversación comercial PyME antes que construir ERP o IA compleja sin contrato.
+
+
+## Mejoras comerciales y controles incorporados el 09/11/2026
+
+**FLUYNOVA Control, demo offline:**
+- Se agregó recorrido guiado **observar → subsanar ejemplo → nueva validación → aprobar → exportar**.
+- La subsanación cambia solo datos sintéticos conocidos: número duplicado, total de prueba o número de orden de ejemplo. Recalcula todas las alertas, incluso del otro documento que antes estaba duplicado.
+- No permite aprobar documentos observados o documentos con alertas; es obligatoria una vuelta a pendiente, o una subsanación simulada que deja el registro pendiente.
+- La exportación CSV identifica cada registro como **FICTICIO** y aclara que neto, impuesto y total se expresan en **centavos**, evitando importes ambiguos.
+- El historial en memoria registra los motivos de observación, subsanación y aprobación. No es inmutable, no persiste tras recargar y no representa una auditoría legal.
+- Pruebas automatizadas con Chromium comprueban estados, métricas, filtros, exportación y el recorrido completo. Se agregó una prueba de seguridad de salida para neutralizar fórmulas de planillas y no interpretar HTML contenido en observaciones.
+- **No se publicó**, integró, notificó ni usó datos reales. Sin IA, OCR, almacenamiento, autenticación ni tratamiento fiscal real.
+
+**Demostración municipal offline:**
+- Se agregaron área responsable simulada e historial de derivaciones y cierres de casos; el reinicio también borra este historial de la vista.
+- Pruebas automáticas cubren 7 anchuras, ciclo de estados, historial visible, reinicio y ausencia de POST/red externa.
+- Evidencia CI municipal: https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42706637300
+
+**Criterios previos a vender un piloto operativo:** validar volumen y reglas del comprador, consentimiento y base legal para datos, separación por roles, persistencia auditable, backups/restore, controles de acceso, integración autorizada y pruebas E2E con errores inducidos. No presentar los simuladores como productos instalados.
+
+**Siguiente objetivo comercial:** una conversación de diagnóstico con prospecto real y propuesta de piloto acotado con presupuesto acordado. La ampliación de alcance queda bloqueada hasta validación de interés.
