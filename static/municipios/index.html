@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10191c">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="description" content="FLUYNOVA: propuestas piloto de automatización administrativa para municipios, con trazabilidad, privacidad y revisión humana.">
+  <title>FLUYNOVA | Automatización municipal con control humano</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/municipios/municipios.css">
+  <script src="/municipios/municipios.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#principal">Ir al contenido principal</a>
+  <header class="site-head">
+    <div class="shell nav">
+      <a class="brand" href="/" aria-label="Volver al sitio principal de FLUYNOVA">FLUY<span>NOVA</span><span class="dot">.</span></a>
+      <nav aria-label="Navegación de esta página">
+        <a href="#propuestas">Soluciones</a>
+        <a href="#demo">Ver demostración</a>
+        <a href="#contacto" class="nav-action">Solicitar diagnóstico</a>
+      </nav>
+    </div>
+  </header>
+  <main id="principal">
+    <section class="hero shell">
+      <div class="eyebrow"><span class="pulse" aria-hidden="true"></span> FLUYNOVA / GESTIÓN PÚBLICA</div>
+      <h1>Menos tareas manuales.<br><span>Más capacidad para atender a los vecinos.</span></h1>
+      <p class="lead">Proponemos automatizaciones pequeñas y auditables para equipos municipales: seguimiento de solicitudes, derivación entre áreas y reportes de gestión. Sin reemplazar plataformas existentes ni delegar decisiones oficiales a una IA.</p>
+      <div class="actions">
+        <a class="btn primary" href="#demo">Explorar un caso ficticio</a>
+        <a class="btn secondary" href="#contacto">Evaluar un piloto</a>
+      </div>
+      <p class="micro">Servicio propuesto, no sistema municipal contratado. Alcance y costos sujetos a diagnóstico, compras públicas y autorización del organismo.</p>
+    </section>
+    <section class="shell" id="propuestas">
+      <div class="section-intro"><div><p class="eyebrow">SERVICIOS PROPUESTOS</p><h2>Soluciones chicas, medibles y compatibles</h2></div><p>Empezar por tareas repetitivas antes de pensar en sistemas grandes.</p></div>
+      <div class="grid">
+        <article class="panel"><span class="index">01 / TRAZABILIDAD</span><h3>Solicitudes y reclamos</h3><p>Registro de casos, clasificación por tipo, responsable asignado, estado y alertas de seguimiento.</p><p class="result">Indicador propuesto: tiempo entre recepción, derivación y resolución.</p></article>
+        <article class="panel"><span class="index">02 / OPERACIÓN</span><h3>Trámites y documentos</h3><p>Control de vencimientos, solicitudes de documentación faltante y derivaciones con aprobación de personal autorizado.</p><p class="result">Indicador propuesto: gestiones manuales y errores de carga evitados.</p></article>
+        <article class="panel"><span class="index">03 / INFORMACIÓN</span><h3>Tableros para cada área</h3><p>Reportes agregados de volumen, pendientes y demoras sobre datos habilitados por el municipio.</p><p class="result">Indicador propuesto: cantidad de casos pendientes fuera del plazo establecido.</p></article>
+      </div>
+    </section>
+    <section class="shell demo-section" id="demo" aria-labelledby="demo-title">
+      <div class="section-intro"><div><p class="eyebrow">LABORATORIO INTERACTIVO</p><h2 id="demo-title">Así se puede ordenar una bandeja municipal</h2></div><p>Probá derivar y cerrar los casos de ejemplo. No se envía ni almacena información.</p></div>
+      <div class="demo-frame">
+        <div class="demo-head">
+          <div><strong>Panel de solicitudes</strong><p>Prototipo visual offline — no es una herramienta municipal en funcionamiento.</p></div>
+          <span class="status-pill">DATOS 100% FICTICIOS</span>
+        </div>
+        <div class="stats" aria-label="Estadísticas de demostración">
+          <div class="stat"><span>Nuevas</span><output id="count-new" aria-live="polite">3</output></div>
+          <div class="stat"><span>Derivadas</span><output id="count-assigned" aria-live="polite">0</output></div>
+          <div class="stat"><span>Resueltas</span><output id="count-resolved" aria-live="polite">0</output></div>
+        </div>
+        <ul class="cases" id="case-list" aria-label="Solicitudes ficticias">
+          <li class="case" data-case="DEMO-001" data-state="new" data-area="Servicios públicos">
+            <div><span class="case-id">DEMO-001 · Servicios públicos</span><strong>Consulta sobre luminaria en una plaza</strong><p>Ejemplo inventado; sin ubicación ni datos de personas.</p></div>
+            <div class="case-actions"><span class="case-status">Nueva</span><button type="button" data-advance="DEMO-001">Derivar al área</button></div>
+          </li>
+          <li class="case" data-case="DEMO-002" data-state="new" data-area="Espacios verdes">
+            <div><span class="case-id">DEMO-002 · Espacios verdes</span><strong>Pedido de seguimiento de mantenimiento</strong><p>Ejemplo inventado; sin ubicación ni datos de personas.</p></div>
+            <div class="case-actions"><span class="case-status">Nueva</span><button type="button" data-advance="DEMO-002">Derivar al área</button></div>
+          </li>
+          <li class="case" data-case="DEMO-003" data-state="new" data-area="Atención ciudadana">
+            <div><span class="case-id">DEMO-003 · Atención ciudadana</span><strong>Consulta por requisitos de un trámite</strong><p>Ejemplo inventado; sin ubicación ni datos de personas.</p></div>
+            <div class="case-actions"><span class="case-status">Nueva</span><button type="button" data-advance="DEMO-003">Derivar al área</button></div>
+          </li>
+        </ul>
+        <div class="demo-bottom"><p id="demo-notice" role="status" aria-live="polite">Seleccioná «Derivar al área» para ver cómo cambia el seguimiento.</p><button id="reset-demo" class="reset" type="button">Reiniciar ejemplo</button></div>
+      </div>
+      <p class="micro">Este prototipo usa reglas locales deterministas, sin modelo de IA, sin API, sin base de datos y sin efectos sobre expedientes, turnos o ciudadanos.</p>
+    </section>
+    <section class="shell process">
+      <p class="eyebrow">FORMA DE TRABAJO</p>
+      <h2>Un piloto que se pueda evaluar</h2>
+      <ol class="steps">
+        <li><strong>Diagnóstico</strong><p>Identificar una tarea repetitiva, sus responsables y su volumen.</p></li>
+        <li><strong>Alcance acotado</strong><p>Acordar entregables, datos permitidos, presupuesto y medición.</p></li>
+        <li><strong>Prueba controlada</strong><p>Datos sintéticos primero; personal humano valida todas las decisiones.</p></li>
+        <li><strong>Evaluación</strong><p>Comparar tiempos y errores. Integrar solo con permisos y contratación válida.</p></li>
+      </ol>
+    </section>
+    <section class="shell boundaries">
+      <h2>Privacidad, trazabilidad y supervisión</h2>
+      <p>La IA puede asistir con búsqueda o clasificación, pero un funcionario conserva la aprobación de expedientes y decisiones. Los datos de vecinos no se utilizan para entrenar modelos sin autorización; toda integración exige reglas de acceso, registro de acciones, protección de datos y revisión técnica.</p>
+    </section>
+    <section class="shell contact" id="contacto">
+      <div><p class="eyebrow">CONTACTO PARA EQUIPOS MUNICIPALES</p><h2>Empecemos por un proceso, no por una plataforma gigante.</h2><p>Podemos preparar un diagnóstico inicial y una propuesta técnica para el área interesada. La contratación y cualquier acceso a sistemas oficiales dependen del procedimiento correspondiente.</p></div>
+      <div class="contact-box">
+        <p>Consultas institucionales</p>
+        <a href="mailto:contacto.fluynova@gmail.com?subject=FLUYNOVA%20%7C%20Propuesta%20de%20piloto%20municipal" class="btn primary">Escribir a FLUYNOVA</a>
+        <a href="/diagnostico/" class="text-link">Ver diagnóstico inicial</a>
+        <small>No cargues datos de vecinos ni expedientes reales en un primer contacto.</small>
+      </div>
+    </section>
+  </main>
+  <footer class="footer"><div class="shell"><span>FLUYNOVA · Software y automatizaciones a medida</span><a href="/">Volver al sitio principal</a></div></footer>
+</body>
+</html>
