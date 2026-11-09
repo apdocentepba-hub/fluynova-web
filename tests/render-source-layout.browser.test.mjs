@@ -44,8 +44,11 @@ async function session({width=1920,baseline=false}={}){
    const code=bytes.toString('utf8');
    assert.equal(code.split('html{scroll-behavior:smooth;overflow-x:clip}').length,2,
     'Baseline debe revertir exactamente el parche de clipping en memoria');
+   const changed='.ambient-one{background:#275c45;opacity:.20;width:min(490px,100vw);height:490px;right:0;top:170px}';
+   const original='.ambient-one{background:#275c45;opacity:.20;width:490px;height:490px;right:-250px;top:170px}';
+   assert.equal(code.split(changed).length,2,'Comparar exactamente el resplandor inicial de Render');
    bytes=Buffer.from(code.replace('html{scroll-behavior:smooth;overflow-x:clip}',
-    'html{scroll-behavior:smooth}'),'utf8');
+    'html{scroll-behavior:smooth}').replace(changed,original),'utf8');
   }
   return route.fulfill({status:200,contentType:MIME[extname(path)]||'application/octet-stream',
    body:bytes});
