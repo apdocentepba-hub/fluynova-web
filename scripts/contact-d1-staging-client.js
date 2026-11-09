@@ -27,7 +27,7 @@
   let token='',widget=null,pending=false;
   // Reutilizar la MISMA clave cuando una respuesta se pierde tras guardar D1.
   // Al editar datos de la consulta, se inicia una intención nueva.
-  let requestId='',draftSignature=';
+  let requestId='',draftSignature='';
   const messages={
     CAPTCHA_FAILED:'El CAPTCHA no se pudo verificar. Intentá de nuevo.',
     TOO_MANY_REQUESTS:'Demasiadas consultas. Escribinos al correo.',
