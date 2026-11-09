@@ -12,7 +12,7 @@
 import {randomBytes,createHash,createHmac,createCipheriv,createDecipheriv,
  scrypt as scryptCallback} from 'node:crypto';
 import {promisify} from 'node:util';
-import {TABLES} from './encrypted-snapshot.mjs';
+import {TABLES,checkedSchema} from './encrypted-snapshot.mjs';
 
 const scrypt=promisify(scryptCallback);
 const KIND='FLUYNOVA_PAGED_ENCRYPTED_LAB_V1';
@@ -121,6 +121,7 @@ export async function createPagedEncryptedLabArchive(db,passphrase,{
  const at=now();if(!iso(at))fail('PAGED_TIME_INVALID');
  // LAS CUENTAS y las dos lecturas comprueban drift observable. No reemplazan
  // un punto de vista transaccional consistente ante escrituras concurrentes.
+ await checkedSchema(db);
  const before=await readCounts(db);
  const salt=randomBytes(16);
  const header=Object.freeze({
@@ -151,6 +152,7 @@ export async function createPagedEncryptedLabArchive(db,passphrase,{
     chunks.push(chunk);macEntry(seal,chunk);digests.push([page.table,page.digest]);
    }finally{plain.fill(0)}
   }
+  await checkedSchema(db);
   const after=await readCounts(db);
   if(before.some((n,i)=>n!==after[i])||
     TABLES.some((t,i)=>firstCounts[t.name]!==before[i]))
