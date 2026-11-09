@@ -140,7 +140,7 @@ test('D1 LOCAL: una tabla de leads sin PK no pasa aunque conserve columnas e ín
  await apply(db,BASE);
  const defs=await sqlStatements(BASE);
  await db.prepare('DROP TABLE leads').run();
- const original=defs.find(x=>/^CREATE TABLE IF NOT EXISTS leads\\b/i.test(x));
+ const original=defs.find(x=>/^CREATE TABLE IF NOT EXISTS leads\b/i.test(x));
  assert.ok(original);
  const weakened=original
    .replace('id TEXT PRIMARY KEY NOT NULL','id TEXT NOT NULL')
@@ -163,7 +163,7 @@ test('D1 LOCAL: rate limiter sin PK compuesta es rechazado antes de cualquier mi
  await apply(db,BASE);
  const defs=await sqlStatements(BASE);
  await db.prepare('DROP TABLE lead_rate_limit').run();
- const original=defs.find(x=>/^CREATE TABLE IF NOT EXISTS lead_rate_limit\\b/i.test(x));
+ const original=defs.find(x=>/^CREATE TABLE IF NOT EXISTS lead_rate_limit\b/i.test(x));
  assert.ok(original);
  const weakened=original.replace('PRIMARY KEY (fingerprint, hour_bucket)',
    'UNIQUE (fingerprint, hour_bucket)').replace('hits INTEGER NOT NULL','hits INTEGER');
