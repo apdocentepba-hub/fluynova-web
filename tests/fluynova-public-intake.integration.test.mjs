@@ -9,11 +9,13 @@ import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {build} from 'esbuild';
 import {Miniflare,createFetchMock} from 'miniflare';
+import {dispatchOnePendingNotice} from '../infra/fluynova-public-intake-worker/mail-notification.mjs';
 
 const ENTRY=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/index.mjs',import.meta.url));
 const WORKER_DIR=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/',import.meta.url));
 const SCHEMA=fileURLToPath(new URL('../infra/fluynova-contact-worker/schema.sql',import.meta.url));
 const IDEMPOTENCY_SCHEMA=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/idempotency.schema.sql',import.meta.url));
+const MAIL_SCHEMA=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/mail-outbox.schema.sql',import.meta.url));
 const ENDPOINT='https://public-candidate.invalid/api/contact';
 const ORIGIN='https://fluynova-lab.invalid';
 const fakeLead={
@@ -30,7 +32,7 @@ function request(data=fakeLead,{url=ENDPOINT,method='POST',origin=ORIGIN}={}){
  if(method==='POST')request.body=JSON.stringify(data);
  return {url,request};
 }
-async function makeRuntime(bundle,flags,{siteverifySuccess=true,createLeads=true,createIdempotency=true}={}){
+async function makeRuntime(bundle,flags,{siteverifySuccess=true,createLeads=true,createIdempotency=true,createMailOutbox=true}={}){
  const fetchMock=createFetchMock();
  fetchMock.disableNetConnect();
  fetchMock.get('https://challenges.cloudflare.com')
@@ -42,6 +44,7 @@ async function makeRuntime(bundle,flags,{siteverifySuccess=true,createLeads=true
   bindings:{
    ENABLE_PUBLIC_INTAKE:flags.public,
    ENABLE_CONTACT_SUBMISSIONS:flags.contact,
+   ENABLE_MAIL_OUTBOX:flags.mail==='true'?'true':'false',
    ALLOWED_ORIGINS:ORIGIN,
    TURNSTILE_HOSTNAMES:'fluynova-lab.invalid',
    TURNSTILE_SECRET_KEY:'TEST_SECRET_NEVER_REAL',
@@ -55,6 +58,11 @@ async function makeRuntime(bundle,flags,{siteverifySuccess=true,createLeads=true
   const dedupe=(await readFile(IDEMPOTENCY_SCHEMA,'utf8')).replace(/^--.*$/gm,'')
     .split(';').map(x=>x.trim()).filter(Boolean);
   statements.push(...dedupe);
+ }
+ if(createMailOutbox) {
+  const mail=(await readFile(MAIL_SCHEMA,'utf8')).replace(/^--.*$/gm,'')
+    .split(';').map(x=>x.trim()).filter(Boolean);
+  statements.push(...mail);
  }
  for(const sql of statements){
   if(!createLeads && (/^CREATE TABLE IF NOT EXISTS leads\b/i.test(sql)||
@@ -230,6 +238,87 @@ test('workerd+D1 real local: puertas cerradas, ninguna API privada y POST confir
    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM lead_idempotency').first()).n,2,
      'Conservar claves vigentes');
    console.log('PUBLIC_INTAKE_LOCAL_PASS: workerd=true, d1_local=true, siteverify_mock=true, scheduled_d1_local=true, remote=false');
+  }finally{await mf.dispose()}
+ }finally{await rm(dir,{recursive:true,force:true})}
+});
+
+test('Workerd + D1 LOCAL: aviso encolado junto con lead; proveedor simulado nunca implica entrega',async()=>{
+ const dir=await mkdtemp(join(WORKER_DIR,'.fluynova-mail-lab-'));
+ try{
+  const bundle=join(dir,'worker.mjs');
+  await build({entryPoints:[ENTRY],outfile:bundle,bundle:true,format:'esm',
+    platform:'browser',logLevel:'silent'});
+  // Falta esquema de mail: el INSERT de lead y la reserva de UUID se revierten.
+  {
+   const {mf,db}=await makeRuntime(bundle,{public:'true',contact:'true',mail:'true'},
+     {createMailOutbox:false});
+   try{
+    const {url,request:args}=request();
+    const rejected=await mf.dispatchFetch(url,args);
+    assert.equal(rejected.status,503);
+    assert.equal((await rejected.json()).error,'PERSISTENCE_UNAVAILABLE');
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,0);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM lead_idempotency').first()).n,0);
+   }finally{await mf.dispose()}
+  }
+  const {mf,db}=await makeRuntime(bundle,{public:'true',contact:'true',mail:'true'});
+  try{
+   const {url,request:args}=request();
+   const response=await mf.dispatchFetch(url,args);
+   const stored=await response.json();
+   assert.equal(response.status,201,JSON.stringify(stored));
+   assert.equal(stored.stored,true);
+   assert.equal(stored.delivery,'database','El formulario no declara entrega por email');
+   const queue=await db.prepare('SELECT lead_id,state,attempts FROM lead_mail_outbox').first();
+   assert.equal(queue.lead_id,stored.id);
+   assert.equal(queue.state,'pending');
+   assert.equal(queue.attempts,0);
+   const retry=await mf.dispatchFetch(url,request().request);
+   assert.equal(retry.status,200);
+   assert.equal((await retry.json()).id,stored.id);
+   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM lead_mail_outbox').first()).n,1);
+
+   let calls=0,payload;
+   const mockEmail={async send(x){calls++;payload=x;return {messageId:'ci-accepted-only-123'}}};
+   const options={db,emailBinding:mockEmail,from:'avisos@fluynova.invalid',
+     now:()=> '2026-11-09T10:30:00.000Z'};
+   const disabled=await dispatchOnePendingNotice({...options,enabled:false});
+   assert.equal(disabled.state,'disabled');
+   assert.equal(calls,0);
+   const done=await dispatchOnePendingNotice({...options,enabled:true});
+   assert.equal(done.state,'accepted');
+   assert.equal(done.providerAccepted,true);
+   assert.equal(done.mailDelivered,false);
+   assert.equal(calls,1);
+   assert.equal(payload.to,'contacto.fluynova@gmail.com');
+   assert.match(payload.subject,/FLUYNOVA/);
+   assert.match(payload.text,/intake-test@example.invalid/);
+   assert.equal(payload.html,undefined);
+   const outbox=await db.prepare('SELECT state,attempts,provider_message_id FROM lead_mail_outbox').first();
+   assert.equal(outbox.state,'accepted');
+   assert.equal(outbox.attempts,1);
+   assert.equal(outbox.provider_message_id,'ci-accepted-only-123');
+   assert.equal((await dispatchOnePendingNotice({...options,enabled:true})).state,'empty');
+   assert.equal(calls,1,'Nunca duplicar el aviso aceptado');
+
+   // Fallo ambiguo: el proveedor pudo aceptar el mensaje antes del error.
+   const second=await mf.dispatchFetch(url,request({
+     ...fakeLead,request_id:'b09297e9-9360-41b9-8e63-0b2aeb3e7b03'
+   }).request);
+   assert.equal(second.status,201);
+   const failed=await dispatchOnePendingNotice({
+     ...options,enabled:true,
+     emailBinding:{async send(){calls++;throw Error('TEST_PROVIDER_TIMEOUT_AFTER_ACCEPTANCE')}}
+   });
+   assert.equal(failed.state,'uncertain');
+   assert.equal(failed.mailDelivered,false);
+   assert.equal((await db.prepare(
+     "SELECT COUNT(*) AS n FROM lead_mail_outbox WHERE state='uncertain'"
+   ).first()).n,1);
+   assert.equal((await dispatchOnePendingNotice({...options,enabled:true})).state,'empty');
+   assert.equal(calls,2,'Una respuesta ambigua no se reintenta automáticamente');
+   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,2);
+   console.log('FLUYNOVA_MAIL_OUTBOX_LOCAL_PASS: leads=2, email_mock_calls=2, accepted_not_delivered=true, ambiguous_no_retry=true');
   }finally{await mf.dispose()}
  }finally{await rm(dir,{recursive:true,force:true})}
 });
