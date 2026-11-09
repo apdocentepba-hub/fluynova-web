@@ -77,11 +77,11 @@ jobs:
     steps:
       - name: Checkout rama feature del receptor
         uses: actions/checkout@v4
-      - name: Checkout frontend aprobado en versión fija (sin publicar)
+      - name: Checkout frontend PR #21 tras QA visual, SHA fijo (sin publicar)
         uses: actions/checkout@v4
         with:
           repository: apdocentepba-hub/fluynova-web
-          ref: 06af3d1422cdba7bb5bbee8da877af091d5ad798
+          ref: 570a6ac636dbc48b0dcd820bcdce94b50e44fb5e
           path: frontend-candidate
           persist-credentials: false
       - name: Node 22
