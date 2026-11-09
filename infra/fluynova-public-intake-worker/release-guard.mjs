@@ -82,7 +82,7 @@ export function auditClosedRelease({candidate,privateWorker,privateSource,public
   requireSafe(typeof publicHandler==='string'&&
     publicHandler.includes('export function createHandler(')&&
     publicHandler.includes('async function persistIdempotentLead(')&&
-    !/\\bimport\\s*(?:\\(|\\{|\\*|['"])/.test(publicHandler)&&
+    !/\bimport\s*(?:\(|\{|\*|['"])/.test(publicHandler)&&
     !publicHandler.includes('../fluynova-contact-worker/'),
     'PUBLIC_HANDLER_NOT_SELF_CONTAINED');
   requireSafe(privateWorker?.name==='fluynova-contact-staging-only','PRIVATE_WORKER_CHANGED');
