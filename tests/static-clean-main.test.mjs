@@ -98,3 +98,19 @@ test('el build no puede borrar el código fuente ni construir en un subdirectori
  await assert.rejects(build({sourceDir:'/tmp/origen',outputDir:'/tmp/origen/salida'}),/separado/);
  await assert.rejects(build({sourceDir:'/tmp/origen/salida',outputDir:'/tmp/origen'}),/separado/);
 });
+
+test('web comercial: menú único y comunicación honesta de disponibilidad',async()=>{
+ const file=await readFile(new URL('../static/index.html',import.meta.url),'utf8');
+ const nav=file.match(/<nav class="menu"[\s\S]*?<\/nav>/)?.[0];
+ assert.ok(nav,'Existe menú principal');
+ assert.equal((nav.match(/href="\/webs\//g)||[]).length,1,
+   'Una sola entrada Páginas web, no dos enlaces duplicados');
+ assert.match(nav,/>Páginas web para negocios<\/a>/);
+ assert.match(file,/El formulario automático sigue en verificación\./);
+ assert.doesNotMatch(file,/formulario conectado al correo/i,
+   'No afirmar entrega confirmada sin prueba extrema a extremo');
+ assert.match(file,/mailto:contacto\.fluynova@gmail\.com/);
+ assert.match(file,/<section[^>]+id="contacto"/);
+ assert.match(file,/method="POST" action="https:\/\/formsubmit\.co\//,
+   'El origen aún conserva la integración histórica; solo el BUILD estático la desactiva');
+});
