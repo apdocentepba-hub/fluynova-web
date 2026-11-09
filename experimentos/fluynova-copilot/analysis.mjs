@@ -67,7 +67,7 @@ export function validateReview(extracted,source){
     disclaimer:'La IA puede equivocarse. No valida AFIP/ARCA, CAE, proveedor ni documento original.'
   };
 }
-export async function analyzeDocument(source,{fetchImpl=fetch,model='qwen3:1.7b',timeoutMs=30000}={}){
+export async function analyzeDocument(source,{fetchImpl=fetch,model='qwen3:1.7b',timeoutMs=120000}={}){
   if(typeof source!=='string'||source.trim().length<25||source.length>6000)
     throw new CopilotError('INVALID_DOCUMENT_LENGTH',422);
   if(typeof model!=='string'||!/^[a-z0-9][a-z0-9._:/-]{0,70}$/i.test(model))
