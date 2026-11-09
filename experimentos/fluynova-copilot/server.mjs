@@ -1,6 +1,7 @@
 import {createServer} from 'node:http';
 import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
+import {resolve} from 'node:path';
 import {analyzeDocument,CopilotError} from './analysis.mjs';
 
 const HEADERS={
@@ -59,7 +60,7 @@ export function createApp({analyzer=analyzeDocument,model='qwen3:1.7b'}={}){
     }
   });
 }
-if(process.argv[1] && fileURLToPath(import.meta.url)===fileURLToPath('file://'+process.argv[1].replaceAll('\\','/'))) {
+if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)) {
   const port=Number(process.env.FLUYNOVA_PORT||8767);
   const model=process.env.FLUYNOVA_MODEL||'qwen3:1.7b';
   if(!Number.isSafeInteger(port)||port<1024||port>65535)throw Error('FLUYNOVA_PORT inválido');
