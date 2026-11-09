@@ -1,0 +1,22 @@
+{
+  "name": "fluynova-public-intake-candidate",
+  "main": "./index.mjs",
+  "compatibility_date": "2026-11-08",
+  "workers_dev": false,
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "ENABLE_PUBLIC_INTAKE": "false",
+    "ENABLE_CONTACT_SUBMISSIONS": "false",
+    "ALLOWED_ORIGINS": "https://fluynova-staging.invalid",
+    "TURNSTILE_HOSTNAMES": "fluynova-staging.invalid"
+  },
+  "secrets": {
+    "required": [
+      "TURNSTILE_SECRET_KEY",
+      "RATE_HASH_SECRET"
+    ]
+  },
+  "preview_urls": false
+}

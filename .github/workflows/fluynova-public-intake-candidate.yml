@@ -1,0 +1,105 @@
+name: FLUYNOVA — receptor público aislado (NO publicar)
+
+on:
+  push:
+    branches:
+      - feature/fluynova-public-intake-isolated-20261108
+    paths:
+      - 'infra/fluynova-public-intake-worker/**'
+      - 'infra/fluynova-contact-worker/**'
+      - '.gitignore'
+      - 'tests/fluynova-public-intake*.mjs'
+      - '.github/workflows/fluynova-public-intake-candidate.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-intake-offline-only:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Exigir configuración de receptor cerrado — auditor independiente
+        run: node infra/fluynova-public-intake-worker/release-guard.mjs
+      - name: Informe de preparación y reversión (read-only, sin Cloudflare)
+        run: |
+          node infra/fluynova-public-intake-worker/release-readiness.mjs
+          node --test tests/fluynova-public-intake-release-readiness.test.mjs
+      - name: Sintaxis y restricciones de despliegue
+        run: |
+          node --check infra/fluynova-public-intake-worker/index.mjs
+          node --check tests/fluynova-public-intake.test.mjs
+          node --check tests/fluynova-public-intake.integration.test.mjs
+          node --check infra/fluynova-public-intake-worker/schema-preflight.mjs
+          node --check infra/fluynova-public-intake-worker/mail-admin-report.mjs
+          node --check tests/fluynova-public-intake-mail-admin.test.mjs
+          node --test tests/fluynova-public-intake-mail-admin.test.mjs
+          node --check tests/fluynova-public-intake-schema-preflight.test.mjs
+          node --test tests/fluynova-public-intake.test.mjs
+          node --test tests/fluynova-public-intake-release-guard.test.mjs
+      - name: Instalar runtime D1 local y bundler SIN tokens
+        run: npm install --no-save --no-package-lock --no-audit --no-fund miniflare@4.20260730.0 esbuild@0.25.12
+      - name: Probar Worker público en workerd con D1 LOCAL real, Siteverify interceptado
+        run: timeout --signal=TERM --kill-after=3s 60s node --test tests/fluynova-public-intake.integration.test.mjs
+      - name: Ensayar esquema D1, migración repetida y reversión SOLO LOCAL
+        run: timeout --signal=TERM --kill-after=3s 60s node --test tests/fluynova-public-intake-schema-preflight.test.mjs
+      - name: Compilar Wrangler candidato (dry-run solamente, sin publicación)
+        working-directory: infra/fluynova-public-intake-worker
+        run: |
+          npm install --no-audit --no-fund
+          npm run dryrun
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+
+  public-intake-compile-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Prueba unitaria de aislamiento y dos puertas
+        run: node --test tests/fluynova-public-intake.test.mjs
+      - name: Compilación independiente Wrangler, sin deploy
+        working-directory: infra/fluynova-public-intake-worker
+        run: |
+          npm install --no-audit --no-fund
+          npm run dryrun
+        env:
+          WRANGLER_SEND_METRICS: 'false'
+
+  public-intake-browser-workerd-d1-offline:
+    needs: public-intake-offline-only
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout rama feature del receptor
+        uses: actions/checkout@v4
+      - name: Checkout frontend PR #21 tras QA visual, SHA fijo (sin publicar)
+        uses: actions/checkout@v4
+        with:
+          repository: apdocentepba-hub/fluynova-web
+          ref: a5a7bae846a1e37ebce73ee6053acdf8f93c0eaa
+          path: frontend-candidate
+          persist-credentials: false
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar D1 local, empaquetador y Chromium CI
+        run: |
+          npm install --no-save --no-package-lock --no-audit --no-fund miniflare@4.20260730.0 esbuild@0.25.12 playwright@1.65.0
+          npx playwright install --with-deps --only-shell chromium
+      - name: Probar formulario completo Chromium + Worker PUBLICO workerd + D1 local
+        run: timeout --signal=TERM --kill-after=3s 150s node --test tests/fluynova-public-intake-browser.e2e.test.mjs
+
