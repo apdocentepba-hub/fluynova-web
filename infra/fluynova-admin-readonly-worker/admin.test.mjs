@@ -20,7 +20,7 @@ const TEAM='https://fluynova-ci.cloudflareaccess.com';
 const AUD='a'.repeat(64);
 const SUB='7335d417-61da-459d-899c-0a01c76a2f94';
 const ENDPOINT='https://fluynova-admin-ci.invalid/api/admin/mail-summary';
-let mf,db,privateKey,workerDir;
+let mf,db,privateKey,rotatedPrivateKey,workerDir;
 const disabledConfig={
  ADMIN_READ_ENABLED:'false',
  ACCESS_TEAM_DOMAIN:TEAM,
@@ -42,11 +42,15 @@ before(async()=>{
  privateKey=pair.privateKey;
  const jwk=await exportJWK(pair.publicKey);
  Object.assign(jwk,{kid:'ci-admin-key-1',alg:'RS256',use:'sig'});
+ const rotated=await generateKeyPair('RS256',{extractable:true});
+ rotatedPrivateKey=rotated.privateKey;
+ const rotatedJwk=await exportJWK(rotated.publicKey);
+ Object.assign(rotatedJwk,{kid:'ci-admin-key-2',alg:'RS256',use:'sig'});
  const fetchMock=createFetchMock();
  fetchMock.disableNetConnect();
  fetchMock.get(TEAM)
   .intercept({method:'GET',path:'/cdn-cgi/access/certs'})
-  .reply(200,JSON.stringify({keys:[jwk]}),{
+  .reply(200,JSON.stringify({keys:[jwk,rotatedJwk]}),{
    headers:{'content-type':'application/json'}
   }).persist();
  workerDir=await mkdtemp(join(DIR,'.admin-ci-'));
@@ -75,11 +79,11 @@ after(async()=>{await mf?.dispose();if(workerDir)await rm(workerDir,{recursive:t
 
 async function token({
  issuer=TEAM,audience=AUD,sub=SUB,type='app',expired=false,
- future=false,algorithm='RS256',key=privateKey
+ future=false,algorithm='RS256',key=privateKey,kid='ci-admin-key-1'
 }={}){
  const now=Math.floor(Date.now()/1000);
  let jwt=new SignJWT({sub,type,email:'ADMIN_EMAIL_SHOULD_NOT_LEAK@example.invalid'})
-  .setProtectedHeader({alg:algorithm,kid:'ci-admin-key-1',typ:'JWT'})
+  .setProtectedHeader({alg:algorithm,kid,typ:'JWT'})
   .setIssuer(issuer).setAudience(audience)
   .setIssuedAt(expired?now-7200:now)
   .setNotBefore(future?now+300:now-10)
@@ -169,6 +173,31 @@ test('JWT firmado pero de otra identidad, otra app, otro emisor o expirado es de
   assert.equal(r.status,403,JSON.stringify(claims));
   assert.equal((await r.json()).error,'ACCESS_DENIED');
  }
+});
+
+test('Access valida dos claves RSA rotativas de JWKS por kid, no acepta key desconocida',async()=>{
+ const rotatedJWT=await token({kid:'ci-admin-key-2',key:rotatedPrivateKey});
+ const valid=await dispatch({jwt:rotatedJWT});
+ assert.equal(valid.status,200,'La segunda clave legítima debe funcionar');
+ const wrongKid=await token({kid:'kid-desconocido',key:rotatedPrivateKey});
+ const denied=await dispatch({jwt:wrongKid});
+ assert.equal(denied.status,403);
+ assert.equal((await denied.json()).error,'ACCESS_DENIED');
+});
+
+test('Access no acepta confusión de algoritmo HS256 ni JWT firmado sin exp',async()=>{
+ const forged=await token({algorithm:'HS256',
+  key:new TextEncoder().encode('ci-only-fake-key-never-secret')});
+ const forgedResponse=await dispatch({jwt:forged});
+ assert.equal(forgedResponse.status,403);
+ const now=Math.floor(Date.now()/1000);
+ const noExpiry=await new SignJWT({sub:SUB,type:'app'})
+  .setProtectedHeader({alg:'RS256',kid:'ci-admin-key-1'})
+  .setIssuer(TEAM).setAudience(AUD)
+  .setIssuedAt(now).setNotBefore(now-10)
+  .sign(privateKey);
+ const noExpResponse=await dispatch({jwt:noExpiry});
+ assert.equal(noExpResponse.status,403);
 });
 
 test('JWT alterado criptográficamente no permite acceso a D1',async()=>{
