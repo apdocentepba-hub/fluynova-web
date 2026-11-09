@@ -17,7 +17,7 @@ Cloudflare Access configurado para **todos los Workers de la cuenta** podría pr
 - Otros métodos sobre `/api/contact` responden **405**.
 - Se necesitan **dos flags independientes** con valor literal `"true"`: `ENABLE_PUBLIC_INTAKE` y `ENABLE_CONTACT_SUBMISSIONS`. Por defecto, ambos están en `"false"`; se responde **503** sin leer ni almacenar el cuerpo.
 - Al habilitarse en una prueba local aislada, delega al receptor existente: validación de origen exacto, límite de 16 KiB, consentimiento, honeypot, Turnstile Siteverify (`action=contact` y hostname permitido), límite por IP anonimizada y confirmación solo después de D1.
-- No incluye endpoints de administración, listado, borrado, consulta de leads ni registro de mensajes; no incluye cron.
+- No incluye endpoints HTTP de administración, listado, borrado ni consulta de leads. Incluye un **handler programable `scheduled()`** para limpiar únicamente fingerprints HMAC antiguos en D1, **sin trigger configurado**: no ejecuta limpieza remota, no despliega nada y no abre HTTP. Requiere auditar el cron real y su intervalo antes de habilitar recepción.
 
 ## Auditoría de liberación cerrada
 
