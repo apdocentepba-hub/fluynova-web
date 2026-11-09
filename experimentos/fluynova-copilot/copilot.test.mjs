@@ -43,7 +43,7 @@ test('error de importe, orden ausente y falta de citas se señalan sin decisión
  assert.equal(r.extracted.evidence_rejected,1);assert.equal(r.can_auto_approve,false);
 });
 test('campos numéricos alucinados o estructura extra causan fallo seguro',async()=>{
- for(const malformed of [{...FIELDS,total_cents:NaN},{...FIELDS,total_cents:-10},{...FIELDS,admin:true}]){
+ for(const malformed of [{...FIELDS,total_cents:'no es un número'},{...FIELDS,total_cents:-10},{...FIELDS,admin:true}]){
   const m=mockModel(malformed);
   await assert.rejects(analyzeDocument(SOURCE,{fetchImpl:m.handler}),
     e=>e instanceof CopilotError&&e.code==='AI_INVALID_RESPONSE'&&e.status===502);
