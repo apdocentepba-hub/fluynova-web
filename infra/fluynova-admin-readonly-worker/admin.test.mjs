@@ -160,6 +160,48 @@ test('Access JWT válido RS256: sólo contadores de D1 local, sin PII',async()=>
  console.log('FLUYNOVA_ADMIN_AUTH_LOCAL_PASS: real_jwt_rs256=true, d1_local=true, pii=false, external_net=0');
 });
 
+test('HTML, CSS y JS admin se entregan SOLO con JWT firmado y subject correcto',async()=>{
+ const valid=await token();
+ for(const [asset,type,needle] of [
+  ['/admin/dashboard.html','text/html','Estado de avisos'],
+  ['/admin/dashboard.css','text/css','.summary{'],
+  ['/admin/dashboard.js','text/javascript','/api/admin/mail-summary']
+ ]){
+  const url='https://fluynova-admin-ci.invalid'+asset;
+  const allowed=await dispatch({url,jwt:valid});
+  assert.equal(allowed.status,200,asset);
+  assert.match(allowed.headers.get('content-type'),new RegExp(type));
+  assert.match(allowed.headers.get('cache-control'),/no-store/);
+  assert.equal(allowed.headers.get('cross-origin-resource-policy'),'same-origin');
+  assert.equal(allowed.headers.get('x-robots-tag'),'noindex, nofollow, noarchive');
+  assert.match(allowed.headers.get('content-security-policy'),/script-src 'self'/);
+  assert.ok((await allowed.text()).includes(needle),'El contenido empaquetado coincide');
+  for(const denied of [{},{jwt:await token({sub:'11111111-2222-4333-8444-555555555555'})}]){
+   const response=await dispatch({url,...denied});
+   assert.equal(response.status,403,'Asset privado denegado: '+asset);
+   assert.equal((await response.json()).error,'ACCESS_DENIED');
+  }
+  assert.equal((await dispatch({url:url+'?bypass=1',jwt:valid})).status,404);
+  assert.equal((await dispatch({url,method:'HEAD',jwt:valid})).status,405);
+ }
+ const badHtml=await dispatch({url:'https://fluynova-admin-ci.invalid/admin/dashboard.html',
+  jwt:'invalid.jwt.token'});
+ assert.equal(badHtml.status,403);
+ console.log('FLUYNOVA_ADMIN_ASSET_GATE_PASS: html_css_js=3, auth=RS256, anonymous=403, no_deploy=true');
+});
+
+test('assets no se sirven si el Worker está deshabilitado o falta D1',async()=>{
+ const {fetchAdmin}=await import('./index.mjs');
+ const request=new Request('https://fluynova-admin-ci.invalid/admin/dashboard.html',{
+  headers:{'Cf-Access-Jwt-Assertion':await token()}
+ });
+ for(const config of [disabledConfig,{...enabledConfig,DB:null}]){
+  const response=await fetchAdmin(request,config);
+  assert.equal(response.status,503);
+  assert.equal((await response.json()).error,'ADMIN_DISABLED');
+ }
+});
+
 test('JWT firmado pero de otra identidad, otra app, otro emisor o expirado es denegado',async()=>{
  for(const claims of [
   {sub:'11111111-2222-4333-8444-555555555555'},
