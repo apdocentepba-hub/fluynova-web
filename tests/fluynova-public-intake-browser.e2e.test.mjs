@@ -14,6 +14,7 @@ import {Miniflare,createFetchMock} from 'miniflare';
 import {build} from 'esbuild';
 import {chromium} from 'playwright';
 import {buildD1Candidate} from '../frontend-candidate/scripts/build-static-d1-contact-candidate.mjs';
+import {readMailAdminSnapshot,renderOfflineMailAdminHtml} from '../infra/fluynova-public-intake-worker/mail-admin-report.mjs';
 
 const ROOT=fileURLToPath(new URL('../',import.meta.url));
 const FRONT=fileURLToPath(new URL('../frontend-candidate/',import.meta.url));
@@ -375,4 +376,57 @@ test('Chromium: regresión visual PR21 sincronizado, sin POST ni solapamiento m�
   assert.deepEqual(s.unexpectedPosts,[]);
   assert.deepEqual(s.pageErrors,[]);
  }finally{await s.close()}
+});
+
+test('Chromium: reporte administrativo offline adaptable sin PII ni red',async()=>{
+ const aggregateDb={prepare(){return {all:async()=>({
+  success:true,results:[
+   {state:'pending',total:12,email:'NEVER_SHOW@example.invalid'},
+   {state:'uncertain',total:2},
+   {state:'delivered',total:4},
+   {state:'bounced',total:1}
+  ]
+ })}}};
+ const snapshot=await readMailAdminSnapshot(aggregateDb,{
+  now:()=> '2026-11-09T14:15:00.000Z'
+ });
+ const html=renderOfflineMailAdminHtml(snapshot);
+ const context=await browser.newContext({viewport:{width:390,height:844}});
+ const page=await context.newPage();
+ const external=[],errors=[];
+ page.on('pageerror',e=>errors.push(e.message));
+ await context.route('**/*',async route=>{
+  external.push(route.request().url());
+  await route.abort('blockedbyclient');
+ });
+ try{
+  await page.setContent(html,{waitUntil:'load'});
+  assert.equal(await page.title(),'FLUYNOVA | Avisos de contacto (reporte sin conexión)');
+  assert.equal(await page.locator('h1').innerText(),'Estado de avisos de contacto');
+  assert.equal(await page.locator('table tbody tr').count(),6);
+  assert.equal(await page.locator('.card').count(),3);
+  assert.equal(await page.getByText('Requieren revisión').count(),1);
+  assert.equal(await page.locator('script').count(),0);
+  assert.equal(await page.locator('form').count(),0);
+  assert.equal(await page.locator('a[href]').count(),0);
+  assert.equal((await page.locator('time').getAttribute('datetime')),
+   '2026-11-09T14:15:00.000Z');
+  const body=await page.locator('body').innerText();
+  assert.ok(body.includes('12'),'Conteo de avisos pendientes');
+  assert.ok(body.includes('19'),'Total exacto');
+  assert.ok(body.includes('3'),'Tres casos para revisión');
+  assert.equal(body.includes('NEVER_SHOW@example.invalid'),false);
+  for(const width of [320,390,768,1366]){
+   await page.setViewportSize({width,height:850});
+   const metrics=await page.evaluate(()=>({
+    viewport:innerWidth,scroll:document.documentElement.scrollWidth,
+    cards:getComputedStyle(document.querySelector('.grid')).gridTemplateColumns.split(' ').length
+   }));
+   assert.equal(metrics.scroll,width,'Sin scroll horizontal en '+width);
+   assert.equal(metrics.cards,width<=650?1:3,'Tarjetas adaptables en '+width);
+  }
+  assert.deepEqual(external,[],'Sin requests de red al abrir la vista');
+  assert.deepEqual(errors,[],'Sin fallos JS');
+  console.log('FLUYNOVA_MAIL_ADMIN_CHROMIUM_PASS: mobile_desktop=true, six_states=true, pii=false, network=0');
+ }finally{await context.close()}
 });
