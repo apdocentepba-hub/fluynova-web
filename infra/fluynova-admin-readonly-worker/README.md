@@ -13,8 +13,8 @@
 ## Verificado con pruebas reales LOCALES
 
 - Clave RSA y JWT real firmados por `jose`. Workerd + D1 LOCAL con datos sintéticos y endpoint JWKS interceptado: **cero llamadas a red externa**.
-- 9 pruebas: compuerta cerrada en Wrangler, rutas restringidas, cookie sola/ausencia de JWT, autorización criptográfica válida, errores de issuer/audience/sub/type/exp/nbf, firma manipulada, tabla D1 ausente, configuración incompleta y cabeceras de seguridad.
-- [CI de GitHub #42605843533](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42605843533): **SUCCESS 1/1 job, 9/9 tests, Wrangler `--dry-run`**.
+- 11 pruebas: compuerta cerrada en Wrangler, rutas restringidas, cookie sola/ausencia de JWT, autorización criptográfica válida, errores de issuer/audience/sub/type/exp/nbf, firma manipulada, rotación entre dos claves RSA JWKS, algoritmo HS256 no permitido, JWT sin expiración, tabla D1 ausente, configuración incompleta y cabeceras de seguridad.
+- [CI de GitHub #42605843533](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42606154367): **SUCCESS 1/1 job, 11/11 tests, Wrangler `--dry-run`**.
 - La API autorizada responde solamente totales por estado y casos para revisión. Nunca expone PII ni confirma Cloudflare real.
 
 ## Para activación futura — NO AUTORIZADA
