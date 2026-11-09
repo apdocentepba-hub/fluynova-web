@@ -12,7 +12,7 @@ import {chromium} from 'playwright';
 
 const ROOT=fileURLToPath(new URL('../static/',import.meta.url));
 const HOST='fluynova-source-local.invalid';
-const URL='https://'+HOST+'/';
+const SITE='https://'+HOST+'/';
 const MIME={'.html':'text/html','.css':'text/css','.js':'application/javascript',
  '.svg':'image/svg+xml','.txt':'text/plain','.json':'application/json'};
 let browser;
@@ -49,7 +49,7 @@ async function session({width=1920,baseline=false}={}){
   return route.fulfill({status:200,contentType:MIME[extname(path)]||'application/octet-stream',
    body:bytes});
  });
- const response=await page.goto(URL,{waitUntil:'domcontentloaded'});
+ const response=await page.goto(SITE,{waitUntil:'domcontentloaded'});
  assert.equal(response.status(),200);
  await page.locator('h1').waitFor();
  // Main.js consulta /api/config, respuesta sintética de formulario desactivado.
