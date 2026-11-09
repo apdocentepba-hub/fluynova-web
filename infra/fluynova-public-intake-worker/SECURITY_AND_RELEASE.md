@@ -27,6 +27,18 @@ El guardián `node infra/fluynova-public-intake-worker/release-guard.mjs` se eje
 
 El auditor aplica una **allowlist estricta** de campos de `wrangler.jsonc`. Rechaza cualquier clave nueva no revisada, incluidos `env`, bindings de servicios, colas, KV, R2, `unsafe` o rutas anidadas. También fija la fecha de compatibilidad y exige observabilidad desactivada. Esto impide que una configuración alternativa con `wrangler --env` evite silenciosamente las dos compuertas apagadas. Un cambio legítimo de configuración requiere modificar el auditor, agregar una prueba de regresión y revisar el PR; **ningún PASS de CI autoriza desplegar**.
 
+## Endurecimiento del workflow candidato — revisión 08/11/2026
+
+El release guard de esta rama ahora exige que `package.json` tenga únicamente los scripts locales auditados `check` y `dryrun`. También rechaza, en el **workflow de este PR**, comandos que pueden modificar Cloudflare incluso sin un `wrangler deploy` directo:
+
+- `wrangler versions upload/deploy/secret`, `wrangler secret`, `wrangler triggers`, `wrangler d1 execute`, `wrangler pages deploy`, `wrangler rollback` y `wrangler deploy --temporary`.
+- Scripts indirectos como `npm run publish`, referencias de tokens Cloudflare o llamadas a la API oficial, y acciones `cloudflare/wrangler-action` o `cloudflare/pages-action`.
+- Cambios no revisados en los orígenes `.invalid` o rutas del **Worker privado**, además de nombre, D1 y flag que ya estaban protegidos.
+
+El control detecta patrones conocidos **estáticamente**: no demuestra que otras automatizaciones del repositorio, Cloudflare Builds o un script deliberadamente ofuscado sean seguros. La revisión de cambios, permisos y configuraciones remotas reales es obligatoria antes de cualquier ejecución externa. `SAFE_CLOSED` significa únicamente que las configuraciones y pruebas admitidas siguen cerradas, nunca autorización de publicar.
+
+Cloudflare confirma que `wrangler secret put` despliega una versión inmediatamente, mientras que `wrangler versions upload` guarda una versión sin publicarla; **ambas son mutaciones remotas**, por eso quedan prohibidas en este CI. Referencia: https://developers.cloudflare.com/workers/wrangler/commands/workers/
+
 ## Condiciones obligatorias ANTES de una eventual publicación (requieren autorización)
 1. **No desplegar este candidato** hasta crear una estrategia de publicación pública segregada y revisar costos/permisos. No conectarlo al Worker protegido ni desactivar Access del Worker privado. Ante Access global, revisar una excepción específica SOLO para el nuevo Worker, nunca una excepción de cuenta.
 2. Elegir y verificar un dominio/ruta pública exclusiva (preferible Custom Domain de Cloudflare) y confirmar que se controla realmente. Evitar conectar la web oficial en Render durante esta etapa.
