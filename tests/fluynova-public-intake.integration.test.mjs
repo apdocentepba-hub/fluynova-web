@@ -456,8 +456,9 @@ test('D1 LOCAL: resumen administrativo de estados reales sin datos personales ni
    for(const request_id of ids) {
     const {url,request:args}=request({...fakeLead,request_id});
     const response=await mf.dispatchFetch(url,args);
-    assert.equal(response.status,201,await response.text());
-    leadIds.push((await response.clone().json()).id);
+    const body=await response.json();
+    assert.equal(response.status,201,JSON.stringify(body));
+    leadIds.push(body.id);
    }
    for(const [id,state] of [
     [leadIds[0],'delivered'],
