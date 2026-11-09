@@ -40,6 +40,14 @@ En `feature/fluynova-static-clean-from-main-20261107`, **sin tocar main**, se co
 
 Se agregó la prueba de regresión `web comercial: menú único y comunicación honesta de disponibilidad` a `tests/static-clean-main.test.mjs`. La CI de la rama verifica el candidato; no hace merge ni lo publica.
 
+## Auditoría visual de desbordamiento horizontal — 09/11/2026
+
+- Inspección con navegador sobre la web **pública**: a `window.innerWidth=1920`, el documento reportó `document.documentElement.scrollWidth=2155`, excediendo el viewport en **235 px** (frente al ancho efectivo de contenido, 1905 px, el exceso es 250 px). No se envió ningún formulario.
+- El único elemento cuyo rectángulo excedía el borde derecho fue `div.ambient.ambient-one`, resplandor decorativo de **490 px** con `right:-250px`. Ese desplazamiento explica el exceso reportado; no es contenido esencial.
+- Cambio de contención **solo en PR #21**: `static/styles.css` aplica `overflow-x:clip` a `html`, preservando el diseño y evitando que el resplandor decorativo amplíe el desplazamiento horizontal. No se cambió el sitio en producción.
+- La prueba Chromium de PR #21 ahora recorre **320, 390, 768, 900, 1024, 1366 y 1920 px**. Observación relevante: el candidato aislado **ya había aprobado 1920 px antes del ajuste**, por lo que esa prueba no reproduce el comportamiento de Render. El cambio es una defensa basada en la regla CSS inspeccionada; su eficacia en producción queda **pendiente de validación posterior a una publicación autorizada**.
+- Antes de considerar cerrado el defecto hay que comparar en un mismo navegador la web previa y una publicación aprobada (métricas `innerWidth`, `clientWidth`, `scrollWidth`, capturas escritorio/móvil). No publicar para hacer esta prueba sin autorización.
+
 ## Pendientes reales
 
 1. Probar envío FormSubmit → Gmail **solo con autorización explícita**, usando datos ficticios y verificando recepción real. Hasta entonces no declarar que el contacto está resuelto.
