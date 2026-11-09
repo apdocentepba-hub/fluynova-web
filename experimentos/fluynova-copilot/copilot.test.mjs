@@ -88,9 +88,16 @@ test('API local real: cabeceras, política origen, longitud y revisión humana',
   const page=await fetch(base+'/');assert.equal(page.status,200);
   assert.match(await page.text(),/FLUYNOVA Copilot/);
   assert.match(page.headers.get('content-security-policy'),/default-src 'none'/);
-  const rebind=await fetch(base+'/api/status',{headers:{Host:'empresa-maliciosa.example'}});
+  // Node fetch ignora un Host forzado: para probar DNS rebinding usar cliente HTTP nativo.
+  const {request:rawRequest}=await import('node:http');
+  const rebind=await new Promise((resolve,reject)=>{
+    const request=rawRequest(base+'/api/status',{headers:{host:'empresa-maliciosa.example'}},response=>{
+      let chunks='';response.on('data',c=>chunks+=String(c));
+      response.on('end',()=>resolve({status:response.statusCode,data:JSON.parse(chunks)}));
+    });request.on('error',reject);request.end();
+  });
   assert.equal(rebind.status,403);
-  assert.equal((await rebind.json()).error,'HOST_REJECTED');
+  assert.equal(rebind.data.error,'HOST_REJECTED');
   const status=await (await fetch(base+'/api/status')).json();
   assert.equal(status.model_connection,'NO_VERIFICADA');
   const denied=await fetch(base+'/api/analyze',{method:'POST',headers:{'origin':'https://hostil.example','content-type':'application/json'},body:JSON.stringify({document:SOURCE})});
