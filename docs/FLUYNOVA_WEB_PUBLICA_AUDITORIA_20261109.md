@@ -2,6 +2,16 @@
 
 **Objetivo:** distinguir lo que un visitante puede abrir de lo que está preparado en ramas de laboratorio. **Solo lectura:** no se enviaron consultas, no se activó Cloudflare/D1, no hubo despliegue ni contacto a terceros.
 
+## Verificación real de recepción por Gmail — 09/11/2026
+
+**CONFIRMADO:** se consultó la cuenta Gmail FLUYNOVA `contacto.fluynova@gmail.com` y se encontró un mensaje de FormSubmit recibido el **9 de noviembre de 2026, 14:28:15 UTC (11:28 Argentina)** con asunto **«FLUYNOVA | Nueva consulta: Desarrollar software»**. El cuerpo declara expresamente que el mensaje proviene del formulario `https://fluynova-web.onrender.com/`. Gmail lo clasificó en **Recibidos (INBOX), no leído**, no Spam. Esto es evidencia directa de **una entrega real de FormSubmit a Gmail**.
+
+- [Ver mensaje recibido en Gmail](https://mail.google.com/mail/u/?authuser=contacto.fluynova%40gmail.com#all/1a1c0b5b2c7cbb40).
+- No se reproduce ni almacena en GitHub nombre, correo del remitente ni contenido privado de la consulta.
+- La prueba fue localizada en Gmail al atender el pedido de verificación del usuario; **no se envió una segunda consulta**, para evitar duplicados.
+- Esto **supersede** las afirmaciones anteriores de este mismo documento de que la recepción FormSubmit no estaba comprobada, pero **no certifica disponibilidad permanente, latencia, entregabilidad de todos los correos, recepción desde todos los navegadores ni persistencia D1**.
+- El texto público «El formulario automático sigue en verificación» ya puede revisarse para una futura actualización de redacción, **pero no se modificó otra vez producción ni se autorizó un nuevo despliegue**.
+
 ## Dirección actual y plataforma
 
 - Web pública: https://fluynova-web.onrender.com/
