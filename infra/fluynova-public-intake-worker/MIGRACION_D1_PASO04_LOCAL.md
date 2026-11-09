@@ -17,6 +17,15 @@
 - Los tests incluyen aserción de que el auditor solo prepara instrucciones SQL de metadatos. El ensayo de reversión es **local** y elimina la tabla nueva únicamente una vez vacía.
 - **No es un backup de Cloudflare ni un test de Time Travel**: no certifica permisos reales, bookmark, base remota, retención, límites, cron, secretos, DNS, notificaciones ni una restauración remota.
 
+## Paso 04E — endurecimiento de integridad y revisión de SQL (verificado LOCAL)
+
+- `schema-preflight.mjs` ahora inspecciona, además de nombres y columnas, las claves primarias y restricciones NOT NULL **de las tablas originales** `leads` y `lead_rate_limit`. En particular exige `leads.id` como PK y `lead_rate_limit(fingerprint,hour_bucket)` como PK compuesta en ese orden. Una base que conserva todas las columnas e índices secundarios pero perdió esas claves se declara `baseReady=false` y **no puede considerarse apta para migración**.
+- Dos nuevas pruebas en `tests/fluynova-public-intake-schema-preflight.test.mjs` crean versiones defectuosas de ambas tablas en D1 **LOCAL** y confirman el rechazo; no tocan ninguna D1 remota.
+- `migration-guard.mjs` establece una allowlist de **exactamente dos sentencias** para `idempotency.schema.sql`: `CREATE TABLE IF NOT EXISTS lead_idempotency (...)` con PK, UNIQUE y NOT NULL verificados, y `CREATE INDEX IF NOT EXISTS lead_idempotency_created_at ON lead_idempotency(created_at)`. Cambiar el índice de tabla, quitar restricciones, introducir columnas no auditadas o agregar `DROP`, `DELETE`, `UPDATE`, `ALTER` o `CREATE TRIGGER` rompe el control de liberación.
+- `release-guard.mjs` ahora lee esa migración y exige `auditMigrationSql(...).safe=true`. Dos pruebas nuevas ejercitan cambios peligrosos y permiten comentarios sin modificar SQL. El control no reescribe, ejecuta, migra ni autoriza D1.
+- [GitHub Actions #42551401701](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42551401701): 7 pruebas unitarias, 18 de seguridad, 8 de readiness, 1 integración Worker+D1 local, 4 de migración D1 local y 9 Chromium E2E = **47 pruebas distintas** cuando los tres jobs terminen `SUCCESS`. El ensayo de SQL y schema no sustituye inspección autenticada de la base real.
+- Los fallos de las primeras pruebas de regresión se debieron al escape incorrecto de `\\b` en el código de pruebas; se corrigieron y se volvieron a ejecutar, sin modificar datos remotos.
+
 ## Procedimiento remoto propuesto — BLOQUEADO hasta nueva autorización
 
 1. **Inspección autenticada de solo lectura**: confirmar cuenta y base exactamente `fluynova-leads-staging`, UUID de D1 `ce8ac477-dd77-4a1c-a42e-6096dcb78768`, subsistema `version: production` o `alpha`, que el Worker privado sigue bajo Access y el receptor público sin ruta ni flags activados. Si no coinciden identificadores, detener.
