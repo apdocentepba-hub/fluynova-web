@@ -58,9 +58,26 @@ export async function inspectD1Schema(db) {
   const ledgerTable=has('table',OBJECTS.ledgerTable);
   const ledgerIndex=has('index',OBJECTS.ledgerIndex,OBJECTS.ledgerTable);
   if(ledgerTable) {
-    const actual=await columns(db,OBJECTS.ledgerTable);
+    const info=await rows(db,"PRAGMA table_info('lead_idempotency')");
+    const actual=info.map(x=>String(x.name));
     for(const col of REQUIRED_COLUMNS.lead_idempotency)
       if(!actual.includes(col))missing.push('LEDGER_COLUMN_MISSING_'+col);
+    const requestId=info.find(x=>x.name==='request_id');
+    if(Number(requestId?.pk)!==1)missing.push('LEDGER_REQUEST_ID_NOT_PRIMARY_KEY');
+    for(const col of REQUIRED_COLUMNS.lead_idempotency) {
+      const item=info.find(x=>x.name===col);
+      if(item&&Number(item.notnull)!==1)
+        missing.push('LEDGER_COLUMN_NULLABLE_'+col);
+    }
+    // Verificar UNIQUE sobre lead_id: no alcanza con la existencia de la columna.
+    const list=await rows(db,"PRAGMA index_list('lead_idempotency')");
+    let uniqueLeadId=false;
+    for(const item of list.filter(x=>Number(x.unique)===1)) {
+      const name=String(item.name||'');
+      if(!/^[A-Za-z0-9_]+$/.test(name))throw Error('UNEXPECTED_SQLITE_INDEX_NAME');
+      if(equalList(await indexColumns(db,name),['lead_id']))uniqueLeadId=true;
+    }
+    if(!uniqueLeadId)missing.push('LEDGER_LEAD_ID_NOT_UNIQUE');
   }
   if(ledgerIndex && !equalList(await indexColumns(db,OBJECTS.ledgerIndex),
       INDEX_COLUMNS.lead_idempotency_created_at))
