@@ -126,7 +126,9 @@ test('Privacidad: no hay datos reales, almacenamiento ni envío automático',asy
   assert.equal(state.sessionStorage,0);
   assert.equal(state.buttons,3);
   const script=await readFile(new URL('../static/municipios/municipios.js',import.meta.url),'utf8');
-  assert.doesNotMatch(script,/\bfetch\s*\(|XMLHttpRequest|localStorage\s*\.|sessionStorage\s*\.|navigator\.sendBeacon/i);
+  // No confundir comentarios descriptivos con llamadas ejecutables (e.g. "NO fetch()").
+  const executableSource=script.replace(/\/\*[\s\S]*?\*\//g,'').replace(/^\s*\/\/.*$/gm,'');
+  assert.doesNotMatch(executableSource,/\bfetch\s*\(|XMLHttpRequest|localStorage\s*\.|sessionStorage\s*\.|navigator\.sendBeacon/i);
   assert.deepEqual(s.errors,[]);
  }finally{await s.context.close()}
 });
