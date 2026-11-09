@@ -10,8 +10,18 @@
  */
 import {createRemoteJWKSet,jwtVerify} from 'jose';
 import {readMailAdminSnapshot} from '../fluynova-public-intake-worker/mail-admin-report.mjs';
+import {ADMIN_ASSETS} from './admin-assets.generated.mjs';
 
 const PATH='/api/admin/mail-summary';
+const ASSET_PATHS=Object.freeze({
+ '/admin/dashboard.html':['dashboard.html','text/html; charset=utf-8'],
+ '/admin/dashboard.css':['dashboard.css','text/css; charset=utf-8'],
+ '/admin/dashboard.js':['dashboard.js','text/javascript; charset=utf-8']
+});
+const PAGE_CSP="default-src 'none'; script-src 'self'; style-src 'self'; "+
+ "connect-src 'self'; img-src 'none'; font-src 'none'; object-src 'none'; "+
+ "base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+
 const TEAM_RE=/^https:\/\/[a-z0-9][a-z0-9-]{0,62}\.cloudflareaccess\.com$/;
 const AUD_RE=/^[A-Za-z0-9_-]{20,128}$/;
 const SUBJECT_RE=/^[A-Za-z0-9-]{16,128}$/;
@@ -26,7 +36,9 @@ function headers(){
   'Content-Security-Policy':"default-src 'none'; frame-ancestors 'none'",
   'Referrer-Policy':'no-referrer',
   'X-Frame-Options':'DENY',
-  'Vary':'Cf-Access-Jwt-Assertion'
+  'Vary':'Cf-Access-Jwt-Assertion',
+  'X-Robots-Tag':'noindex, nofollow, noarchive',
+  'Cross-Origin-Resource-Policy':'same-origin'
  };
 }
 function reply(status,error){
@@ -78,10 +90,24 @@ async function authorized(request,env){
 }
 export async function fetchAdmin(request,env={}){
  const u=new URL(request.url);
- if(u.pathname!==PATH||u.search)return reply(404,'NOT_FOUND');
+ const asset=Object.hasOwn(ASSET_PATHS,u.pathname)?ASSET_PATHS[u.pathname]:null;
+ if((u.pathname!==PATH&&!asset)||u.search)return reply(404,'NOT_FOUND');
  if(request.method!=='GET')return reply(405,'METHOD_NOT_ALLOWED');
  if(!allowedConfig(env))return reply(503,'ADMIN_DISABLED');
  if(!(await authorized(request,env)))return reply(403,'ACCESS_DENIED');
+ // La UI y sus recursos JAMÁS se sirven antes de verificar el JWT RS256
+ // y el subject autorizado. No existe un hosting estático alternativo.
+ if(asset){
+  const [filename,contentType]=asset;
+  return new Response(ADMIN_ASSETS[filename],{
+   status:200,
+   headers:{
+    ...headers(),
+    'Content-Type':contentType,
+    'Content-Security-Policy':PAGE_CSP
+   }
+  });
+ }
  try{
   const report=await readMailAdminSnapshot(env.DB);
   // Solo totales por estado, nunca nombres, mensajes ni IDs de personas.
