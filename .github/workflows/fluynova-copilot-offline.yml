@@ -1,0 +1,29 @@
+name: FLUYNOVA Copilot - Node local, SIN PUBLICAR
+on:
+  push:
+    branches: ['feature/fluynova-municipios-piloto-20261109']
+    paths:
+      - 'experimentos/fluynova-copilot/**'
+      - '.github/workflows/fluynova-copilot-offline.yml'
+  pull_request:
+    paths:
+      - 'experimentos/fluynova-copilot/**'
+      - '.github/workflows/fluynova-copilot-offline.yml'
+permissions:
+  contents: read
+jobs:
+  copilot-local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Control de sintaxis sin despliegue
+        run: |
+          node --check experimentos/fluynova-copilot/analysis.mjs
+          node --check experimentos/fluynova-copilot/server.mjs
+          node --check experimentos/fluynova-copilot/copilot.test.mjs
+      - name: Pruebas unitarias y HTTP contra modelo ficticio aislado
+        run: node --test experimentos/fluynova-copilot/copilot.test.mjs
