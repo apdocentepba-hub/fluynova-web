@@ -106,6 +106,14 @@ test('Render REAL-SOURCE offline: raíz clip y contenido visible a siete anchura
    assert.ok(m.scrollWidth<=m.contentWidth+2,
     'El documento no debe desplazarse lateralmente: '+JSON.stringify(m));
    assert.equal(m.duplicateWebLinks,1,'Solo un enlace /webs en el menú');
+   if(width===320){
+    const heading=await x.page.locator('#servicios .section-top h2').boundingBox();
+    assert.ok(heading&&heading.x>=-2&&heading.x+heading.width<=width+2,
+     'El título de servicios no puede recortarse por el borde móvil: '+
+      JSON.stringify({heading,viewport:width}));
+    assert.ok(m.bodyScrollWidth<=width+2,
+     'El contenedor visible tampoco debe conservar overflow de texto: '+JSON.stringify(m));
+   }
    assert.equal(m.formVisible,true,'El formulario visible conserva el correo alternativo');
   }
   assert.match(await x.page.locator('body').innerText(),
