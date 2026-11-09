@@ -18,6 +18,7 @@ import {buildD1Candidate} from '../frontend-candidate/scripts/build-static-d1-co
 const ROOT=fileURLToPath(new URL('../',import.meta.url));
 const FRONT=fileURLToPath(new URL('../frontend-candidate/',import.meta.url));
 const SCHEMA=join(ROOT,'infra/fluynova-contact-worker/schema.sql');
+const DEDUPE_SCHEMA=join(ROOT,'infra/fluynova-public-intake-worker/idempotency.schema.sql');
 const PUBLIC_WORKER=join(ROOT,'infra/fluynova-public-intake-worker/index.mjs');
 const PUBLIC_DIR=join(ROOT,'infra/fluynova-public-intake-worker');
 let workerdDir,workerBundle;
@@ -56,7 +57,7 @@ async function makeD1({siteverify=true,createLeads=true,publicOn=true,contactOn=
       .intercept({method:'POST',path:'/turnstile/v0/siteverify'})
       .reply(200,JSON.stringify({
         success:siteverify===true,action:'contact',hostname:'fluynova-e2e.invalid'
-      }));
+      })).persist();
   }
   const mf=new Miniflare({
     modules:true,scriptPath:workerBundle,cf:false,fetchMock:mock,
@@ -73,6 +74,8 @@ async function makeD1({siteverify=true,createLeads=true,publicOn=true,contactOn=
   const db=await mf.getD1Database('DB');
   const stmts=(await readFile(SCHEMA,'utf8')).replace(/^--.*$/gm,'')
     .split(';').map(s=>s.trim()).filter(Boolean);
+  stmts.push(...(await readFile(DEDUPE_SCHEMA,'utf8')).replace(/^--.*$/gm,'')
+    .split(';').map(s=>s.trim()).filter(Boolean));
   for(const stmt of stmts){
     if(!createLeads && (/^CREATE TABLE IF NOT EXISTS leads\b/i.test(stmt) ||
       /^CREATE INDEX IF NOT EXISTS leads_/i.test(stmt)))continue;
