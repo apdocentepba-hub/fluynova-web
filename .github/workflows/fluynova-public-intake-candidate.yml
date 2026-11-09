@@ -81,7 +81,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: apdocentepba-hub/fluynova-web
-          ref: 570a6ac636dbc48b0dcd820bcdce94b50e44fb5e
+          ref: 5acb82e2e126efb14c869fa86d6ae5f99d4fd4b4
           path: frontend-candidate
           persist-credentials: false
       - name: Node 22
