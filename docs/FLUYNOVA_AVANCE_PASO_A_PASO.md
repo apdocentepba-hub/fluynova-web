@@ -55,4 +55,11 @@ Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida cons
 - [Plan de conexión remota y bloqueos](https://github.com/apdocentepba-hub/fluynova-web/blob/feature/fluynova-public-intake-isolated-20261108/infra/fluynova-public-intake-worker/PASO04_PREPARACION_REMOTA.md): Access/WAF, widget Turnstile, D1 y tres índices, dominio, cron real, versionado y Time Travel. No hay sesión Cloudflare autenticada conectada al navegador del asistente.
 - **NO cerrar el Paso 04 como terminado:** falta comprobar y, con permiso, configurar los recursos remotos; los flujos siguen cerrados.
 
+**04B — AVANCE: E2E CON DISEÑO ACTUALIZADO — 08/11/2026 (todavía sin Cloudflare autenticado).**
+- Detectado y corregido fixture obsoleto: PR #23 (`fluynova-public-intake-candidate`) verificaba el frontend viejo `06af3d1`, no los cambios visuales del PR #21. Ahora fija el commit real `570a6ac` del candidato auditado.
+- Se agregó escenario Chromium con visual y contacto cerrado: 320/390/900/1366 px sin scroll lateral, menú con Escape, un acceso `/webs/`, sin solapamiento de Guardián, alternativa por correo y 0 POST remoto.
+- [CI #42541540967](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42541540967): **SUCCESS 3/3 jobs**. **36 pruebas distintas** (7 unitarias + 12 auditoría + 8 readiness + 1 Workerd/D1 LOCAL + 8 Chromium), Wrangler `--dry-run`. No prueba D1 remota ni email.
+- Se habilitó enlace de inicio de sesión seguro Cloudflare mediante conector de navegador, sin sesión confirmada ni acceso todavía. Las políticas remotas y los secretos permanecen **no verificados**. No se ejecutó ninguna modificación Cloudflare, Render, D1 ni dominio.
+- **PASO 04 sigue abierto** hasta que pueda auditarse/configurarse el servicio remoto con aprobación específica.
+
 **SIGUIENTE ACCIÓN — 04B.** Verificar configuraciones reales de Cloudflare mediante sesión autorizada; separar claramente Access privado del receptor público, y preparar vinculación a D1 con recuperación verificada antes de cualquier POST remoto.
