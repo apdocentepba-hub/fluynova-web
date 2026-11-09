@@ -137,8 +137,8 @@ test('sin JWT, token en cookie o formato inválido: HTTP 403 y cero PII',async()
 
 test('Access JWT válido RS256: sólo contadores de D1 local, sin PII',async()=>{
  const r=await dispatch({jwt:await token()});
- assert.equal(r.status,200,await r.text().then(x=>x.slice(0,300)));
  const json=await r.json();
+ assert.equal(r.status,200,JSON.stringify(json).slice(0,300));
  assert.equal(json.ok,true);
  assert.equal(json.total,1);
  assert.equal(json.needsReview,1);
