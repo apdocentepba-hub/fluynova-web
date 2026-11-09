@@ -79,7 +79,7 @@ after(async()=>{
  if(temp)await rm(temp,{recursive:true,force:true});
 });
 
-async function scene({token=null,injectBadData=false}={}){
+async function scene({token=null,apiToken=undefined,injectBadData=false}={}){
  const context=await browser.newContext({viewport:{width:390,height:850}});
  const page=await context.newPage();
  const requests=[],errors=[];
@@ -93,31 +93,26 @@ async function scene({token=null,injectBadData=false}={}){
   if(req.method()!=='GET'){
    await route.fulfill({status:405,body:'Method Not Allowed'});return;
   }
-  if(url.pathname==='/api/admin/mail-summary'){
-   if(injectBadData){
-    await route.fulfill({status:200,contentType:'application/json',body:
-     JSON.stringify({ok:true,generatedAt:'2026-11-09T12:00:00.000Z',
-      counts:{pending:'<img src=x onerror=alert(1)>'},total:100,needsReview:0})});
-    return;
-   }
-   const response=await mf.dispatchFetch(ENDPOINT,{
-    method:'GET',headers:token?{'Cf-Access-Jwt-Assertion':token}:{}
-   });
-   await route.fulfill({status:response.status,
-    contentType:response.headers.get('content-type')||'application/json',
-    body:await response.text()});
+  if(url.pathname==='/api/admin/mail-summary'&&injectBadData){
+   await route.fulfill({status:200,contentType:'application/json',body:
+    JSON.stringify({ok:true,generatedAt:'2026-11-09T12:00:00.000Z',
+     counts:{pending:'<img src=x onerror=alert(1)>'},total:100,needsReview:0})});
    return;
   }
-  const files={
-   '/dashboard.html':'text/html; charset=utf-8',
-   '/dashboard.js':'text/javascript; charset=utf-8',
-   '/dashboard.css':'text/css; charset=utf-8'
-  };
-  if(!files[url.pathname]){
-   await route.fulfill({status:404,body:'Not Found'});return;
-  }
-  await route.fulfill({status:200,contentType:files[url.pathname],
-   body:await readFile(join(DIR,url.pathname.slice(1)))});
+  // Administra TODAS las rutas a través del Worker real. El JWT jamás
+  // entra al código del cliente: sólo lo añade este puente de CI.
+  const bearer=url.pathname==='/api/admin/mail-summary'&&apiToken!==undefined?
+   apiToken:token;
+  const response=await mf.dispatchFetch(HOST+url.pathname,{
+   method:'GET',headers:bearer?{'Cf-Access-Jwt-Assertion':bearer}:{}
+  });
+  await route.fulfill({status:response.status,
+   contentType:response.headers.get('content-type')||'application/json',
+   headers:{
+    'cache-control':response.headers.get('cache-control')||'no-store',
+    'content-security-policy':response.headers.get('content-security-policy')||"default-src 'none'"
+   },
+   body:await response.text()});
  });
  return {page,context,requests,errors,close:async()=>context.close()};
 }
@@ -129,7 +124,7 @@ async function waitForStatus(page,text){
 test('Chromium: login autorizado RS256 y Workerd D1 local muestran 6 estados, sin PII',async()=>{
  const s=await scene({token:adminToken});
  try{
-  await s.page.goto(HOST+'/dashboard.html');
+  await s.page.goto(HOST+'/admin/dashboard.html');
   await waitForStatus(s.page,'Estadísticas actualizadas');
   assert.equal(await s.page.locator('#results').isVisible(),true);
   assert.equal(await s.page.locator('tbody tr').count(),6);
@@ -156,25 +151,39 @@ test('Chromium: login autorizado RS256 y Workerd D1 local muestran 6 estados, si
   console.log('FLUYNOVA_ADMIN_DASHBOARD_AUTH_BROWSER_PASS: JWT_RS256=true, states=6, pii=false, viewports=4, external_net=0');
  }finally{await s.close()}
 });
-test('Chromium: anónimo y otro usuario no ven estadísticas (403)',async()=>{
+test('Chromium: HTML, CSS y JS son privados — anónimo y otra identidad reciben 403',async()=>{
  for(const token of [null,badToken]){
   const s=await scene({token});
   try{
-   await s.page.goto(HOST+'/dashboard.html');
-   await waitForStatus(s.page,'Acceso denegado');
-   assert.equal(await s.page.locator('#results').isVisible(),false);
-   assert.equal(await s.page.locator('tbody tr').count(),0);
-   assert.equal(await s.page.locator('#total').textContent(),'—');
+   const response=await s.page.goto(HOST+'/admin/dashboard.html');
+   assert.equal(response.status(),403);
+   assert.equal(await s.page.locator('#results').count(),0);
+   assert.equal(await s.page.locator('script').count(),0);
+   const text=await s.page.locator('body').innerText();
+   assert.ok(text.includes('ACCESS_DENIED'));
    assert.ok(s.requests.every(r=>r.origin===HOST&&r.method==='GET'));
    assert.deepEqual(s.errors,[]);
   }finally{await s.close()}
  }
- console.log('FLUYNOVA_ADMIN_DASHBOARD_DENIED_BROWSER_PASS: anonymous_and_wrong_user=403');
+ console.log('FLUYNOVA_ADMIN_DASHBOARD_ASSETS_DENIED_PASS: html=403, anonymous_and_wrong_user=true');
+});
+test('Chromium: HTML protegido cargado, sesión de API revocada muestra acceso denegado',async()=>{
+ const s=await scene({token:adminToken,apiToken:badToken});
+ try{
+  await s.page.goto(HOST+'/admin/dashboard.html');
+  await waitForStatus(s.page,'Acceso denegado');
+  assert.equal(await s.page.locator('#results').isVisible(),false);
+  assert.equal(await s.page.locator('tbody tr').count(),0);
+  assert.equal(await s.page.locator('#total').textContent(),'—');
+  assert.ok(s.requests.every(r=>r.origin===HOST&&r.method==='GET'));
+  assert.deepEqual(s.errors,[]);
+ }finally{await s.close()}
+ console.log('FLUYNOVA_ADMIN_DASHBOARD_DENIED_BROWSER_PASS: revoked_api=403');
 });
 test('Chromium: datos falsificados no generan HTML dinámico o falsa confirmación',async()=>{
  const s=await scene({token:adminToken,injectBadData:true});
  try{
-  await s.page.goto(HOST+'/dashboard.html');
+  await s.page.goto(HOST+'/admin/dashboard.html');
   await waitForStatus(s.page,'no superaron la validación');
   assert.equal(await s.page.locator('#results').isVisible(),false);
   assert.equal(await s.page.locator('img').count(),0);
@@ -185,7 +194,7 @@ test('Chromium: datos falsificados no generan HTML dinámico o falsa confirmaci�
 test('Chromium: al perder el esquema D1 tras cargar, refrescar limpia datos anteriores',async()=>{
  const s=await scene({token:adminToken});
  try{
-  await s.page.goto(HOST+'/dashboard.html');
+  await s.page.goto(HOST+'/admin/dashboard.html');
   await waitForStatus(s.page,'Estadísticas actualizadas');
   assert.equal(await s.page.locator('#results').isVisible(),true);
   assert.equal((await db.prepare('DROP TABLE lead_mail_outbox').run()).success,true);
