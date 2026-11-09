@@ -4,6 +4,7 @@
  * PASS significa SAFE_CLOSED, no que esté autorizado para publicación.
  */
 import {readFileSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
 import {readMigrationSql,auditMigrationSql} from './migration-guard.mjs';
@@ -12,12 +13,15 @@ const local=(relative)=>fileURLToPath(new URL(relative,import.meta.url));
 export const readReleaseInputs=()=>({
   candidate:JSON.parse(readFileSync(local('./wrangler.jsonc'),'utf8')),
   privateWorker:JSON.parse(readFileSync(local('../fluynova-contact-worker/wrangler.jsonc'),'utf8')),
+  privateSource:readFileSync(local('../fluynova-contact-worker/index.mjs'),'utf8'),
+  publicEntry:readFileSync(local('./index.mjs'),'utf8'),
+  publicHandler:readFileSync(local('./contact-handler.mjs'),'utf8'),
   pkg:JSON.parse(readFileSync(local('./package.json'),'utf8')),
   workflow:readFileSync(local('../../.github/workflows/fluynova-public-intake-candidate.yml'),'utf8'),
   migrationSql:readMigrationSql(),
 });
 
-export function auditClosedRelease({candidate,privateWorker,pkg,workflow,migrationSql}) {
+export function auditClosedRelease({candidate,privateWorker,privateSource,publicEntry,publicHandler,pkg,workflow,migrationSql}) {
   const failures=[];
   const requireSafe=(ok,code)=>{if(!ok)failures.push(code)};
   requireSafe(candidate?.name==='fluynova-public-intake-candidate','WRONG_PUBLIC_WORKER');
@@ -59,6 +63,28 @@ export function auditClosedRelease({candidate,privateWorker,pkg,workflow,migrati
   const publicText=JSON.stringify({...candidate,secrets:undefined});
   requireSafe(!/secret|api.token|password|credential|service_role|private.key/i.test(publicText),
     'SECRET_IN_PUBLIC_CONFIG');
+
+  // Congelar el código del Worker privado, no solamente su wrangler.jsonc.
+  // Usar el hash Git blob del archivo base staging (dato público, NO secreto).
+  // Un cambio en el código del Worker privado no debe entrar desde este PR.
+  const privateSourceHash=typeof privateSource==='string'
+    ?createHash('sha1').update('blob '+Buffer.byteLength(privateSource)+'\0')
+      .update(privateSource).digest('hex')
+    :'';
+  requireSafe(privateSourceHash==='d1811e9bf4a35bec0baecbe05ab3833d8360e536',
+    'PRIVATE_WORKER_SOURCE_CHANGED');
+  // Este Worker debe depender de su copia propia: nunca importar
+  // el módulo que Cloudflare Builds despliega para staging privado.
+  requireSafe(typeof publicEntry==='string'&&
+    publicEntry.includes("from './contact-handler.mjs'")&&
+    !publicEntry.includes('../fluynova-contact-worker/'),
+    'PUBLIC_WORKER_IMPORTS_PRIVATE_BACKEND');
+  requireSafe(typeof publicHandler==='string'&&
+    publicHandler.includes('export function createHandler(')&&
+    publicHandler.includes('async function persistIdempotentLead(')&&
+    !/\\bimport\\s*(?:\\(|\\{|\\*|['"])/.test(publicHandler)&&
+    !publicHandler.includes('../fluynova-contact-worker/'),
+    'PUBLIC_HANDLER_NOT_SELF_CONTAINED');
   requireSafe(privateWorker?.name==='fluynova-contact-staging-only','PRIVATE_WORKER_CHANGED');
   requireSafe(privateWorker?.vars?.ENABLE_CONTACT_SUBMISSIONS==='false','PRIVATE_WORKER_OPEN');
   // El backend privado no debe aceptar orígenes/hostnames verdaderos desde
