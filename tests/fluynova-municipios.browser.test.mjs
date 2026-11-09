@@ -90,9 +90,14 @@ test('Demostración municipal: derivar, resolver, reiniciar sin HTTP ni datos',a
   const button=s.page.locator('[data-advance="DEMO-001"]');
   await button.click();
   assert.deepEqual(await total(),['2','1','0']);
+  assert.equal(await s.page.locator('#demo-history li').count(),1);
+  assert.match(await s.page.locator('#demo-history').innerText(),/Derivada a Servicios públicos/);
+  assert.match(await s.page.locator('[data-case="DEMO-001"] .case-owner').innerText(),/Servicios públicos/);
   assert.equal(await button.textContent(),'Marcar resuelta');
   await button.click();
   assert.deepEqual(await total(),['2','0','1']);
+  assert.equal(await s.page.locator('#demo-history li').count(),2);
+  assert.match(await s.page.locator('#demo-history').innerText(),/Marcada resuelta/);
   assert.equal(await button.isDisabled(),true);
   assert.equal(await s.page.locator('[data-case="DEMO-001"] .case-status').textContent(),'Resuelta');
   for(const id of ['DEMO-002','DEMO-003']){
@@ -100,8 +105,12 @@ test('Demostración municipal: derivar, resolver, reiniciar sin HTTP ni datos',a
    await b.click();await b.click();
   }
   assert.deepEqual(await total(),['0','0','3']);
+  assert.equal(await s.page.locator('#demo-history li').count(),6);
   await s.page.locator('#reset-demo').click();
   assert.deepEqual(await total(),['3','0','0']);
+  assert.equal(await s.page.locator('#demo-history li').count(),1);
+  assert.match(await s.page.locator('#demo-history').innerText(),/Sin movimientos todavía/);
+  assert.equal(await s.page.locator('[data-case="DEMO-001"] .case-owner').isHidden(),true);
   assert.equal(await button.isDisabled(),false);
   assert.match(await s.page.locator('#demo-notice').textContent(),/Ejemplo reiniciado/);
   assert.deepEqual(s.errors,[]);
