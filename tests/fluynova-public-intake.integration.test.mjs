@@ -9,7 +9,7 @@ import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {build} from 'esbuild';
 import {Miniflare,createFetchMock} from 'miniflare';
-import {dispatchOnePendingNotice} from '../infra/fluynova-public-intake-worker/mail-notification.mjs';
+import {dispatchOnePendingNotice,recordVerifiedDeliveryEvent} from '../infra/fluynova-public-intake-worker/mail-notification.mjs';
 
 const ENTRY=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/index.mjs',import.meta.url));
 const WORKER_DIR=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/',import.meta.url));
@@ -300,6 +300,30 @@ test('Workerd + D1 LOCAL: aviso encolado junto con lead; proveedor simulado nunc
    assert.equal(outbox.provider_message_id,'ci-accepted-only-123');
    assert.equal((await dispatchOnePendingNotice({...options,enabled:true})).state,'empty');
    assert.equal(calls,1,'Nunca duplicar el aviso aceptado');
+
+   // Sólo evento SMTP terminal de una Queue AUTENTICADA permite decir Delivered.
+   const event={
+     type:'cf.email.sending.message.delivered',
+     source:{type:'email.sending',domain:'fluynova.invalid'},
+     payload:{terminal:true,messageId:'ci-accepted-only-123',
+       recipient:'contacto.fluynova@gmail.com',delivery:{status:'delivered'}}
+   };
+   const forged=await recordVerifiedDeliveryEvent({
+     db,enabled:true,event:{...event,payload:{...event.payload,recipient:'intruder@example.invalid'}}
+   });
+   assert.equal(forged.state,'ignored');
+   assert.equal((await db.prepare('SELECT state FROM lead_mail_outbox WHERE lead_id=?')
+     .bind(stored.id).first()).state,'accepted');
+   const disabledEvent=await recordVerifiedDeliveryEvent({db,enabled:false,event});
+   assert.equal(disabledEvent.state,'disabled');
+   const delivery=await recordVerifiedDeliveryEvent({db,enabled:true,event});
+   assert.equal(delivery.state,'delivered');
+   assert.equal(delivery.mailDelivered,true,'SMTP receptor aceptó el correo según Queue');
+   assert.equal((await db.prepare('SELECT state FROM lead_mail_outbox WHERE lead_id=?')
+     .bind(stored.id).first()).state,'delivered');
+   assert.equal((await recordVerifiedDeliveryEvent({db,enabled:true,event})).state,
+     'unknown-message','Un evento repetido no vuelve a modificar');
+   assert.equal(calls,1,'La verificación SMTP nunca envía otro mail');
 
    // Fallo ambiguo: el proveedor pudo aceptar el mensaje antes del error.
    const second=await mf.dispatchFetch(url,request({
