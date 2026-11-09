@@ -34,6 +34,11 @@ jobs:
           node --check tools/build-review-package.mjs
           node tools/generate-admin-assets.mjs --check
           node --test tools/package.test.mjs
+          node --check tools/release-preflight.mjs
+          node --check tools/release-preflight.test.mjs
+          node --test tools/release-preflight.test.mjs
+          node tools/release-preflight.mjs --write
+          node tools/release-preflight.mjs --check
       - name: Instalar solo herramientas locales y verificador criptográfico
         working-directory: infra/fluynova-admin-readonly-worker
         run: npm install --no-audit --no-fund
@@ -65,6 +70,13 @@ jobs:
                   info.external_attr=0o644 << 16
                   z.writestr(info,path.read_bytes())
           PY
+      - name: Guardar reporte de puertas de liberación (solo offline)
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluynova-admin-release-readiness-BLOCKED
+          path: infra/fluynova-admin-readonly-worker/ADMIN_RELEASE_READINESS.json
+          if-no-files-found: error
+          retention-days: 7
       - name: Publicar artefacto de CI (NO es publicación web)
         uses: actions/upload-artifact@v4
         with:
