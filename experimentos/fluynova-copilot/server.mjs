@@ -27,6 +27,11 @@ async function readBody(req,maxBytes=8000){
 }
 export function createApp({analyzer=analyzeDocument,model='qwen3:1.7b'}={}){
   return createServer(async(req,res)=>{
+    // Evita que una página externa use DNS rebinding para acceder al servidor local.
+    const expectedHost='127.0.0.1:'+req.socket.localPort;
+    if(req.headers.host!==expectedHost){
+      json(res,403,{error:'HOST_REJECTED'});return;
+    }
     if(req.url==='/' && req.method==='GET') {
       res.writeHead(200,{...HEADERS,'content-type':'text/html; charset=utf-8'});
       res.end(await readFile(new URL('./index.html',import.meta.url)));
