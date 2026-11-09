@@ -3,7 +3,7 @@
  * (static/index.html, styles.css, conversion-ux-2026.css, main.js).
  * No transforma el candidato, NO tiene red externa y nunca envía formularios.
  */
-import test from 'node:test';
+import test,{after} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile,mkdir} from 'node:fs/promises';
 import {resolve,join,sep,extname} from 'node:path';
@@ -16,6 +16,7 @@ const SITE='https://'+HOST+'/';
 const MIME={'.html':'text/html','.css':'text/css','.js':'application/javascript',
  '.svg':'image/svg+xml','.txt':'text/plain','.json':'application/json'};
 let browser;
+after(async()=>{await browser?.close();browser=undefined});
 async function session({width=1920,baseline=false}={}){
  browser??=await chromium.launch({headless:true});
  const context=await browser.newContext({viewport:{width,height:900}});
@@ -49,11 +50,11 @@ async function session({width=1920,baseline=false}={}){
   return route.fulfill({status:200,contentType:MIME[extname(path)]||'application/octet-stream',
    body:bytes});
  });
- const response=await page.goto(SITE,{waitUntil:'domcontentloaded'});
+ const response=await page.goto(SITE,{waitUntil:'domcontentloaded',timeout:15000});
  assert.equal(response.status(),200);
  await page.locator('h1').waitFor();
  // Main.js consulta /api/config, respuesta sintética de formulario desactivado.
- await page.waitForFunction(()=>document.querySelector('.submit-btn')?.disabled===true);
+ await page.waitForFunction(()=>document.querySelector('.submit-btn')?.disabled===true,null,{timeout:8000});
  return {page,context,unexpected,errors};
 }
 async function layout(page){
