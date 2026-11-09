@@ -16,6 +16,13 @@ Estado del hito: **04A preparación de código y pruebas locales** (implementada
 - [CI del receptor transaccional](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42547985836) aprobó 3/3 jobs: 7 pruebas unitarias + 16 de auditoría + 8 de readiness + 1 integración Workerd+D1 LOCAL + 9 Chromium (incluye respuesta perdida/reintento) = **41 pruebas distintas**. [CI del frontend](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42547960794) aprobó 29 tests de código + 10 Chromium = **39**. No se mezclan ni suman como pruebas remotas.
 - **Condición de salida 04B antes de uso real:** inspección Cloudflare autenticada de Access/WAF, Turnstile real y dominio, confirmar dos tablas/3 índices previos, obtener bookmark y aprobar/ejecutar la migración para la tercera tabla/índice, verificar cuatro índices propios y tres tablas, rollback, y cron. Estos requisitos son pasos con distintas autorizaciones; este código **no habilita tráfico**.
 
+## 04D — ensayo de migración y reversión solo D1 LOCAL (aprobado)
+
+- Se incorporó `schema-preflight.mjs`: SELECT a `sqlite_master` y PRAGMA de esquema, **sin leer contenido de contactos**; valida dos tablas/3 índices anteriores, y en la nueva tabla verifica las cinco columnas, PRIMARY KEY, UNIQUE, NOT NULL y un índice adicional correcto. La verificación parcial falla cerrada.
+- [Ensayo + procedimiento de migración y reversión](./MIGRACION_D1_PASO04_LOCAL.md): D1 local con leads ficticios anteriores, aplicación de `idempotency.schema.sql`, nueva aplicación sin errores, comprobación de constraints, y ensayo local de eliminar sólo la tabla nueva vacía manteniendo las filas anteriores. **No equivale a Time Travel remoto ni a una copia de seguridad.**
+- [GitHub Actions #42549694618](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42549694618) **SUCCESS 3/3 jobs**, 43 pruebas distintas (7 unitarias + 16 seguridad + 8 readiness + 1 integración D1 local + 2 migración D1 local + 9 Chromium). Wrangler `--dry-run`, sin tokens ni despliegue.
+- Bloqueado hasta Cloudflare autenticado: identificar D1 efectiva, inspección real sin PII, bookmark/versionado, autorización de migración, validación posterior y permisos/recuperación separados de cualquier publicación.
+ 
 ## Evidencia que falta para cerrar 04B (Cloudflare autenticado, solo lectura al comenzar)
 | Elemento | Evidencia necesaria | Condición |
 | --- | --- | --- |
