@@ -33,6 +33,14 @@ jobs:
       - name: Firmas RS256 y D1 local, red externa completamente interceptada
         working-directory: infra/fluynova-admin-readonly-worker
         run: timeout --signal=TERM --kill-after=3s 120s npm test
+      - name: Instalar Chromium solo para pruebas locales de UI
+        working-directory: infra/fluynova-admin-readonly-worker
+        run: |
+          npm install --no-save --no-audit --no-fund playwright@1.65.0
+          npx playwright install --with-deps --only-shell chromium
+      - name: Probar interfaz de administración con Access JWT + D1 local, sin red externa
+        working-directory: infra/fluynova-admin-readonly-worker
+        run: timeout --signal=TERM --kill-after=3s 150s node --test dashboard.browser.test.mjs
       - name: Construir candidato admin sin desplegarlo
         working-directory: infra/fluynova-admin-readonly-worker
         run: npm run dryrun
