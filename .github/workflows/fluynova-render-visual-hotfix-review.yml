@@ -1,0 +1,43 @@
+name: FLUYNOVA Render — visual mínimo, SIN PUBLICACIÓN
+
+on:
+  push:
+    branches:
+      - fix/fluynova-render-visual-minimo-20261109
+    paths:
+      - 'static/index.html'
+      - 'static/styles.css'
+      - 'tests/render-source-layout.browser.test.mjs'
+      - '.github/workflows/fluynova-render-visual-hotfix-review.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  source-render-e2e:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Leer cambios de la rama propuesta
+        uses: actions/checkout@v4
+      - name: Preparar Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Instalar navegador de prueba aislado
+        run: |
+          npm install --no-save --no-package-lock playwright@1.65.0
+          npx playwright install --with-deps --only-shell chromium
+      - name: Confirmar sintaxis del test (sin despliegue)
+        run: node --check tests/render-source-layout.browser.test.mjs
+      - name: Probar HTML y CSS de Render con todas las salidas externas bloqueadas
+        run: node --test tests/render-source-layout.browser.test.mjs
+      - name: Guardar evidencia visual de laboratorio, nunca publicar
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluynova-render-hotfix-revision-SIN-PUBLICAR
+          path: artifacts/fluynova-render-source/
+          if-no-files-found: warn
+          retention-days: 7
