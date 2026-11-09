@@ -8,6 +8,14 @@ Estado del hito: **04A preparación de código y pruebas locales** (implementada
 - Pruebas unitarias: validación del SQL, límite temporal, rechazo de D1 ausente/resultado fallido; Workerd con D1 local para borrado de huellas viejas, conservación de actuales y de lead ya guardado. Siteverify sigue interceptado durante las pruebas.
 - El release readiness añade la verificación de **Cron Triggers efectivos** como bloqueo. Ausencia de `triggers` en Git no prueba ausencia del cron remoto al desplegar sobre un Worker existente: Cloudflare mantiene los cron anteriores cuando se omiten `triggers`/`crons`.
 
+## 04C — reintentos de red sin duplicados (código validado, remoto aún bloqueado)
+
+- El navegador PR #21 crea `request_id` UUIDv4; conserva su valor mientras el contenido no cambie y no haya recepción confirmada. El backend público PR #23 requiere ese ID y usa la nueva tabla `lead_idempotency` con `D1.batch` transaccional. Reintentar el mismo contenido devuelve el mismo código (HTTP 200 `duplicate:true`); un intento original confirma con HTTP 201. Reutilizar la misma clave con datos distintos da HTTP 409.
+- La migración adicional **no está aplicada remotamente**: `infra/fluynova-public-intake-worker/idempotency.schema.sql`. No cambiar el esquema de `leads` ni la D1 de APDocentePBA. Si falta la tabla, un POST simulado de laboratorio devuelve 503 sin crear consultas.
+- La limpieza del ledger se preparó para siete días, dependiente de un cron aún no autorizado. Su ejecución local prueba que no borra `leads`; la retención remota no está certificada.
+- [CI del receptor transaccional](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42547985836) aprobó 3/3 jobs: 7 pruebas unitarias + 16 de auditoría + 8 de readiness + 1 integración Workerd+D1 LOCAL + 9 Chromium (incluye respuesta perdida/reintento) = **41 pruebas distintas**. [CI del frontend](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42547960794) aprobó 29 tests de código + 10 Chromium = **39**. No se mezclan ni suman como pruebas remotas.
+- **Condición de salida 04B antes de uso real:** inspección Cloudflare autenticada de Access/WAF, Turnstile real y dominio, confirmar dos tablas/3 índices previos, obtener bookmark y aprobar/ejecutar la migración para la tercera tabla/índice, verificar cuatro índices propios y tres tablas, rollback, y cron. Estos requisitos son pasos con distintas autorizaciones; este código **no habilita tráfico**.
+
 ## Evidencia que falta para cerrar 04B (Cloudflare autenticado, solo lectura al comenzar)
 | Elemento | Evidencia necesaria | Condición |
 | --- | --- | --- |
