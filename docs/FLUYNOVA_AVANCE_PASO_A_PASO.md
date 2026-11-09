@@ -1,5 +1,5 @@
 # FLUYNOVA — hoja de ruta ejecutiva (formulario y diseño)
-Actualizado: 2026-11-08 (Paso 03 documentado; controles remotos pendientes). Registro de estado verificable. **Ningún check autoriza por sí solo publicar ni captar datos reales.**
+Actualizado: 2026-11-08 (Paso 04A local aprobado; 04B remoto pendiente). Registro de estado verificable. **Ningún check autoriza por sí solo publicar ni captar datos reales.**
 
 ## Objetivo de aceptación
 Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida consentimiento y antispam, registra el caso en D1 remoto, presenta un ID **solo si se confirmó la escritura**, permite lectura administrativa autenticada y notifica por email al correo comercial con entrega verificada por separado. Ante cualquier fallo muestra el contacto manual y no pierde datos silenciosamente. La web es clara, adaptable y visualmente profesional.
@@ -48,4 +48,11 @@ Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida cons
 - **Hallazgo operativo:** el handler `scheduled()` para borrar fingerprints anteriores a ~48–49 h existe, pero no hay `triggers.crons` en staging; recepción debe seguir deshabilitada.
 - [Informe y matriz de evidencias](./FLUYNOVA_INFRA_READONLY_PASO03_20261108.md). **Paso 03 cierra el diagnóstico, no una certificación de seguridad**. Se mantienen bloqueantes que impiden la activación.
 
-**SIGUIENTE PASO — 04.** Preparación segura y verificable de recepción remota: primero controles Cloudflare autenticados, reglas Access/WAF, secretos, D1, Turnstile y cron; cualquier cambio remoto, despliegue, DNS o envío de prueba requiere permiso explícito y rollback preparado.
+**PASO 04A — COMPLETADO EN CÓDIGO Y D1 LOCAL el 08/11/2026. PASO 04B REMOTO SIGUE PENDIENTE.**
+- PR [#23](https://github.com/apdocentepba-hub/fluynova-web/pull/23): receptor público aislado agregó handler `scheduled()` para limpiar fingerprints HMAC sin borrar la tabla `leads`, conservando `triggers` AUSENTE, flags false, sin dominio ni binding D1 remoto ni nuevos secretos.
+- [CI #42538495371](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42538495371): **3/3 jobs SUCCESS**; 7 unitarias, 12 de auditoría, 8 de preparación/reversión, 1 Workerd + D1 LOCAL (incluye cron simulado con SQL real) y 7 Chromium = **35 pruebas distintas PASS**. Wrangler dry-run, sin publicación.
+- **Corrección del informe anterior:** la omisión de `triggers` en el `wrangler.jsonc` NO permite deducir si existe un cron efectivo en el Worker remoto: Cloudflare preserva cron existentes al omitirlos. La limpieza aún debe comprobarse autenticadamente en Settings → Triggers. Un cron diario puede dar ~48–73 h de retención, no una cota de ~48–49 h.
+- [Plan de conexión remota y bloqueos](https://github.com/apdocentepba-hub/fluynova-web/blob/feature/fluynova-public-intake-isolated-20261108/infra/fluynova-public-intake-worker/PASO04_PREPARACION_REMOTA.md): Access/WAF, widget Turnstile, D1 y tres índices, dominio, cron real, versionado y Time Travel. No hay sesión Cloudflare autenticada conectada al navegador del asistente.
+- **NO cerrar el Paso 04 como terminado:** falta comprobar y, con permiso, configurar los recursos remotos; los flujos siguen cerrados.
+
+**SIGUIENTE ACCIÓN — 04B.** Verificar configuraciones reales de Cloudflare mediante sesión autorizada; separar claramente Access privado del receptor público, y preparar vinculación a D1 con recuperación verificada antes de cualquier POST remoto.
