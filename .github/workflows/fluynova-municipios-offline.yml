@@ -1,0 +1,40 @@
+name: FLUYNOVA municipios - demo offline, SIN PUBLICACION
+
+on:
+  push:
+    branches:
+      - feature/fluynova-municipios-piloto-20261109
+    paths:
+      - 'static/municipios/**'
+      - 'tests/fluynova-municipios.browser.test.mjs'
+      - '.github/workflows/fluynova-municipios-offline.yml'
+  pull_request:
+    paths:
+      - 'static/municipios/**'
+      - 'tests/fluynova-municipios.browser.test.mjs'
+      - '.github/workflows/fluynova-municipios-offline.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  municipal-demo-browser-offline:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout codigo, solo lectura
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Playwright Chromium aislado
+        run: |
+          npm install --no-save --no-package-lock playwright@1.65.0
+          npx playwright install --with-deps --only-shell chromium
+      - name: Sintaxis sin red ni despliegue
+        run: |
+          node --check static/municipios/municipios.js
+          node --check tests/fluynova-municipios.browser.test.mjs
+      - name: Demo real en Chromium contra archivos locales
+        run: node --test tests/fluynova-municipios.browser.test.mjs
