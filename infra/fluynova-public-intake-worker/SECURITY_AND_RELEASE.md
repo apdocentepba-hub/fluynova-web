@@ -1,5 +1,18 @@
 # FLUYNOVA — candidato a receptor público, SIN publicar
 
+## Separación real de código — 04F (8 de noviembre de 2026)
+
+**Hallazgo confirmado** al comparar la feature con `deploy/fluynova-contact-staging`: aunque el Worker de contacto público estaba configurado con su propio nombre, `index.mjs` importaba el handler desde `../fluynova-contact-worker/index.mjs`. Para habilitar idempotencia se habían agregado **63 líneas de código** al archivo del **Worker privado de staging**, ampliando el riesgo de que un merge alterara un servicio que debe permanecer protegido.
+
+**Corrección aplicada en la feature aislada PR #23:**
+
+- Se creó `infra/fluynova-public-intake-worker/contact-handler.mjs`, módulo autocontenido con validación del formulario, Siteverify, almacenamiento D1, rate limiting e idempotencia. El público `index.mjs` ahora importa `./contact-handler.mjs`, **nunca el módulo de staging**.
+- Se restauró el archivo `infra/fluynova-contact-worker/index.mjs` al **mismo Git blob SHA-1** que la rama base: `d1811e9bf4a35bec0baecbe05ab3833d8360e536`. La comparación final entre feature y staging ya no debe contener este archivo como modificado. Restaurar el archivo **de la rama feature** no cambia un Worker remoto.
+- `release-guard.mjs` ahora comprueba el hash de contenido del archivo privado, el import local del receptor público y la ausencia de imports desde staging en el handler autocontenido. GitHub Actions se ejecuta también ante cambios en `infra/fluynova-contact-worker/**` **dentro de esta rama feature** para evitar que pasen inadvertidos. Tres pruebas nuevas provocan modificaciones y dependencias cruzadas simuladas; se espera `SAFE_CLOSED=false` ante cualquiera de ellas.
+- El comportamiento funcional se vuelve a ejecutar en **Workerd + D1 local + Chromium** con Turnstile simulado, sin nube ni datos personales reales. La verificación del archivo privado se basa en el snapshot de staging del momento; si la rama base cambia legítimamente, habrá que revisar el diff, no desactivar silenciosamente el guard.
+
+**Limitación decisiva:** el PR #23 todavía tiene como rama de destino `deploy/fluynova-contact-staging`, la cual puede producir builds automáticos **si se fusiona**. Por eso **sigue en borrador y no debe fusionarse**. Esta corrección elimina del diff cambios al archivo privado, pero **no autoriza merges, cambios de ramas, CI remoto privilegiado ni despliegues**.
+
 ## Por qué es independiente
 El Worker actual `fluynova-contact-staging-only` está protegido por Cloudflare Access para **todo el tráfico**. Según Cloudflare, Access intercepta solicitudes ANTES de que lleguen al código del Worker. No desactivar su protección para habilitar un formulario de clientes.
 
