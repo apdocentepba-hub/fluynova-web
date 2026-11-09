@@ -10,6 +10,7 @@ import {fileURLToPath} from 'node:url';
 import {build} from 'esbuild';
 import {Miniflare,createFetchMock} from 'miniflare';
 import {dispatchOnePendingNotice,recordVerifiedDeliveryEvent,recordVerifiedBounceEvent,markStaleSendingUncertain} from '../infra/fluynova-public-intake-worker/mail-notification.mjs';
+import {readMailAdminSnapshot,renderOfflineMailAdminHtml} from '../infra/fluynova-public-intake-worker/mail-admin-report.mjs';
 
 const ENTRY=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/index.mjs',import.meta.url));
 const WORKER_DIR=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/',import.meta.url));
@@ -433,6 +434,63 @@ test('Workerd+D1 LOCAL: cola sending interrumpida pasa a revisión y rebote SMTP
    assert.equal(emailCalls,1,'El reconciliador nunca llama al proveedor');
    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,4);
    console.log('FLUYNOVA_MAIL_STALE_BOUNCE_LOCAL_PASS: bounced=1, stale_to_uncertain=1, sends=1, leads=4, remote=false');
+  }finally{await mf.dispose()}
+ }finally{await rm(dir,{recursive:true,force:true})}
+});
+
+test('D1 LOCAL: resumen administrativo de estados reales sin datos personales ni HTTP',async()=>{
+ const dir=await mkdtemp(join(WORKER_DIR,'.fluynova-admin-local-'));
+ try{
+  const bundle=join(dir,'worker.mjs');
+  await build({entryPoints:[ENTRY],outfile:bundle,bundle:true,
+   format:'esm',platform:'browser',logLevel:'silent'});
+  const {mf,db}=await makeRuntime(bundle,{public:'true',contact:'true',mail:'true'});
+  try{
+   const ids=[
+    fakeLead.request_id,
+    'b09297e9-9360-41b9-8e63-0b2aeb3e7b03',
+    'e27ee346-aeb0-43ad-95c6-81e179c2b4de',
+    'c1023a3b-8c86-4c9e-bf65-09f1f3bb9159'
+   ];
+   const leadIds=[];
+   for(const request_id of ids) {
+    const {url,request:args}=request({...fakeLead,request_id});
+    const response=await mf.dispatchFetch(url,args);
+    assert.equal(response.status,201,await response.text());
+    leadIds.push((await response.clone().json()).id);
+   }
+   for(const [id,state] of [
+    [leadIds[0],'delivered'],
+    [leadIds[1],'uncertain'],
+    [leadIds[2],'bounced']
+   ]) {
+    const r=await db.prepare('UPDATE lead_mail_outbox SET state=? WHERE lead_id=?')
+      .bind(state,id).run();
+    assert.equal(r.success,true);
+   }
+   const queries=[];
+   const aggregateOnlyDb={prepare(sql){queries.push(sql);return db.prepare(sql)}};
+   const snapshot=await readMailAdminSnapshot(aggregateOnlyDb,{
+    now:()=> '2026-11-09T14:15:00.000Z'
+   });
+   assert.deepEqual(snapshot.counts,{
+    pending:1,sending:0,accepted:0,delivered:1,bounced:1,uncertain:1
+   });
+   assert.equal(snapshot.total,4);
+   assert.equal(snapshot.needsReview,2);
+   assert.deepEqual(queries,[
+    'SELECT state, COUNT(*) AS total FROM lead_mail_outbox GROUP BY state ORDER BY state'
+   ]);
+   const html=renderOfflineMailAdminHtml(snapshot);
+   for(const sensitive of ['intake-test@example.invalid','Consulta Ficticia',
+    'Necesito un catálogo','203.0.113.53',...leadIds])
+    assert.equal(html.includes(sensitive),false,'No exponer '+sensitive);
+   assert.equal(html.includes('<script'),false);
+   assert.equal((await mf.dispatchFetch('https://public-candidate.invalid/admin')).status,404);
+   assert.equal((await mf.dispatchFetch('https://public-candidate.invalid/api/admin/mail')).status,404);
+   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,4,
+    'El informe nunca borra consultas');
+   console.log('FLUYNOVA_ADMIN_SUMMARY_D1_LOCAL_PASS: rows=4, states=6, review=2, pii=false, public_route=404');
   }finally{await mf.dispose()}
  }finally{await rm(dir,{recursive:true,force:true})}
 });
