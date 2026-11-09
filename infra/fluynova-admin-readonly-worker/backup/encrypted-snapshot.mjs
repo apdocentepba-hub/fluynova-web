@@ -165,7 +165,7 @@ export async function decryptSnapshotForLocalRecovery(envelope,passphrase){
  // No ejecutar sobre D1: devuelve únicamente un objeto EN MEMORIA.
  if(!passphraseValid(passphrase))fail('BACKUP_PASSPHRASE_TOO_WEAK');
  if(!envelope||typeof envelope!=='object'||Array.isArray(envelope)||
-    Object.keys(envelope).length!==9||
+    Object.keys(envelope).length!==10||
     envelope.kind!==KIND||envelope.version!==1||
     envelope.kdf!=='scrypt'||envelope.N!==N||
     envelope.r!==R||envelope.p!==P)
