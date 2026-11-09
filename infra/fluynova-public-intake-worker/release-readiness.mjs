@@ -10,6 +10,7 @@ export const prerequisites=Object.freeze([
  'Confirmar dominio exclusivo y reglas de Cloudflare Access/WAF para el nuevo Worker',
  'Crear widget Turnstile del dominio real; guardar secret únicamente en Cloudflare',
  'Revisar D1 remoto exclusivo de FLUYNOVA, esquema, permisos y bookmark previo',
+ 'Verificar tercera tabla lead_idempotency e índice adicional solo tras migración D1 remota autorizada',
  'Configurar secreto HMAC independiente, sin registrarlo en Git ni chats',
  'Definir retención, acceso administrativo y eliminación de datos personales',
  'Auditar Cron Triggers EFECTIVOS en Cloudflare; código scheduled sin trigger no demuestra limpieza',
