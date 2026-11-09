@@ -4,7 +4,7 @@
 CREATE TABLE IF NOT EXISTS lead_mail_outbox (
   lead_id TEXT PRIMARY KEY NOT NULL,
   state TEXT NOT NULL DEFAULT 'pending'
-    CHECK (state IN ('pending','sending','accepted','uncertain','delivered')),
+    CHECK (state IN ('pending','sending','accepted','uncertain','delivered','bounced')),
   attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
   created_at TEXT NOT NULL,
   updated_at TEXT NOT NULL,
