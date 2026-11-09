@@ -132,6 +132,42 @@ test('Chromium real: CAPTCHA simulado activa botón; HTTP 201 confirma solo D1 g
   assert.deepEqual(x.browserErrors,[]);
  }finally{await x.context.close()}
 });
+test('Chromium: un reintento idempotente HTTP 200 solo confirma con duplicate y ID',async()=>{
+ const x=await visit({configured:true,workerStatus:200,
+   workerBody:{ok:true,stored:true,duplicate:true,delivery:'database',id:UUID}});
+ try{
+  await x.page.waitForFunction(()=>window.__turnstileOpts?.action==='contact');
+  await fillForm(x.page);
+  await x.page.evaluate(()=>window.__turnstileOpts.callback('retry-captcha-token'));
+  await x.page.locator('#contact-form button[type="submit"]').click();
+  await x.page.waitForFunction(()=>document.querySelector('#form-status')
+    ?.textContent?.includes('Consulta guardada con código'),null,{timeout:5000});
+  assert.equal(x.workerRequests.length,1);
+  assert.match(x.workerRequests[0].body.request_id,
+    /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i);
+  assert.match(await x.page.locator('#form-status').innerText(),/no confirma entrega por correo/);
+  assert.deepEqual(x.unexpectedPosts,[]);
+  assert.deepEqual(x.browserErrors,[]);
+ }finally{await x.context.close()}
+});
+test('Chromium: HTTP 200 sin duplicate explícito no permite falsos éxitos',async()=>{
+ const x=await visit({configured:true,workerStatus:200,
+   workerBody:{ok:true,stored:true,delivery:'database',id:UUID}});
+ try{
+  await x.page.waitForFunction(()=>window.__turnstileOpts?.action==='contact');
+  await fillForm(x.page);
+  await x.page.evaluate(()=>window.__turnstileOpts.callback('retry-captcha-token'));
+  await x.page.locator('#contact-form button[type="submit"]').click();
+  await x.page.waitForFunction(()=>document.querySelector('#form-status')
+    ?.textContent?.includes('No pudimos guardar tu consulta'),null,{timeout:5000});
+  assert.equal(await x.page.locator('#contact-form input[name="email"]').inputValue(),
+    'prueba@example.invalid');
+  assert.equal(x.workerRequests.length,1);
+  assert.deepEqual(x.unexpectedPosts,[]);
+  assert.deepEqual(x.browserErrors,[]);
+ }finally{await x.context.close()}
+});
+
 test('Chromium real: HTTP 200 sin stored no simula éxito ni borra el formulario',async()=>{
  const x=await visit({configured:true,workerStatus:200,workerBody:{success:true,stored:false}});
  try{
