@@ -1,5 +1,5 @@
 # FLUYNOVA — hoja de ruta ejecutiva (formulario y diseño)
-Actualizado: 2026-11-09 (auditoría web publicada y copy seguro PR21; backend remoto pendiente). Registro de estado verificable. **Ningún check autoriza por sí solo publicar ni captar datos reales.**
+Actualizado: 2026-11-09 (hotfix Render PR24 validado 7 tamaños; publicación y correo reales pendientes). Registro de estado verificable. **Ningún check autoriza por sí solo publicar ni captar datos reales.**
 
 ## Objetivo de aceptación
 Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida consentimiento y antispam, registra el caso en D1 remoto, presenta un ID **solo si se confirmó la escritura**, permite lectura administrativa autenticada y notifica por email al correo comercial con entrega verificada por separado. Ante cualquier fallo muestra el contacto manual y no pierde datos silenciosamente. La web es clara, adaptable y visualmente profesional.
@@ -11,6 +11,14 @@ Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida cons
 - Se detectaron en producción dos vínculos equivalentes a `/webs/` en el menú y una frase que sugería entrega ya confirmada. El candidato PR #21 conserva un único vínculo y ahora comunica «contacto directo por correo; el formulario automático sigue en verificación». Se agregó test de regresión.
 - [GitHub Actions #42627325050](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42627325050): **SUCCESS 2/2**, 30 tests Node + 10 Chromium offline, sin publicación; los workflows complementarios también aprobaron. La web pública sigue en el mismo commit de main, sin modificaciones.
 - Prioridad operativa: verificar el circuito real de contacto y la experiencia pública antes de seguir agregando funciones internas. Esto exige consentimiento antes de enviar una consulta real o cambiar producción.
+
+## Corrección visual de la web real preparada — 09/11/2026
+
+- **Nuevo [PR #24 Render visual mínimo](https://github.com/apdocentepba-hub/fluynova-web/pull/24)**, **DRAFT**, creado directamente desde `main` en el último deploy Render comprobado `1504e396...`. Se separó del PR #21 de migración estática para evitar que su fusión automática publique también cambios de backend/formulario. **Únicamente modifica `static/index.html` y `static/styles.css` en la web.**
+- Auditoría con navegador de la web real: a 1920px el resplandor decorativo `.ambient-one` se extendía 250px por fuera; primera solución `overflow-x:clip` **insuficiente** en 320px. El hotfix también desplaza y limita el ancho de ese decorado (`right:0;width:min(490px,100vw)`). Se corrigió el título de servicios recortado a 320px.
+- [CI #42631466045](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42631466045): **SUCCESS 2/2 tests Chromium de los archivos fuente de Render**, baseline de 1920px reproduce scrollWidth 2170 y candidato muestra 1920; a 320px `documentElement.scrollWidth=body.scrollWidth=320`. Validación adicional 390/768/900/1024/1366px. Capturas sin datos reales. Workflows auxiliares Guardian, formularios y diagnóstico **SUCCESS**.
+- El hotfix preserva `app.py`, `static/main.js`, Render, FormSubmit, Guardián y el correo directo; elimina el vínculo duplicado del menú y deja explícito que la entrega del formulario sigue sin confirmarse.
+- **Sin merge ni deploy; PR #24 aún DRAFT.** Render tiene autoDeploy desde `main`: publicar cualquier PR requiere aprobación explícita. PR #21 y #23 permanecen separados y cerrados al tráfico.
 
 ## Estado previo comprobado
 - 30/10: FormSubmit había entregado dos mensajes de prueba a la casilla comercial; después se observaron errores FormSubmit / Cloudflare 522 y episodios 503/carga fría en Render. Eso **no** demuestra que el envío de clientes funcione ahora.
