@@ -55,7 +55,8 @@ export function auditAdminReleaseInputs({config,entry,workflowText,assets,packag
  blocked(errors,'ADMIN_ENTRYPOINT_CHANGED',typeof entry==='string'&&
   entry.includes("import {ADMIN_ASSETS} from './admin-assets.generated.mjs'")&&
   entry.includes('createRemoteJWKSet,jwtVerify')&&
-  entry.includes('readMailAdminSnapshot')&&
+  entry.includes("import {readMailAdminSnapshot} from '../fluynova-public-intake-worker/mail-admin-report.mjs'")&&
+  entry.includes('await readMailAdminSnapshot(env.DB)')&&
   entry.includes("u.pathname!==PATH&&!asset")&&
   entry.includes('if(!(await authorized(request,env)))')&&
   entry.includes("request.method!=='GET'")&&
