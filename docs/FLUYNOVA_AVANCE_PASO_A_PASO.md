@@ -62,4 +62,12 @@ Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida cons
 - Se habilitó enlace de inicio de sesión seguro Cloudflare mediante conector de navegador, sin sesión confirmada ni acceso todavía. Las políticas remotas y los secretos permanecen **no verificados**. No se ejecutó ninguna modificación Cloudflare, Render, D1 ni dominio.
 - **PASO 04 sigue abierto** hasta que pueda auditarse/configurarse el servicio remoto con aprobación específica.
 
+**04B — SEGURO CONTRA MUTACIONES REMOTAS — 08/11/2026 (validado en CI, remoto pendiente).**
+- Se revisó `release-guard.mjs` de PR #23: el auditor anterior rechazaba `wrangler deploy`, pero dejaba fuera otras operaciones como `wrangler versions upload/deploy`, `secret put`, `triggers deploy`, `d1 execute --remote` y despliegues Pages.
+- Se incorporó una prohibición de comandos conocidos de mutación, acciones Cloudflare, credenciales/API en el **workflow de esta rama** y scripts `package.json` fuera de los dos permitidos. Se añadieron controles de estabilidad para los orígenes y rutas del Worker privado.
+- **[GitHub Actions #42546544055](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42546544055): SUCCESS 3/3 jobs**. 7 unitarias + 16 auditoría de seguridad (4 nuevas) + 8 readiness + 1 Workerd con D1 **LOCAL** + 8 E2E Chromium = **40 pruebas distintas aprobadas**, y Wrangler `--dry-run` en dos jobs. No se tocó Cloudflare remoto.
+- La documentación oficial confirma que `wrangler secret put` muta y despliega inmediatamente, mientras `versions upload` sube versiones sin publicarlas; ninguno corresponde a un workflow de PR de solo pruebas.
+- Se comprobó el perfil del navegador: **Cloudflare todavía NO figura como sesión autenticada guardada**, por lo que no es posible confirmar Access/WAF, D1 remota, Trigger efectivo, Turnstile ni permisos. Se habilitó previamente un acceso de configuración de perfil para que el usuario inicie sesión sin compartir credenciales en el chat.
+- Paso 04B **abierto**: se redujo el riesgo de cambios accidentales desde GitHub, pero no se activó recepción ni se completó el trabajo remoto.
+
 **SIGUIENTE ACCIÓN — 04B.** Verificar configuraciones reales de Cloudflare mediante sesión autorizada; separar claramente Access privado del receptor público, y preparar vinculación a D1 con recuperación verificada antes de cualquier POST remoto.
