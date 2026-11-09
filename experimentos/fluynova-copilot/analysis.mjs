@@ -75,7 +75,7 @@ export async function analyzeDocument(source,{fetchImpl=fetch,model='qwen3:1.7b'
   // Endpoint fijo local. El documento o el cliente NO pueden configurar destinos de red.
   const controller=new AbortController();
   const timer=setTimeout(()=>controller.abort(),timeoutMs);
-  let response;
+  let response,rawBody;
   try {
     response=await fetchImpl('http://127.0.0.1:11434/api/chat',{
       method:'POST',signal:controller.signal,
@@ -89,16 +89,18 @@ export async function analyzeDocument(source,{fetchImpl=fetch,model='qwen3:1.7b'
         ]
       })
     });
+    if(!response?.ok)throw new CopilotError('AI_UNAVAILABLE',503);
+    // Se mantiene el timeout hasta consumir TODO el cuerpo de la respuesta, no solo cabeceras.
+    rawBody=await response.text();
   } catch(err) {
     if(controller.signal.aborted)throw new CopilotError('AI_TIMEOUT',504);
+    if(err instanceof CopilotError)throw err;
     throw new CopilotError('AI_UNAVAILABLE',503);
   } finally {clearTimeout(timer)}
-  if(!response?.ok)throw new CopilotError('AI_UNAVAILABLE',503);
   let payload;
   try {
-    const body=await response.text();
-    if(body.length>30000)throw Error('oversize');
-    const wrapper=JSON.parse(body);
+    if(rawBody.length>30000)throw Error('oversize');
+    const wrapper=JSON.parse(rawBody);
     payload=JSON.parse(wrapper.message.content);
   }catch{throw new CopilotError('AI_INVALID_RESPONSE',502)}
   const extracted=cleanStructured(payload,source);
