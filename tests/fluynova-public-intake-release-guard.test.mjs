@@ -89,3 +89,56 @@ test('fecha de compatibilidad y observabilidad requieren revisión expresa',()=>
  const extra=modify(c=>{c.candidate.observability.logs={enabled:true}});
  assert.ok(extra.failures.includes('OBSERVABILITY_UNREVIEWED'));
 });
+
+test('CI bloquea mutaciones remotas distintas de wrangler deploy',()=>{
+ const commands=[
+   'npx wrangler versions upload',
+   'npx wrangler versions deploy',
+   'npx wrangler versions secret put TURNSTILE_SECRET_KEY',
+   'npx wrangler secret put RATE_HASH_SECRET',
+   'npx wrangler triggers deploy',
+   'npx wrangler d1 execute fluynova-leads-staging --remote',
+   'npx wrangler pages deploy ./dist',
+   'npx wrangler rollback previous-version',
+   'npx wrangler deploy --temporary',
+   'npm run publish',
+   'pnpm run deploy',
+   'yarn run promote',
+   'curl -X POST https://api.cloudflare.com/client/v4/accounts/example/workers',
+ ];
+ for(const command of commands){
+   const report=modify(c=>{c.workflow+='\n      - name: Intento de modificación\n        run: '+command+'\n'});
+   assert.ok(report.failures.includes('LIVE_DEPLOY_COMMAND_IN_CI'),
+     'No bloquearía comando remoto: '+command);
+ }
+});
+test('CI rechaza acciones Cloudflare y referencias a credenciales',()=>{
+ for(const fragment of [
+  '\n      - uses: cloudflare/wrangler-action@v3',
+  '\n      - uses: cloudflare/pages-action@v1',
+  '\n      - name: Credencial\n        env:\n          CLOUDFLARE_API_TOKEN: hidden',
+  '\n      - name: Credencial\n        env:\n          CF_API_KEY: hidden',
+  '\n      - name: Credencial\n        run: echo ' + '$' + '{{ secrets.CLOUDFLARE_TOKEN }}',
+ ]){
+  const report=modify(c=>{c.workflow+=fragment+'\n'});
+  assert.ok(report.failures.includes('LIVE_DEPLOY_COMMAND_IN_CI'),fragment);
+ }
+});
+test('package scripts están en allowlist; tareas nuevas no pasan la auditoría',()=>{
+ for(const action of [
+  c=>{c.pkg.scripts.publish='wrangler versions deploy';},
+  c=>{c.pkg.scripts.check='wrangler deploy --dry-run';},
+  c=>{c.pkg.scripts.deploy='echo HELLO';}
+ ]){
+  const report=modify(action);
+  assert.ok(report.failures.includes('UNREVIEWED_PACKAGE_SCRIPT'));
+ }
+});
+test('Worker privado: un origen real o rutas nuevas exigen revisión independiente',()=>{
+ const changedOrigin=modify(c=>{c.privateWorker.vars.ALLOWED_ORIGINS='https://fluynova-web.onrender.com'});
+ assert.ok(changedOrigin.failures.includes('PRIVATE_WORKER_ORIGINS_CHANGED'));
+ const changedHostname=modify(c=>{c.privateWorker.vars.TURNSTILE_HOSTNAMES='fluynova.com.ar'});
+ assert.ok(changedHostname.failures.includes('PRIVATE_WORKER_ORIGINS_CHANGED'));
+ const changedRoute=modify(c=>{c.privateWorker.routes=[{pattern:'fluynova.example/*'}]});
+ assert.ok(changedRoute.failures.includes('PRIVATE_WORKER_ROUTES_CHANGED'));
+});
