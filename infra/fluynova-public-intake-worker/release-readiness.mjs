@@ -12,6 +12,7 @@ export const prerequisites=Object.freeze([
  'Revisar D1 remoto exclusivo de FLUYNOVA, esquema, permisos y bookmark previo',
  'Configurar secreto HMAC independiente, sin registrarlo en Git ni chats',
  'Definir retención, acceso administrativo y eliminación de datos personales',
+ 'Auditar Cron Triggers EFECTIVOS en Cloudflare; código scheduled sin trigger no demuestra limpieza',
  'Validar con consulta ficticia en remoto cerrado y confirmar observabilidad',
  'Registrar ID de versión segura, bindings y plan de reversión',
  'Obtener aprobación explícita antes de publicar o habilitar tráfico'
