@@ -21,7 +21,7 @@ test('política de retención conserva las copias recientes y nunca ejecuta borr
 test('copias viejas redundantes solo producen candidatos para revisión manual',()=>{
  const data=[
   backup('latest1',0),backup('latest2',1),backup('latest3',2),
-  backup('old1',190),backup('old2',210),backup('old3',230)
+  backup('old1',190),backup('old2',191),backup('old3',192)
  ];
  const result=proposeEncryptedBackupRetention(data,{asOf:NOW});
  assert.ok(result.candidates>=2);
