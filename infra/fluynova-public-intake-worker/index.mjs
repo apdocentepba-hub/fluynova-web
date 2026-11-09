@@ -3,7 +3,7 @@
  * Sin dominio, sin ruta ni publicación. No mezclar con APDocentePBA.
  * Ambos flags deben ser literalmente 'true'; siempre cerrados por defecto.
  */
-import {createHandler,scheduled as purgeOldRateBuckets} from '../fluynova-contact-worker/index.mjs';
+import {createHandler,scheduled as purgeOldRateBuckets} from './contact-handler.mjs';
 
 function fail(status,error) {
   return new Response(JSON.stringify({ok:false,error}),{
