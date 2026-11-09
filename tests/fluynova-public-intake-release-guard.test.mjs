@@ -170,3 +170,33 @@ test('CI bloquea migraciones alteradas o destructivas antes de cualquier D1',()=
  const absent=modify(c=>{delete c.migrationSql});
  assert.ok(absent.failures.includes('MIGRATION_SQL_NOT_ALLOWLISTED'));
 });
+
+test('el receptor público usa módulo propio sin modificar código del Worker privado',()=>{
+ const report=auditClosedRelease(baseline);
+ assert.ok(report.safeClosed,JSON.stringify(report.failures));
+ assert.ok(baseline.publicEntry.includes("from './contact-handler.mjs'"));
+ assert.ok(baseline.publicHandler.includes('persistIdempotentLead'));
+ assert.ok(!baseline.publicEntry.includes('../fluynova-contact-worker/'));
+});
+test('CI detiene cualquier cambio al código fuente del Worker privado',()=>{
+ for(const mutation of [
+  s=>s+'\\n// Cambio ajeno inadvertido',
+  s=>s.replace('const MAX_BYTES = 16_384','const MAX_BYTES = 20_000')
+ ]){
+  const r=modify(c=>{c.privateSource=mutation(c.privateSource)});
+  assert.ok(r.failures.includes('PRIVATE_WORKER_SOURCE_CHANGED'));
+ }
+ const missing=modify(c=>{delete c.privateSource});
+ assert.ok(missing.failures.includes('PRIVATE_WORKER_SOURCE_CHANGED'));
+});
+test('CI bloquea importar Worker privado desde receptor aislado o perder su deduplicación',()=>{
+ const external=modify(c=>{
+  c.publicEntry=c.publicEntry.replace("from './contact-handler.mjs'",
+    "from '../fluynova-contact-worker/index.mjs'");
+ });
+ assert.ok(external.failures.includes('PUBLIC_WORKER_IMPORTS_PRIVATE_BACKEND'));
+ const importFromPrivate=modify(c=>{c.publicHandler+="\\nimport {createHandler} from '../fluynova-contact-worker/index.mjs';"});
+ assert.ok(importFromPrivate.failures.includes('PUBLIC_HANDLER_NOT_SELF_CONTAINED'));
+ const missing=modify(c=>{c.publicHandler='export function createHandler() {}';});
+ assert.ok(missing.failures.includes('PUBLIC_HANDLER_NOT_SELF_CONTAINED'));
+});
