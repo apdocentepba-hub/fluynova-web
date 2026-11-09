@@ -17,6 +17,14 @@ const REQUIRED_COLUMNS=Object.freeze({
   lead_rate_limit:['fingerprint','hour_bucket','hits'],
   lead_idempotency:['request_id','payload_mac','fingerprint','lead_id','created_at']
 });
+const BASE_PRIMARY_KEYS=Object.freeze({
+  leads:[['id',1]],
+  lead_rate_limit:[['fingerprint',1],['hour_bucket',2]]
+});
+const BASE_NOT_NULL=Object.freeze({
+  leads:['id','received_at','name','email','category','message','consent_at','status'],
+  lead_rate_limit:['fingerprint','hour_bucket','hits']
+});
 const INDEX_COLUMNS=Object.freeze({
   leads_received_at:['received_at'],
   leads_status:['status','received_at'],
@@ -47,9 +55,22 @@ export async function inspectD1Schema(db) {
     if(!has('index',name,name.startsWith('leads_')?'leads':'lead_rate_limit'))
       missing.push('MISSING_INDEX_'+name);
   for(const name of OBJECTS.tables)if(has('table',name)){
-    const actual=await columns(db,name);
+    // Las columnas presentes NO bastan: sin PK y NOT NULL los reintentos,
+    // filtros y relaciones pueden fallar aunque los nombres coincidan.
+    const info=await rows(db,`PRAGMA table_info('${name}')`);
+    const actual=info.map(x=>String(x.name));
     for(const col of REQUIRED_COLUMNS[name])
       if(!actual.includes(col))missing.push('MISSING_COLUMN_'+name+'.'+col);
+    for(const [col,position] of BASE_PRIMARY_KEYS[name]){
+      const foundColumn=info.find(x=>x.name===col);
+      if(Number(foundColumn?.pk)!==position)
+        missing.push('BASE_PK_MISMATCH_'+name+'.'+col);
+    }
+    for(const col of BASE_NOT_NULL[name]){
+      const foundColumn=info.find(x=>x.name===col);
+      if(foundColumn && Number(foundColumn.notnull)!==1)
+        missing.push('BASE_COLUMN_NULLABLE_'+name+'.'+col);
+    }
   }
   for(const name of OBJECTS.indexes)if(has('index',name)){
     if(!equalList(await indexColumns(db,name),INDEX_COLUMNS[name]))
