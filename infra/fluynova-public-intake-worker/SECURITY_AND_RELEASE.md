@@ -19,6 +19,26 @@ Cloudflare Access configurado para **todos los Workers de la cuenta** podría pr
 - Al habilitarse en una prueba local aislada, delega al receptor existente: validación de origen exacto, límite de 16 KiB, consentimiento, honeypot, Turnstile Siteverify (`action=contact` y hostname permitido), límite por IP anonimizada y confirmación solo después de D1.
 - No incluye endpoints HTTP de administración, listado, borrado ni consulta de leads. Incluye un **handler programable `scheduled()`** para limpiar únicamente fingerprints HMAC antiguos en D1, **sin trigger configurado**: no ejecuta limpieza remota, no despliega nada y no abre HTTP. Requiere auditar el cron real y su intervalo antes de habilitar recepción.
 
+## Protección idempotente contra reintentos — solo código aislado
+
+El formulario de la rama candidata (PR #21) genera un `request_id` aleatorio UUIDv4 en el navegador. Conserva esa clave si una solicitud termina con respuesta fallida y los **datos del borrador no cambiaron**, y crea otra clave cuando el usuario edita el borrador o recibe confirmación. Los tokens de Turnstile se renuevan en cada intento; no se reutilizan.
+
+En el receptor **exclusivamente público**, `ENABLE_PUBLIC_INTAKE==='true'` exige un UUIDv4 válido. Tras consentimiento, validación de datos, origen, CAPTCHA y HMAC de IP, consulta la tabla `lead_idempotency` y:
+- Si ya existe la misma clave con la misma huella HMAC de datos normalizados y la misma huella de origen, devuelve **HTTP 200, `duplicate:true` y el mismo ID comprobado con un JOIN a `leads`**. No agrega una fila ni consume otro cupo de rate limit para este reintento confirmado.
+- Si la clave existe con contenido u origen diferentes, responde **HTTP 409 `IDEMPOTENCY_CONFLICT`**, sin confirmar ni crear datos.
+- Si es nueva, usa **`D1.batch` transaccional**: reserva la clave por PRIMARY KEY, inserta la consulta sólo si el identificador de reserva coincide y consulta el resultado unido a `leads`. Sólo responde **HTTP 201** cuando la fila se persistió; si otra solicitud simultánea ganó con la misma clave devuelve 200 con su ID. Si falla cualquier statement, no informa éxito.
+- Si la tabla no existe en D1, se obtiene **HTTP 503 `PERSISTENCE_UNAVAILABLE`** y no se registra ninguna consulta. Nunca se crea ni migra un esquema desde HTTP.
+
+El esquema adicional se prepara en `infra/fluynova-public-intake-worker/idempotency.schema.sql`: `lead_idempotency`, índice por fecha y sin correo/IP en claro; la huella del contenido es un **HMAC-SHA256** con `RATE_HASH_SECRET`, no un hash simple. La rutina `scheduled()` elimina claves anteriores a 7 días y fingerprints según el intervalo ya documentado. Como **no hay cron remoto configurado**, esto **NO garantiza actualmente retención de siete días** en la nube.
+
+**Bloqueante remoto obligatorio:** la D1 `fluynova-leads-staging` solo tenía verificadas anteriormente las dos tablas básicas; `lead_idempotency` e índice no están comprobados remotamente. La migración requiere auditoría de D1, bookmark/recuperación y autorización explícita de escritura, antes de preparar cualquier tráfico. Nunca ejecutar el SQL por el simple hecho de que la CI pase.
+
+Las pruebas usan Siteverify falso interceptado y D1 **LOCAL** con Workerd real: dos POST simultáneos → una fila, duplicado con mismo ID, conflicto para clave reutilizada con otros datos, nueva intención legítima → nueva fila, rechazo cuando falta migración, limpieza sin borrar leads. Chromium reproduce una **respuesta perdida después de confirmar SQL** y recupera el mismo ID con un CAPTCHA nuevo.
+
+**Límites:** una clave válida se reutiliza sólo mientras la sesión/borrador persiste; recargar el navegador crea otra. Tras vencimiento de la tabla (si se configura limpieza), un reintento tardío puede generar otra consulta. Una rotación de `RATE_HASH_SECRET` cambia las huellas y requiere una estrategia de transición. Esto no es una garantía general de eliminación de duplicados por contenido, ni entrega de email.
+
+Referencia oficial de transacciones D1: https://developers.cloudflare.com/d1/worker-api/d1-database/#batch
+
 ## Auditoría de liberación cerrada
 
 El guardián `node infra/fluynova-public-intake-worker/release-guard.mjs` se ejecuta sin red y su resultado **SAFE_CLOSED** solo significa que el candidato sigue sin publicar. **Nunca** representa `readyForPublicTraffic=true`. En cada cambio, GitHub ejecuta las pruebas negativas: activación prematura, D1/rutas, dominios no revisados, secretos en configuración, acceso al Worker privado y comandos de despliegue sin dry-run deben fallar. Esta auditoría no puede sustituir una revisión de políticas reales de Cloudflare ni confirmar secretos privados.
