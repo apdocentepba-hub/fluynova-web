@@ -102,6 +102,21 @@ test('Render REAL-SOURCE offline: raíz clip y contenido visible a siete anchura
    await x.page.setViewportSize({width,height:900});
    const m=await layout(x.page);
    outcomes.push(m);
+   if(width===320&&m.bodyScrollWidth>m.contentWidth+2){
+    const elements=await x.page.evaluate(()=>{
+     const max=innerWidth;
+     return [...document.querySelectorAll('body *')].map(el=>{
+      const r=el.getBoundingClientRect();
+      const css=getComputedStyle(el);
+      return {tag:el.tagName,id:el.id,className:String(el.className||'').slice(0,75),
+       left:Math.round(r.left),right:Math.round(r.right),
+       scrollWidth:el.scrollWidth,clientWidth:el.clientWidth,
+       overflowX:css.overflowX,position:css.position};
+     }).filter(v=>v.right>max+2&&v.right<max+800)
+       .sort((a,b)=>b.right-a.right).slice(0,20);
+    });
+    console.log('FLUYNOVA_RENDER_SMALL_SCREEN_CONTENT_DIAG='+JSON.stringify(elements));
+   }
    assert.equal(m.rootOverflow,'clip','La raíz recorta el decorado que excede el ancho');
    assert.ok(m.scrollWidth<=m.contentWidth+2,
     'El documento no debe desplazarse lateralmente: '+JSON.stringify(m));
