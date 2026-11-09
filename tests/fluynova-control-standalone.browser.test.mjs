@@ -115,3 +115,22 @@ test('documento sin alertas observado necesita volver a pendiente antes de aprob
   assert.deepEqual(s.errors,[]);
  }finally{await s.context.close()}
 });
+
+
+test('observación con texto malicioso queda inerte en HTML y CSV',async()=>{
+ const s=await start(900);
+ try{
+  const malicious='=HYPERLINK("https://evil.invalid","ver") <img src=x onerror=alert(1)>';
+  await s.page.locator('[data-action="observe"][data-id="F-1005"]').click();
+  await s.page.locator('#review-note').fill(malicious);
+  await s.page.locator('#save-observation').click();
+  assert.equal(await s.page.locator('#audit img').count(),0);
+  assert.match(await s.page.locator('#audit').innerText(),/=HYPERLINK/);
+  const p=s.page.waitForEvent('download');
+  await s.page.locator('#export').click();
+  const csv=await readFile(await (await p).path(),'utf8');
+  assert.match(csv,/"'=HYPERLINK/,'Las fórmulas de planilla deben neutralizarse');
+  assert.deepEqual(s.errors,[]);
+  assert.ok(s.requests.every(x=>x.method==='GET'&&x.url==='https://'+HOST+'/control/'));
+ }finally{await s.context.close()}
+});
