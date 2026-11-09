@@ -36,7 +36,14 @@ export function createPublicHandler({contactHandler=createHandler()}={}) {
  // No existe ningún Cron Trigger en este candidato; Wrangler no declara triggers.
  // Ejecutarlo manualmente en CI prueba el SQL y NO configura Cloudflare.
 export async function scheduled(controller,env) {
- return purgeOldRateBuckets(controller,env);
+ await purgeOldRateBuckets(controller,env);
+ // Tabla adicional de idempotencia: retener 7 días desde la recepción.
+ // Ejecutado sólo cuando exista un Cron Trigger aprobado (ahora NO existe).
+ const cutoff=new Date(controller.scheduledTime-7*24*3_600_000).toISOString();
+ const result=await env.DB.prepare(
+   'DELETE FROM lead_idempotency WHERE created_at < ?'
+ ).bind(cutoff).run();
+ if(result?.success!==true)throw Error('Idempotency cleanup not confirmed');
 }
 
 export default {fetch:createPublicHandler(),scheduled};
