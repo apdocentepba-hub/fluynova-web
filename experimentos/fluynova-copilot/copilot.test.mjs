@@ -88,6 +88,9 @@ test('API local real: cabeceras, política origen, longitud y revisión humana',
   const page=await fetch(base+'/');assert.equal(page.status,200);
   assert.match(await page.text(),/FLUYNOVA Copilot/);
   assert.match(page.headers.get('content-security-policy'),/default-src 'none'/);
+  const rebind=await fetch(base+'/api/status',{headers:{Host:'empresa-maliciosa.example'}});
+  assert.equal(rebind.status,403);
+  assert.equal((await rebind.json()).error,'HOST_REJECTED');
   const status=await (await fetch(base+'/api/status')).json();
   assert.equal(status.model_connection,'NO_VERIFICADA');
   const denied=await fetch(base+'/api/analyze',{method:'POST',headers:{'origin':'https://hostil.example','content-type':'application/json'},body:JSON.stringify({document:SOURCE})});
