@@ -135,7 +135,31 @@ test('workerd+D1 real local: puertas cerradas, ninguna API privada y POST confir
    assert.equal(row.category,'Crear página web / catálogo digital');
    assert.ok(row.consent_at);
    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,1);
-   console.log('PUBLIC_INTAKE_LOCAL_PASS: workerd=true, d1_local=true, siteverify_mock=true, remote=false');
+   // Verificar en Workerd + D1 LOCAL el scheduled real, sin modificar leads.
+   const maintenanceAt=Date.UTC(2026,10,8,4,0,0);
+   const currentHour=Math.floor(maintenanceAt/3_600_000);
+   for(const [fingerprint,hour] of [
+     ['ci-expired-hmac',currentHour-49],['ci-fresh-hmac',currentHour-48]
+   ]){
+    const inserted=await db.prepare(
+      'INSERT INTO lead_rate_limit(fingerprint,hour_bucket,hits) VALUES(?,?,?)'
+    ).bind(fingerprint,hour,1).run();
+    assert.equal(inserted.success,true);
+   }
+   const backgroundWorker=await mf.getWorker();
+   const cronResult=await backgroundWorker.scheduled({
+    scheduledTime:new Date(maintenanceAt),cron:'0 * * * *'
+   });
+   assert.equal(cronResult?.outcome,'ok',JSON.stringify(cronResult));
+   assert.equal((await db.prepare(
+     "SELECT COUNT(*) AS n FROM lead_rate_limit WHERE fingerprint='ci-expired-hmac'"
+   ).first()).n,0,'El cron elimina bucket expirado');
+   assert.equal((await db.prepare(
+     "SELECT COUNT(*) AS n FROM lead_rate_limit WHERE fingerprint='ci-fresh-hmac'"
+   ).first()).n,1,'El cron conserva bucket vigente');
+   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,1,
+     'El cron jamás borra consultas guardadas');
+   console.log('PUBLIC_INTAKE_LOCAL_PASS: workerd=true, d1_local=true, siteverify_mock=true, scheduled_d1_local=true, remote=false');
   }finally{await mf.dispose()}
  }finally{await rm(dir,{recursive:true,force:true})}
 });
