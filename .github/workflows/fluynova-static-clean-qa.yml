@@ -15,6 +15,7 @@ on:
       - 'scripts/contact-d1-staging-client.js'
       - 'tests/static-d1-contact.test.mjs'
       - 'tests/static-d1-chromium.browser.test.mjs'
+      - 'tests/render-source-layout.browser.test.mjs'
       - 'static/**'
       - '.github/workflows/fluynova-static-clean-qa.yml'
   workflow_dispatch:
@@ -83,11 +84,15 @@ jobs:
         run: npx playwright install --with-deps --only-shell chromium
       - name: Ejecutar navegador real con red bloqueada y D1 simulada
         run: node --test tests/static-d1-chromium.browser.test.mjs
+      - name: Validar HTML y CSS tal como Render los sirve (sin red ni envíos)
+        run: node --test tests/render-source-layout.browser.test.mjs
       - name: Guardar capturas del laboratorio visual (sin datos de clientes)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fluynova-qa-visual-candidato
-          path: artifacts/fluynova-ui/
+          path: |
+            artifacts/fluynova-ui/
+            artifacts/fluynova-render-source/
           if-no-files-found: warn
           retention-days: 7
