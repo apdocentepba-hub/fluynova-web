@@ -1,8 +1,16 @@
 # FLUYNOVA — hoja de ruta ejecutiva (formulario y diseño)
-Actualizado: 2026-11-09 (Paso 07C bóveda cifrada local validada; 04B remoto pendiente). Registro de estado verificable. **Ningún check autoriza por sí solo publicar ni captar datos reales.**
+Actualizado: 2026-11-09 (auditoría web publicada y copy seguro PR21; backend remoto pendiente). Registro de estado verificable. **Ningún check autoriza por sí solo publicar ni captar datos reales.**
 
 ## Objetivo de aceptación
 Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida consentimiento y antispam, registra el caso en D1 remoto, presenta un ID **solo si se confirmó la escritura**, permite lectura administrativa autenticada y notifica por email al correo comercial con entrega verificada por separado. Ante cualquier fallo muestra el contacto manual y no pierde datos silenciosamente. La web es clara, adaptable y visualmente profesional.
+
+## Auditoría de la web PUBLICADA — 09/11/2026
+
+- [Informe de Render y página pública](./FLUYNOVA_WEB_PUBLICA_AUDITORIA_20261109.md). Dirección real `https://fluynova-web.onrender.com/`, servicio Render Free con Python/FastAPI y último deploy live del 07/11 (`1504e396`); la primera solicitud dio HTTP 503 «Application loading», una nueva dio HTTP 200 y el contenido comercial completo.
+- El formulario público conserva **FormSubmit** y `GET /api/config` devolvió `contact_enabled=true`; **no se hizo POST de prueba** ni se verificó que el correo llegue a Gmail. No confundir ese formulario con la recepción nueva D1/Access, que está desactivada en ramas de revisión.
+- Se detectaron en producción dos vínculos equivalentes a `/webs/` en el menú y una frase que sugería entrega ya confirmada. El candidato PR #21 conserva un único vínculo y ahora comunica «contacto directo por correo; el formulario automático sigue en verificación». Se agregó test de regresión.
+- [GitHub Actions #42627325050](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42627325050): **SUCCESS 2/2**, 30 tests Node + 10 Chromium offline, sin publicación; los workflows complementarios también aprobaron. La web pública sigue en el mismo commit de main, sin modificaciones.
+- Prioridad operativa: verificar el circuito real de contacto y la experiencia pública antes de seguir agregando funciones internas. Esto exige consentimiento antes de enviar una consulta real o cambiar producción.
 
 ## Estado previo comprobado
 - 30/10: FormSubmit había entregado dos mensajes de prueba a la casilla comercial; después se observaron errores FormSubmit / Cloudflare 522 y episodios 503/carga fría en Render. Eso **no** demuestra que el envío de clientes funcione ahora.
