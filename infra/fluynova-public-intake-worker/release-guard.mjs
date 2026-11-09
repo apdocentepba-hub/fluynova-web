@@ -6,6 +6,7 @@
 import {readFileSync} from 'node:fs';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {resolve} from 'node:path';
+import {readMigrationSql,auditMigrationSql} from './migration-guard.mjs';
 
 const local=(relative)=>fileURLToPath(new URL(relative,import.meta.url));
 export const readReleaseInputs=()=>({
@@ -13,12 +14,14 @@ export const readReleaseInputs=()=>({
   privateWorker:JSON.parse(readFileSync(local('../fluynova-contact-worker/wrangler.jsonc'),'utf8')),
   pkg:JSON.parse(readFileSync(local('./package.json'),'utf8')),
   workflow:readFileSync(local('../../.github/workflows/fluynova-public-intake-candidate.yml'),'utf8'),
+  migrationSql:readMigrationSql(),
 });
 
-export function auditClosedRelease({candidate,privateWorker,pkg,workflow}) {
+export function auditClosedRelease({candidate,privateWorker,pkg,workflow,migrationSql}) {
   const failures=[];
   const requireSafe=(ok,code)=>{if(!ok)failures.push(code)};
   requireSafe(candidate?.name==='fluynova-public-intake-candidate','WRONG_PUBLIC_WORKER');
+  requireSafe(auditMigrationSql(migrationSql).safe,'MIGRATION_SQL_NOT_ALLOWLISTED');
   requireSafe(candidate?.main==='./index.mjs','UNEXPECTED_ENTRYPOINT');
   // Allowlist cerrada: Wrangler admite env.<nombre>, bindings y rutas que podrían
   // sobrescribir el modo apagado si en el futuro se invoca --env.
