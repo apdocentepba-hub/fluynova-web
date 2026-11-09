@@ -58,6 +58,13 @@ export function auditClosedRelease({candidate,privateWorker,pkg,workflow}) {
     'SECRET_IN_PUBLIC_CONFIG');
   requireSafe(privateWorker?.name==='fluynova-contact-staging-only','PRIVATE_WORKER_CHANGED');
   requireSafe(privateWorker?.vars?.ENABLE_CONTACT_SUBMISSIONS==='false','PRIVATE_WORKER_OPEN');
+  // El backend privado no debe aceptar orígenes/hostnames verdaderos desde
+  // un cambio en esta feature. Access remoto sigue requiriendo auditoría propia.
+  requireSafe(privateWorker?.vars?.ALLOWED_ORIGINS==='https://fluynova-staging.invalid'&&
+    privateWorker?.vars?.TURNSTILE_HOSTNAMES==='fluynova-staging.invalid',
+    'PRIVATE_WORKER_ORIGINS_CHANGED');
+  requireSafe(privateWorker?.routes===undefined&&privateWorker?.route===undefined,
+    'PRIVATE_WORKER_ROUTES_CHANGED');
   requireSafe(privateWorker?.d1_databases?.length===1&&
     privateWorker.d1_databases[0]?.binding==='DB'&&
     privateWorker.d1_databases[0]?.database_name==='fluynova-leads-staging'&&
