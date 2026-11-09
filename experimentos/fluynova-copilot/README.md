@@ -8,7 +8,7 @@
 - **Salida estructurada** de Ollama (`/api/chat` con esquema JSON); el sistema rechaza respuestas inesperadas o demasiado extensas.
 - **Motor determinista independiente** para suma de importes, orden ausente, duplicados frente a **un registro inventado** y citas que no aparecen en el texto.
 - **Revisión humana obligatoria** sin ninguna ruta de aprobación automática ni escritura externa.
-- API Node vinculada exclusivamente a `127.0.0.1`, con límite de entrada, comprobación de origen, CSP, timeout y fallo cerrado.
+- API Node vinculada exclusivamente a `127.0.0.1`, con límite de entrada, rechazo de Host ajeno al equipo, comprobación de origen, CSP, timeout y fallo cerrado.
 - HTML con carga de ejemplo, consulta real al modelo local y presentación con `textContent`, sin inyectar HTML del modelo.
 
 La demo **NO lee imágenes/PDF**, no ejecuta OCR, no valida CAE/ARCA ni identidades de proveedores, no tiene usuario, roles, persistencia, backups, comprobación fiscal ni auditoría legal. Al faltar Ollama o el modelo, **NO inventa un resultado de IA**: informa error.
@@ -21,7 +21,8 @@ La demo **NO lee imágenes/PDF**, no ejecuta OCR, no valida CAE/ARCA ni identida
   ```powershell
   ollama pull qwen3:1.7b
   ```
-- En Windows, con Ollama iniciado y Node instalado, usar `INICIAR-COPILOT-WINDOWS.cmd`. Alternativamente, dentro de esta carpeta:
+- **Primer paso en Windows:** con Ollama iniciado y el modelo descargado, ejecutá `PROBAR-IA-REAL-WINDOWS.cmd`. Crea `INFORME_FLUYNOVA_IA_LOCAL.txt` usando únicamente **dos facturas ficticias** y sin mostrar respuestas completas ni datos personales.
+- **Segundo paso:** si Ollama responde, abrí `INICIAR-COPILOT-WINDOWS.cmd` para usar la interfaz en el navegador. Alternativamente, dentro de esta carpeta:
   ```powershell
   node server.mjs
   ```
@@ -39,7 +40,11 @@ node --test copilot.test.mjs
 
 Estas pruebas son ejecutables sin Ollama, mediante un **modelo de respuesta falsa para validar contratos de software**. No constituyen una prueba de inferencia real ni de exactitud de extracción. Validan casos con éxito, error, timeout, rechazo de orígenes, mensajes mal formados, límites y revisión humana.
 
-**Comprobado en GitHub Actions:** 8/8 pruebas Node y 2/2 pruebas Chromium con analizador simulado y solicitudes externas bloqueadas. Evidencia: https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42708416345 . **No hubo inferencia de un LLM real**, ya que el entorno CI no tiene Ollama instalado.
+**Comprobado en GitHub Actions:** 9/9 pruebas Node del motor/API, 1/1 de extremo a extremo del diagnóstico con un **Ollama simulado** y 2/2 pruebas Chromium con analizador simulado y solicitudes externas bloqueadas. Evidencia: https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42714077911 . **No hubo inferencia de un LLM real en CI**, porque no tiene el modelo instalado. El diagnóstico `PROBAR-IA-REAL-WINDOWS.cmd` es la primera prueba con modelo real que debe ejecutarse localmente.
+
+## Diagnóstico local en Windows: qué hace y qué no
+
+La prueba llama al modelo descargado en `127.0.0.1:11434`, toma dos documentos **totalmente sintéticos**, compara 12 campos conocidos y verifica que la aprobación automática esté prohibida. Informa cuánto tardó y si extrajo campos correctos en **esos dos ejemplos**. No mide velocidad o precisión general ni demuestra soporte de GPU; tampoco instala software ni modelos ni envía mensajes externos. Guardá el informe y compartilo para ajustar el motor.
 
 ## Próximo desarrollo basado en una venta real
 
