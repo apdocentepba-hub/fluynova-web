@@ -5,6 +5,7 @@ import {readFileSync} from 'node:fs';
 import {join} from 'node:path';
 import {tmpdir} from 'node:os';
 import {runInNewContext} from 'node:vm';
+import {randomUUID} from 'node:crypto';
 import {fileURLToPath} from 'node:url';
 import {makeD1Html,makeD1Privacy,makeD1MainJs,buildD1Candidate,verifyD1Candidate} from '../scripts/build-static-d1-contact-candidate.mjs';
 import {transformMainJs} from '../scripts/build-static-main-preview.mjs';
@@ -89,7 +90,7 @@ function simulateConfigured({reply={status:201,body:{ok:true,stored:true,deliver
   head:{appendChild:()=>{script.onload()}}
  };
  const context={
-  document,window:{location:{protocol:'https:'},
+  document,window:{location:{protocol:'https:'},crypto:{randomUUID},
    turnstile:{render:(_target,opts)=>{turnstileOptions=opts;return 'widget-1'},
      reset:wid=>{resetCalls.push(wid)}}},
   URL, FormData:class{get(key){return ({
