@@ -134,3 +134,49 @@ test('D1 LOCAL: una tabla de idempotencia incompleta o con constraints falsos bl
  assert.equal(result.canApplyInIsolatedLab,false);
  console.log('FLUYNOVA_D1_PARTIAL_SCHEMA_FAIL_CLOSED_PASS: remote=false');
 });
+
+test('D1 LOCAL: una tabla de leads sin PK no pasa aunque conserve columnas e índices',async t=>{
+ const db=await makeD1(t);
+ await apply(db,BASE);
+ const defs=await sqlStatements(BASE);
+ await db.prepare('DROP TABLE leads').run();
+ const original=defs.find(x=>/^CREATE TABLE IF NOT EXISTS leads\\b/i.test(x));
+ assert.ok(original);
+ const weakened=original
+   .replace('id TEXT PRIMARY KEY NOT NULL','id TEXT NOT NULL')
+   .replace('name TEXT NOT NULL','name TEXT');
+ assert.notEqual(weakened,original);
+ await db.prepare(weakened).run();
+ for(const sql of defs.filter(x=>/^CREATE INDEX IF NOT EXISTS leads_/i.test(x)))
+   await db.prepare(sql).run();
+ const result=await inspectD1Schema(db);
+ assert.equal(result.baseReady,false);
+ assert.equal(result.canApplyInIsolatedLab,false);
+ assert.ok(result.missing.includes('BASE_PK_MISMATCH_leads.id'));
+ assert.ok(result.missing.includes('BASE_COLUMN_NULLABLE_leads.name'));
+ assert.equal(result.approvedToMigrate,false);
+ console.log('FLUYNOVA_BASE_LEADS_PK_FAIL_CLOSED_PASS');
+});
+
+test('D1 LOCAL: rate limiter sin PK compuesta es rechazado antes de cualquier migración',async t=>{
+ const db=await makeD1(t);
+ await apply(db,BASE);
+ const defs=await sqlStatements(BASE);
+ await db.prepare('DROP TABLE lead_rate_limit').run();
+ const original=defs.find(x=>/^CREATE TABLE IF NOT EXISTS lead_rate_limit\\b/i.test(x));
+ assert.ok(original);
+ const weakened=original.replace('PRIMARY KEY (fingerprint, hour_bucket)',
+   'UNIQUE (fingerprint, hour_bucket)').replace('hits INTEGER NOT NULL','hits INTEGER');
+ assert.notEqual(weakened,original);
+ await db.prepare(weakened).run();
+ for(const sql of defs.filter(x=>/^CREATE INDEX IF NOT EXISTS lead_rate_limit_/i.test(x)))
+   await db.prepare(sql).run();
+ const result=await inspectD1Schema(db);
+ assert.equal(result.baseReady,false);
+ assert.equal(result.canApplyInIsolatedLab,false);
+ assert.ok(result.missing.includes('BASE_PK_MISMATCH_lead_rate_limit.fingerprint'));
+ assert.ok(result.missing.includes('BASE_PK_MISMATCH_lead_rate_limit.hour_bucket'));
+ assert.ok(result.missing.includes('BASE_COLUMN_NULLABLE_lead_rate_limit.hits'));
+ assert.equal(result.approvedToMigrate,false);
+ console.log('FLUYNOVA_BASE_RATE_PK_FAIL_CLOSED_PASS');
+});
