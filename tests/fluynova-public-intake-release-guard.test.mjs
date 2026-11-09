@@ -142,3 +142,31 @@ test('Worker privado: un origen real o rutas nuevas exigen revisión independien
  const changedRoute=modify(c=>{c.privateWorker.routes=[{pattern:'fluynova.example/*'}]});
  assert.ok(changedRoute.failures.includes('PRIVATE_WORKER_ROUTES_CHANGED'));
 });
+
+test('el SQL de idempotencia actual es aditivo, no modifica datos y no autoriza remoto',()=>{
+ const r=modify(()=>{});
+ assert.equal(r.safeClosed,true,JSON.stringify(r.failures));
+ const annotated=modify(c=>{c.migrationSql='-- Auditoría solamente\\n'+c.migrationSql;});
+ assert.equal(annotated.safeClosed,true,'Los comentarios de línea no cambian las sentencias');
+});
+test('CI bloquea migraciones alteradas o destructivas antes de cualquier D1',()=>{
+ const changes=[
+  s=>s+'\\nDROP TABLE leads;',
+  s=>s+'\\nDELETE FROM lead_rate_limit;',
+  s=>s+'\\nUPDATE leads SET status = \'Descartado\';',
+  s=>s.replace('lead_id TEXT NOT NULL UNIQUE','lead_id TEXT NOT NULL'),
+  s=>s.replace('payload_mac TEXT NOT NULL','payload_mac TEXT'),
+  s=>s.replace('ON lead_idempotency(created_at)','ON leads(received_at)'),
+  s=>s.replace('CREATE TABLE IF NOT EXISTS lead_idempotency',
+    'CREATE TABLE IF NOT EXISTS leads'),
+  s=>s.replace('created_at TEXT NOT NULL','created_at TEXT NOT NULL, leaked TEXT'),
+  s=>s+'\\nCREATE TRIGGER leaked AFTER INSERT ON leads BEGIN SELECT 1; END;',
+ ];
+ for(const change of changes){
+  const bad=modify(c=>{c.migrationSql=change(c.migrationSql)});
+  assert.ok(bad.failures.includes('MIGRATION_SQL_NOT_ALLOWLISTED'),
+   'Se rechazó el SQL modificado antes de permitir la preparación');
+ }
+ const absent=modify(c=>{delete c.migrationSql});
+ assert.ok(absent.failures.includes('MIGRATION_SQL_NOT_ALLOWLISTED'));
+});
