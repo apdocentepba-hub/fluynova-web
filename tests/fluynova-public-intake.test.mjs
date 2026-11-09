@@ -99,11 +99,14 @@ test('scheduled: limpia solo fingerprints viejos mediante SQL parametrizado, sin
  };
  const output=await worker.scheduled({scheduledTime:at},{DB:db});
  assert.equal(output,undefined);
- assert.equal(prepared.length,1);
+ assert.equal(prepared.length,2);
  assert.equal(prepared[0].statement,
    'DELETE FROM lead_rate_limit WHERE hour_bucket < ?');
  assert.equal(prepared[0].cutoff,Math.floor(at/3_600_000)-48);
- assert.ok(!prepared[0].statement.includes('leads WHERE'));
+ assert.equal(prepared[1].statement,
+   'DELETE FROM lead_idempotency WHERE created_at < ?');
+ assert.equal(prepared[1].cutoff,new Date(at-7*24*3_600_000).toISOString());
+ assert.ok(prepared.every(x=>!/DELETE FROM leads\\b/.test(x.statement)));
  assert.equal(cfg.triggers,undefined);
 });
 
@@ -115,4 +118,10 @@ test('scheduled: falla cerrado sin D1, reloj válido o confirmación de limpieza
  const database={prepare(){return {bind(){return {run:async()=>({success:false})};}}}};
  await assert.rejects(worker.scheduled({scheduledTime:Date.UTC(2026,10,8)},{DB:database}),
    /Rate-limit cleanup not confirmed/);
+ let calls=0;
+ const badDedupe={
+   prepare(){calls++;return {bind(){return {run:async()=>({success:calls===1})};}}}
+ };
+ await assert.rejects(worker.scheduled({scheduledTime:Date.UTC(2026,10,8)},{DB:badDedupe}),
+   /Idempotency cleanup not confirmed/);
 });
