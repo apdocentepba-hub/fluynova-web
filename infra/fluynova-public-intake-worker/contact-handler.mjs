@@ -137,10 +137,11 @@ async function macLeadPayload(value,secret) {
 }
 const DEDUPE_SELECT='SELECT d.lead_id,d.payload_mac,d.fingerprint '+
  'FROM lead_idempotency d INNER JOIN leads l ON l.id=d.lead_id WHERE d.request_id=?';
-async function persistIdempotentLead(db,item,requestId,mac,fingerprint,id,at) {
- // D1 batch realiza la reserva de clave y el INSERT condicional en UNA
- // transacción. Si la escritura de leads falla, revierte también la clave.
- const out=await db.batch([
+async function persistIdempotentLead(db,item,requestId,mac,fingerprint,id,at,{queueMail=false}={}) {
+ // D1 batch es transaccional: reserva, lead y bandeja de salida se
+ // confirman juntos. Mail se encola SOLO si una segunda feature flag
+ // está activada. Nunca se envían correos desde la petición del cliente.
+ const statements=[
    db.prepare('INSERT INTO lead_idempotency '+
      '(request_id,payload_mac,fingerprint,lead_id,created_at) VALUES (?,?,?,?,?) '+
      'ON CONFLICT(request_id) DO NOTHING')
@@ -152,9 +153,19 @@ async function persistIdempotentLead(db,item,requestId,mac,fingerprint,id,at) {
     .bind(id,at,item.name,item.email,item.organization,item.category,item.message,
       item.deadline,item.stage,item.budget,item.source,item.medium,item.campaign,
       item.creative,at,'Nuevo',requestId,id),
-   db.prepare(DEDUPE_SELECT).bind(requestId)
- ]);
- if(!Array.isArray(out)||out.length!==3||out.some(x=>x?.success!==true))
+   // La consulta del resultado siempre es la última sentencia.
+ ];
+ if(queueMail){
+   statements.push(db.prepare(
+     "INSERT INTO lead_mail_outbox(lead_id,state,attempts,created_at,updated_at) "+
+     "SELECT ?, 'pending', 0, ?, ? WHERE EXISTS "+
+     "(SELECT 1 FROM lead_idempotency WHERE request_id=? AND lead_id=?) "+
+     "ON CONFLICT(lead_id) DO NOTHING"
+   ).bind(id,at,at,requestId,id));
+ }
+ statements.push(db.prepare(DEDUPE_SELECT).bind(requestId));
+ const out=await db.batch(statements);
+ if(!Array.isArray(out)||out.length!==statements.length||out.some(x=>x?.success!==true))
    throw Error('IDEMPOTENCY_BATCH_NOT_CONFIRMED');
  const row=out[2].results?.[0];
  if(!row?.lead_id||typeof row.lead_id!=='string')
@@ -226,7 +237,8 @@ export function createHandler({fetcher=fetch,clock=()=>Date.now(),uuid=()=>crypt
         if(!await consumeRate(env.DB,fingerprint,clock()))
           return json({ok:false,error:'TOO_MANY_REQUESTS'},429,origin);
         const id=uuid(),at=new Date(clock()).toISOString();
-        const row=await persistIdempotentLead(env.DB,v.value,requestId,mac,fingerprint,id,at);
+        const row=await persistIdempotentLead(env.DB,v.value,requestId,mac,fingerprint,id,at,
+          {queueMail:env.ENABLE_MAIL_OUTBOX==='true'});
         if(row.payload_mac!==mac||row.fingerprint!==fingerprint)
           return json({ok:false,error:'IDEMPOTENCY_CONFLICT'},409,origin);
         const duplicate=row.lead_id!==id;
