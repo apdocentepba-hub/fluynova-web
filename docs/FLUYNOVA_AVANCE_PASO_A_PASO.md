@@ -1,5 +1,5 @@
 # FLUYNOVA — hoja de ruta ejecutiva (formulario y diseño)
-Actualizado: 2026-11-09 (Paso 04B remoto pendiente; pasos 06A y 06B probados localmente). Registro de estado verificable. **Ningún check autoriza por sí solo publicar ni captar datos reales.**
+Actualizado: 2026-11-09 (06C vista administrativa offline probada; 04B remoto pendiente). Registro de estado verificable. **Ningún check autoriza por sí solo publicar ni captar datos reales.**
 
 ## Objetivo de aceptación
 Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida consentimiento y antispam, registra el caso en D1 remoto, presenta un ID **solo si se confirmó la escritura**, permite lectura administrativa autenticada y notifica por email al correo comercial con entrega verificada por separado. Ante cualquier fallo muestra el contacto manual y no pierde datos silenciosamente. La web es clara, adaptable y visualmente profesional.
@@ -121,5 +121,13 @@ Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida cons
 - Nuevo ensayo de integración Workerd+D1 **LOCAL**: 4 consultas ficticias, 1 rebote simulado, 1 `sending` antiguo marcado `uncertain`, 1 reciente sin cambio y 1 `pending` sin cambio; **1 única invocación de proveedor simulado**, sin correos reales; cuatro consultas conservadas.
 - [Procedimiento de correo](https://github.com/apdocentepba-hub/fluynova-web/blob/feature/fluynova-public-intake-isolated-20261108/infra/fluynova-public-intake-worker/MAIL_PASO06A_OFFLINE.md) documenta riesgos de estados ambiguos, comprobación y ausencia de cron/Queue. Falta terminar el paso 04B remoto y no se solicita intervención del usuario para seguir trabajando localmente; sin publicación ni envíos.
 - **Este paso 06B es una preparación**, no equivale a envío en producción, entrega real de Gmail ni cierre del paso 06.
+
+**06C — VISTA ADMINISTRATIVA OFFLINE (PR #23) — 09/11/2026: IMPLEMENTADA Y PROBADA LOCALMENTE.**
+- Nuevo `mail-admin-report.mjs`: genera una instantánea mediante el **único SELECT agregado** `state, COUNT(*)` sobre `lead_mail_outbox`, sin leer filas de `leads` ni datos personales. Valida estados, conteos y fecha; errores D1 provocan rechazo, no ceros inventados.
+- Nuevo HTML administrativo estático sin scripts ni peticiones de red: **6 estados**, 3 tarjetas (total, revisión, SMTP entregados), proporciones e indicadores; distingue aceptación del proveedor de entrega SMTP. Se adapta a móvil y escritorio, con CSP restrictiva.
+- Ninguna ruta administrativa del Worker público fue creada ni activada. `/admin` y `/api/admin/mail` continúan devolviendo **HTTP 404**; no existe login inventado ni acceso a D1 remota. El módulo no se importa desde el Worker. Todo el demo/test usa datos sintéticos.
+- [CI #42604092462](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42604092462): **SUCCESS 3/3 jobs, 57 pruebas distintas**, incluidas **3 unitarias nuevas**, **1 integración D1 LOCAL nueva** y **1 Chromium nuevo**. El navegador verificó 320/390/768/1366 px sin desborde, 6 filas, 3 tarjetas, cero PII y cero conexiones a la red. Wrangler `--dry-run`.
+- [Código e informe 06C](https://github.com/apdocentepba-hub/fluynova-web/blob/feature/fluynova-public-intake-isolated-20261108/infra/fluynova-public-intake-worker/MAIL_ADMIN_PASO06C_OFFLINE.md). **No es panel en vivo**: falta backend administrativo autenticado, conexión remota y autorización de cualquier cambio o acceso a datos reales.
+- **No necesita intervención del usuario para seguir trabajando offline.** Progreso global **3/8**; Paso 04B remoto y Paso 06 real pendientes.
 
 **SIGUIENTE ACCIÓN — 04B.** Verificar configuraciones reales de Cloudflare mediante sesión autorizada; separar claramente Access privado del receptor público, y preparar vinculación a D1 con recuperación verificada antes de cualquier POST remoto.
