@@ -29,7 +29,8 @@ test('es Worker diferente, sin rutas, sin workers.dev, D1 ni valores de secretos
   for(const key of ['cf_api_token','service_role'])
     assert.equal(JSON.stringify(cfg).includes(key),false);
   assert.equal(typeof worker.fetch,'function');
-  assert.equal(worker.scheduled,undefined,'no exportar cron público');
+  assert.equal(typeof worker.scheduled,'function','handler disponible sin triggers remotos');
+  assert.equal(cfg.triggers,undefined,'sin programar cron ni alterar Cloudflare');
 });
 test('ningún endpoint de lectura o administración alcanza la lógica de contacto',async()=>{
   let calls=0;
@@ -79,4 +80,39 @@ test('solo con doble activación delega POST y OPTIONS; no abre otras funciones'
   assert.equal((await handler(req('/api/contact','OPTIONS'),env)).status,201);
   assert.deepEqual(received.map(r=>r.method),['POST','OPTIONS']);
   assert.equal(received[0].env,env);
+});
+
+test('scheduled: limpia solo fingerprints viejos mediante SQL parametrizado, sin leer clientes',async()=>{
+ const at=Date.UTC(2026,10,8,4,0,0);
+ const prepared=[];
+ const db={
+  prepare(statement){
+   const record={statement};
+   prepared.push(record);
+   return {
+    bind(value){
+     record.cutoff=value;
+     return {run:async()=>({success:true})};
+    }
+   };
+  }
+ };
+ const output=await worker.scheduled({scheduledTime:at},{DB:db});
+ assert.equal(output,undefined);
+ assert.equal(prepared.length,1);
+ assert.equal(prepared[0].statement,
+   'DELETE FROM lead_rate_limit WHERE hour_bucket < ?');
+ assert.equal(prepared[0].cutoff,Math.floor(at/3_600_000)-48);
+ assert.ok(!prepared[0].statement.includes('leads WHERE'));
+ assert.equal(cfg.triggers,undefined);
+});
+
+test('scheduled: falla cerrado sin D1, reloj válido o confirmación de limpieza',async()=>{
+ await assert.rejects(worker.scheduled({scheduledTime:Date.now()},{}),
+   /D1 binding missing/);
+ await assert.rejects(worker.scheduled({scheduledTime:NaN},{DB:{prepare(){throw Error('No tocar DB');}}}),
+   /Invalid scheduled time/);
+ const database={prepare(){return {bind(){return {run:async()=>({success:false})};}}}};
+ await assert.rejects(worker.scheduled({scheduledTime:Date.UTC(2026,10,8)},{DB:database}),
+   /Rate-limit cleanup not confirmed/);
 });
