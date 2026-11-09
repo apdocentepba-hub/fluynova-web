@@ -90,3 +90,32 @@ export async function dispatchOnePendingNotice({
   return Object.freeze({state:'uncertain',leadId,providerAccepted:false,mailDelivered:false});
  }
 }
+
+/**
+ * Usar SOLO desde un consumidor autenticado de Cloudflare Event
+ * Subscriptions/Queues, NUNCA desde fetch público. La carga por sí sola
+ * no autentica al remitente; el acceso a Queue debe verificarse al configurar.
+ * 'message.delivered' acredita aceptación por el servidor SMTP destinatario,
+ * NO ubicación en la bandeja de entrada del usuario.
+ */
+export async function recordVerifiedDeliveryEvent({db,event,enabled=false,now=()=>new Date().toISOString()}={}) {
+ if(enabled!==true)return Object.freeze({state:'disabled',mailDelivered:false});
+ if(!db||typeof db.prepare!=='function')throw Error('MAIL_DATABASE_NOT_CONFIGURED');
+ if(event?.type!=='cf.email.sending.message.delivered'||
+    event?.source?.type!=='email.sending'||
+    event?.payload?.terminal!==true||
+    event?.payload?.delivery?.status!=='delivered'||
+    String(event?.payload?.recipient||'').toLowerCase()!==DESTINATION) {
+  return Object.freeze({state:'ignored',mailDelivered:false});
+ }
+ const messageId=event?.payload?.messageId;
+ if(typeof messageId!=='string'||messageId.length<8||messageId.length>256||
+    /[\u0000-\u001f\u007f]/.test(messageId))
+  return Object.freeze({state:'ignored',mailDelivered:false});
+ const result=await db.prepare(
+   "UPDATE lead_mail_outbox SET state='delivered',updated_at=? "+
+   "WHERE provider_message_id=? AND state='accepted' RETURNING lead_id"
+ ).bind(now(),messageId).first();
+ if(!result?.lead_id)return Object.freeze({state:'unknown-message',mailDelivered:false});
+ return Object.freeze({state:'delivered',leadId:result.lead_id,mailDelivered:true});
+}
