@@ -59,6 +59,6 @@ test('recovery: incluso con documentación completa NO ejecuta cambios',()=>{
 });
 test('precondiciones incluyen Turnstile, acceso, D1, privacidad y autorización',()=>{
  const p=prerequisites.join(' ');
- for(const word of ['Turnstile','Cloudflare Access','D1','retención','aprobación','Cron Triggers'])
+ for(const word of ['Turnstile','Cloudflare Access','D1','retención','aprobación','Cron Triggers','lead_idempotency'])
    assert.ok(p.toLowerCase().includes(word.toLowerCase()),word);
 });
