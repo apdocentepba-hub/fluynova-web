@@ -9,7 +9,7 @@ import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {build} from 'esbuild';
 import {Miniflare,createFetchMock} from 'miniflare';
-import {dispatchOnePendingNotice,recordVerifiedDeliveryEvent} from '../infra/fluynova-public-intake-worker/mail-notification.mjs';
+import {dispatchOnePendingNotice,recordVerifiedDeliveryEvent,recordVerifiedBounceEvent,markStaleSendingUncertain} from '../infra/fluynova-public-intake-worker/mail-notification.mjs';
 
 const ENTRY=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/index.mjs',import.meta.url));
 const WORKER_DIR=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/',import.meta.url));
@@ -343,6 +343,96 @@ test('Workerd + D1 LOCAL: aviso encolado junto con lead; proveedor simulado nunc
    assert.equal(calls,2,'Una respuesta ambigua no se reintenta automáticamente');
    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,2);
    console.log('FLUYNOVA_MAIL_OUTBOX_LOCAL_PASS: leads=2, email_mock_calls=2, accepted_not_delivered=true, ambiguous_no_retry=true');
+  }finally{await mf.dispose()}
+ }finally{await rm(dir,{recursive:true,force:true})}
+});
+
+test('Workerd+D1 LOCAL: cola sending interrumpida pasa a revisión y rebote SMTP no se reenvía',async()=>{
+ const dir=await mkdtemp(join(WORKER_DIR,'.fluynova-mail-stale-lab-'));
+ try{
+  const bundle=join(dir,'worker.mjs');
+  await build({entryPoints:[ENTRY],outfile:bundle,bundle:true,format:'esm',
+    platform:'browser',logLevel:'silent'});
+  const {mf,db}=await makeRuntime(bundle,{public:'true',contact:'true',mail:'true'});
+  try{
+   const uuids=[
+    fakeLead.request_id,
+    'b09297e9-9360-41b9-8e63-0b2aeb3e7b03',
+    'e27ee346-aeb0-43ad-95c6-81e179c2b4de',
+    'c1023a3b-8c86-4c9e-bf65-09f1f3bb9159'
+   ];
+   for(const request_id of uuids){
+    const {url,request:args}=request({...fakeLead,request_id});
+    const result=await mf.dispatchFetch(url,args);
+    assert.equal(result.status,201,await result.text());
+   }
+   assert.equal((await db.prepare(
+    "SELECT COUNT(*) AS n FROM lead_mail_outbox WHERE state='pending'"
+   ).first()).n,4);
+
+   let emailCalls=0;
+   const mockEmail={async send(){emailCalls++;return {messageId:'bounce-provider-ci-0001'}}};
+   const options={db,emailBinding:mockEmail,from:'avisos@fluynova.invalid',
+     enabled:true,now:()=> '2026-11-09T12:00:00.000Z'};
+   const sent=await dispatchOnePendingNotice(options);
+   assert.equal(sent.state,'accepted');
+   assert.equal(emailCalls,1);
+
+   const event={
+    type:'cf.email.sending.message.bounced',
+    source:{type:'email.sending',domain:'fluynova.invalid'},
+    payload:{terminal:true,messageId:'bounce-provider-ci-0001',
+      recipient:'contacto.fluynova@gmail.com',delivery:{status:'bounced'}}
+   };
+   assert.equal((await recordVerifiedBounceEvent({db,event,enabled:false})).state,'disabled');
+   const mismatched=await recordVerifiedBounceEvent({db,enabled:true,
+    event:{...event,payload:{...event.payload,recipient:'another@example.invalid'}}});
+   assert.equal(mismatched.state,'ignored');
+   const bounced=await recordVerifiedBounceEvent({db,event,enabled:true});
+   assert.equal(bounced.state,'bounced');
+   assert.equal(bounced.mailDelivered,false);
+   assert.equal(bounced.leadId,sent.leadId);
+   assert.equal((await recordVerifiedBounceEvent({db,event,enabled:true})).state,
+    'unknown-message','Evento duplicado no cambia la cola');
+   const storedBounce=await db.prepare(
+    'SELECT state,attempts FROM lead_mail_outbox WHERE lead_id=?'
+   ).bind(sent.leadId).first();
+   assert.deepEqual(storedBounce,{state:'bounced',attempts:1});
+
+   const pending=(await db.prepare(
+    "SELECT lead_id FROM lead_mail_outbox WHERE state='pending' ORDER BY lead_id"
+   ).all()).results;
+   assert.equal(pending.length,3);
+   const old=pending[0].lead_id, fresh=pending[1].lead_id, untouched=pending[2].lead_id;
+   await db.prepare(
+    "UPDATE lead_mail_outbox SET state='sending',updated_at=? WHERE lead_id=?"
+   ).bind('2026-11-09T10:00:00.000Z',old).run();
+   await db.prepare(
+    "UPDATE lead_mail_outbox SET state='sending',updated_at=? WHERE lead_id=?"
+   ).bind('2026-11-09T11:55:00.000Z',fresh).run();
+   const disabled=await markStaleSendingUncertain({db,enabled:false});
+   assert.equal(disabled.marked,0);
+   await assert.rejects(
+    markStaleSendingUncertain({db,enabled:true,olderThanMinutes:0}),
+    /MAIL_STALE_WINDOW_INVALID/);
+   const result=await markStaleSendingUncertain({db,enabled:true,
+    now:()=> '2026-11-09T12:00:00.000Z',olderThanMinutes:30});
+   assert.equal(result.marked,1);
+   assert.equal(result.state,'review-needed');
+   assert.equal(result.mailDelivered,false);
+   const statuses=(await db.prepare(
+    "SELECT lead_id,state FROM lead_mail_outbox WHERE lead_id IN (?,?,?)"
+   ).bind(old,fresh,untouched).all()).results;
+   const byId=new Map(statuses.map(row=>[row.lead_id,row.state]));
+   assert.equal(byId.get(old),'uncertain','Antiguo sending exige revisión');
+   assert.equal(byId.get(fresh),'sending','Sending reciente no debe alterarse');
+   assert.equal(byId.get(untouched),'pending','Un envío aún pendiente no debe alterarse');
+   assert.equal((await markStaleSendingUncertain({
+    db,enabled:true,now:()=> '2026-11-09T12:00:00.000Z'
+   })).marked,0);
+   assert.equal(emailCalls,1,'El reconciliador nunca llama al proveedor');
+   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,4);
+   console.log('FLUYNOVA_MAIL_STALE_BOUNCE_LOCAL_PASS: bounced=1, stale_to_uncertain=1, sends=1, leads=4, remote=false');
   }finally{await mf.dispose()}
  }finally{await rm(dir,{recursive:true,force:true})}
 });
