@@ -119,3 +119,66 @@ export async function recordVerifiedDeliveryEvent({db,event,enabled=false,now=()
  if(!result?.lead_id)return Object.freeze({state:'unknown-message',mailDelivered:false});
  return Object.freeze({state:'delivered',leadId:result.lead_id,mailDelivered:true});
 }
+
+/**
+ * Recuperación no destructiva de envíos interrumpidos.
+ * Un Worker detenido después de pasar a "sending" NO debe disparar otro
+ * envío: puede haber llegado al SMTP antes del corte.
+ * Sólo mueve un lote acotado de "sending" viejos a "uncertain", sin correo.
+ * NO se invoca en el Worker ni configura un cron remoto.
+ */
+export async function markStaleSendingUncertain({
+ db,enabled=false,now=()=>new Date().toISOString(),olderThanMinutes=30
+}={}) {
+ if(enabled!==true)return Object.freeze({state:'disabled',marked:0,mailDelivered:false});
+ if(!db||typeof db.prepare!=='function')throw Error('MAIL_DATABASE_NOT_CONFIGURED');
+ if(!Number.isSafeInteger(olderThanMinutes)||
+    olderThanMinutes<5||olderThanMinutes>1_440)
+   throw Error('MAIL_STALE_WINDOW_INVALID');
+ const at=now();
+ if(typeof at!=='string'||!Number.isFinite(Date.parse(at))||
+    !/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(at))
+   throw Error('MAIL_CLOCK_INVALID');
+ const cutoff=new Date(Date.parse(at)-olderThanMinutes*60_000).toISOString();
+ // Limitar la mutación a 25 filas por ejecución; no tocar pending/accepted.
+ const outcome=await db.prepare(
+   "UPDATE lead_mail_outbox SET state='uncertain', updated_at=? "+
+   "WHERE state='sending' AND lead_id IN ("+
+   "SELECT lead_id FROM lead_mail_outbox "+
+   "WHERE state='sending' AND updated_at<? "+
+   "ORDER BY updated_at,lead_id LIMIT 25)"
+ ).bind(at,cutoff).run();
+ const count=outcome?.meta?.changes;
+ if(outcome?.success!==true||!Number.isSafeInteger(count)||count<0||count>25)
+   throw Error('MAIL_STALE_RECONCILIATION_NOT_CONFIRMED');
+ return Object.freeze({state:'review-needed',marked:count,mailDelivered:false});
+}
+
+/**
+ * Evento de rebote definitivo, sólo desde consumidor de Queue autenticada.
+ * Nunca dar como entregado un mensaje rechazado por SMTP.
+ * La carga JSON por sí sola NO prueba que procede de Cloudflare.
+ */
+export async function recordVerifiedBounceEvent({
+ db,event,enabled=false,now=()=>new Date().toISOString()
+}={}) {
+ if(enabled!==true)return Object.freeze({state:'disabled',mailDelivered:false});
+ if(!db||typeof db.prepare!=='function')throw Error('MAIL_DATABASE_NOT_CONFIGURED');
+ if(event?.type!=='cf.email.sending.message.bounced'||
+    event?.source?.type!=='email.sending'||
+    event?.payload?.terminal!==true||
+    event?.payload?.delivery?.status!=='bounced'||
+    String(event?.payload?.recipient||'').toLowerCase()!==DESTINATION)
+   return Object.freeze({state:'ignored',mailDelivered:false});
+ const messageId=event?.payload?.messageId;
+ if(typeof messageId!=='string'||messageId.length<8||messageId.length>256||
+    /[\u0000-\u001f\u007f]/.test(messageId))
+   return Object.freeze({state:'ignored',mailDelivered:false});
+ const changed=await db.prepare(
+   "UPDATE lead_mail_outbox SET state='bounced',updated_at=? "+
+   "WHERE provider_message_id=? AND state='accepted' RETURNING lead_id"
+ ).bind(now(),messageId).first();
+ if(!changed?.lead_id)
+   return Object.freeze({state:'unknown-message',mailDelivered:false});
+ return Object.freeze({state:'bounced',leadId:changed.lead_id,mailDelivered:false});
+}
