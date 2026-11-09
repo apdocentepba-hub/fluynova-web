@@ -1,5 +1,5 @@
 # FLUYNOVA — hoja de ruta ejecutiva (formulario y diseño)
-Actualizado: 2026-11-09 (Paso 04B remoto pendiente; 06A correo local validado). Registro de estado verificable. **Ningún check autoriza por sí solo publicar ni captar datos reales.**
+Actualizado: 2026-11-09 (Paso 04B remoto pendiente; pasos 06A y 06B probados localmente). Registro de estado verificable. **Ningún check autoriza por sí solo publicar ni captar datos reales.**
 
 ## Objetivo de aceptación
 Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida consentimiento y antispam, registra el caso en D1 remoto, presenta un ID **solo si se confirmó la escritura**, permite lectura administrativa autenticada y notifica por email al correo comercial con entrega verificada por separado. Ante cualquier fallo muestra el contacto manual y no pierde datos silenciosamente. La web es clara, adaptable y visualmente profesional.
@@ -113,5 +113,13 @@ Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida cons
 - [CI #42601492198](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42601492198): **SUCCESS 3/3**, 51 pruebas distintas (7 unitarias +21 seguridad +8 readiness +2 integración Workerd+D1 local +4 migración local +9 Chromium). En el test nuevo, un POST encola 1 aviso, reintento no duplica, destino fijo, entrega simulated confirmada solo tras evento coincidente y error ambiguo no se reenvía; consulta queda guardada. El intento previo #42601184665 detectó error de índice en el batch, fue corregido y reprobado; no hubo efecto remoto.
 - [Procedimiento del correo](https://github.com/apdocentepba-hub/fluynova-web/blob/feature/fluynova-public-intake-isolated-20261108/infra/fluynova-public-intake-worker/MAIL_PASO06A_OFFLINE.md): requiere sender/domain verificado, binding `send_email` con destino restringido, aprobaciones independientes para esquema/flag/servicio/cron/Queue, y verificación de correo real bajo permiso. **No se configuró nada ni se mandaron correos.**
 - **Paso 06 NO está completo**, ni 04B o 05. Esta implementación local adelanta trabajo pendiente sin reabrir el PR ni tocar producción. El avance global sigue **3/8**.
+
+**06B — RECUPERACIÓN DE ENVÍOS INTERRUMPIDOS Y REBOTES — 09/11/2026 (LOCAL VALIDADO, REMOTO BLOQUEADO).**
+- Hallazgo de auditoría: el nuevo avisador puede quedar congelado en estado `sending` tras una interrupción; faltaba `bounced` para rechazos SMTP permanentes.
+- `mail-notification.mjs` incorporó `markStaleSendingUncertain`: sólo bajo bandera explícita, marca como `uncertain` hasta 25 envíos `sending` anteriores al umbral configurado (30 min predeterminado), **sin reenviar**, tocar leads ni alterar avisos pendientes/aceptados/entregados. `recordVerifiedBounceEvent` registra `bounced` solo cuando recibe evento terminal `message.bounced` desde futura Queue autenticada con ID de proveedor y destinatario esperado.
+- `mail-outbox.schema.sql` añadió `bounced` al CHECK **solo en código local**, no migró ninguna tabla remota. La tabla del correo todavía no existe de forma verificada en Cloudflare.
+- Nuevo ensayo de integración Workerd+D1 **LOCAL**: 4 consultas ficticias, 1 rebote simulado, 1 `sending` antiguo marcado `uncertain`, 1 reciente sin cambio y 1 `pending` sin cambio; **1 única invocación de proveedor simulado**, sin correos reales; cuatro consultas conservadas.
+- [Procedimiento de correo](https://github.com/apdocentepba-hub/fluynova-web/blob/feature/fluynova-public-intake-isolated-20261108/infra/fluynova-public-intake-worker/MAIL_PASO06A_OFFLINE.md) documenta riesgos de estados ambiguos, comprobación y ausencia de cron/Queue. Falta terminar el paso 04B remoto y no se solicita intervención del usuario para seguir trabajando localmente; sin publicación ni envíos.
+- **Este paso 06B es una preparación**, no equivale a envío en producción, entrega real de Gmail ni cierre del paso 06.
 
 **SIGUIENTE ACCIÓN — 04B.** Verificar configuraciones reales de Cloudflare mediante sesión autorizada; separar claramente Access privado del receptor público, y preparar vinculación a D1 con recuperación verificada antes de cualquier POST remoto.
