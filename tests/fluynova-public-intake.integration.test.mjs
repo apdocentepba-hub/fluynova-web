@@ -13,6 +13,7 @@ import {Miniflare,createFetchMock} from 'miniflare';
 const ENTRY=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/index.mjs',import.meta.url));
 const WORKER_DIR=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/',import.meta.url));
 const SCHEMA=fileURLToPath(new URL('../infra/fluynova-contact-worker/schema.sql',import.meta.url));
+const IDEMPOTENCY_SCHEMA=fileURLToPath(new URL('../infra/fluynova-public-intake-worker/idempotency.schema.sql',import.meta.url));
 const ENDPOINT='https://public-candidate.invalid/api/contact';
 const ORIGIN='https://fluynova-lab.invalid';
 const fakeLead={
@@ -20,7 +21,8 @@ const fakeLead={
  organization:'Laboratorio ficticio',
  category:'Crear página web / catálogo digital',
  message:'Necesito un catálogo de prueba con datos inexistentes y sin correo.',
- consent:true,website:'',turnstile_token:'fake-ci-turnstile'
+ consent:true,website:'',turnstile_token:'fake-ci-turnstile',
+ request_id:'65d37f9e-1500-44cd-b3ab-4cc8dbec6b9d'
 };
 function request(data=fakeLead,{url=ENDPOINT,method='POST',origin=ORIGIN}={}){
  const headers={origin,'content-type':'application/json','cf-connecting-ip':'203.0.113.53'};
@@ -28,12 +30,12 @@ function request(data=fakeLead,{url=ENDPOINT,method='POST',origin=ORIGIN}={}){
  if(method==='POST')request.body=JSON.stringify(data);
  return {url,request};
 }
-async function makeRuntime(bundle,flags,{siteverifySuccess=true,createLeads=true}={}){
+async function makeRuntime(bundle,flags,{siteverifySuccess=true,createLeads=true,createIdempotency=true}={}){
  const fetchMock=createFetchMock();
  fetchMock.disableNetConnect();
  fetchMock.get('https://challenges.cloudflare.com')
   .intercept({method:'POST',path:'/turnstile/v0/siteverify'})
-  .reply(200,JSON.stringify({success:siteverifySuccess,action:'contact',hostname:'fluynova-lab.invalid'}));
+  .reply(200,JSON.stringify({success:siteverifySuccess,action:'contact',hostname:'fluynova-lab.invalid'})).persist();
  const mf=new Miniflare({
   modules:true,scriptPath:bundle,cf:false,fetchMock,
   d1Databases:{DB:'fluynova-public-local-only'},
@@ -49,6 +51,11 @@ async function makeRuntime(bundle,flags,{siteverifySuccess=true,createLeads=true
  const db=await mf.getD1Database('DB');
  const statements=(await readFile(SCHEMA,'utf8')).replace(/^--.*$/gm,'')
   .split(';').map(x=>x.trim()).filter(Boolean);
+ if(createIdempotency){
+  const dedupe=(await readFile(IDEMPOTENCY_SCHEMA,'utf8')).replace(/^--.*$/gm,'')
+    .split(';').map(x=>x.trim()).filter(Boolean);
+  statements.push(...dedupe);
+ }
  for(const sql of statements){
   if(!createLeads && (/^CREATE TABLE IF NOT EXISTS leads\b/i.test(sql)||
      /^CREATE INDEX IF NOT EXISTS leads_/i.test(sql)))continue;
@@ -109,6 +116,39 @@ test('workerd+D1 real local: puertas cerradas, ninguna API privada y POST confir
     console.log('PUBLIC_INTAKE_DB_FAILURE_PASS: confirms=false, leads_table_absent=true');
    }finally{await mf.dispose()}
   }
+  // Sin migración D1 idempotente, no se puede prometer almacenamiento.
+  {
+   const {mf,db}=await makeRuntime(bundle,{public:'true',contact:'true'},
+     {createIdempotency:false});
+   try{
+    const {url,request:args}=request();
+    const rejected=await mf.dispatchFetch(url,args);
+    assert.equal(rejected.status,503);
+    assert.equal((await rejected.json()).error,'PERSISTENCE_UNAVAILABLE');
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,0);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM lead_rate_limit').first()).n,0);
+    console.log('IDEMPOTENCY_MIGRATION_MISSING_FAIL_CLOSED_PASS');
+   }finally{await mf.dispose()}
+  }
+  // Reintentos simultáneos: dos respuestas válidas, una sola fila persistida.
+  {
+   const {mf,db}=await makeRuntime(bundle,{public:'true',contact:'true'});
+   try{
+    const {url}=request();
+    const results=await Promise.all([
+      mf.dispatchFetch(url,request().request),
+      mf.dispatchFetch(url,request().request)
+    ]);
+    const bodies=await Promise.all(results.map(x=>x.json()));
+    assert.deepEqual(results.map(x=>x.status).sort(),[200,201]);
+    assert.equal(bodies[0].id,bodies[1].id);
+    assert.equal(bodies[0].stored,true);
+    assert.equal(bodies[1].stored,true);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,1);
+    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM lead_idempotency').first()).n,1);
+    console.log('PUBLIC_INTAKE_CONCURRENT_IDEMPOTENCY_PASS: one_lead=true');
+   }finally{await mf.dispose()}
+  }
   const {mf,db}=await makeRuntime(bundle,{public:'true',contact:'true'});
   try{
    const {url,request:args}=request();
@@ -135,6 +175,25 @@ test('workerd+D1 real local: puertas cerradas, ninguna API privada y POST confir
    assert.equal(row.category,'Crear página web / catálogo digital');
    assert.ok(row.consent_at);
    assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,1);
+   const retry=await mf.dispatchFetch(url,request().request);
+   assert.equal(retry.status,200,'Un reintento devuelve el ID existente');
+   const repeated=await retry.json();
+   assert.equal(repeated.id,body.id);
+   assert.equal(repeated.duplicate,true);
+   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,1);
+   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM lead_rate_limit').first()).n,1,
+     'Un reintento confirmado no vuelve a consumir cuota');
+   const changed=await mf.dispatchFetch(url,request({
+     ...fakeLead,message:'Contenido distinto con la MISMA clave de intento'
+   }).request);
+   assert.equal(changed.status,409,'Clave repetida con contenido distinto es conflicto');
+   assert.equal((await changed.json()).error,'IDEMPOTENCY_CONFLICT');
+   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,1);
+   const another=await mf.dispatchFetch(url,request({
+     ...fakeLead,request_id:'8de76a69-b343-4322-9788-8429e542111a'
+   }).request);
+   assert.equal(another.status,201,'Otro ID representa nueva consulta legítima');
+   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,2);
    // Verificar en Workerd + D1 LOCAL el scheduled real, sin modificar leads.
    const maintenanceAt=Date.UTC(2026,10,8,4,0,0);
    const currentHour=Math.floor(maintenanceAt/3_600_000);
@@ -146,6 +205,12 @@ test('workerd+D1 real local: puertas cerradas, ninguna API privada y POST confir
     ).bind(fingerprint,hour,1).run();
     assert.equal(inserted.success,true);
    }
+   const staleId='2e4bc9d5-637f-4fad-a092-908304727a31';
+   await db.prepare(
+     'INSERT INTO lead_idempotency (request_id,payload_mac,fingerprint,lead_id,created_at) VALUES (?,?,?,?,?)'
+   ).bind(staleId,'stale-test-hmac','stale-test-ip','stale-lead-ref',
+     new Date(maintenanceAt-8*24*3_600_000).toISOString()).run();
+   // La clave reciente debe conservarse; la vieja de 8 días debe caducar.
    const backgroundWorker=await mf.getWorker();
    const cronResult=await backgroundWorker.scheduled({
     scheduledTime:new Date(maintenanceAt),cron:'0 * * * *'
@@ -157,8 +222,13 @@ test('workerd+D1 real local: puertas cerradas, ninguna API privada y POST confir
    assert.equal((await db.prepare(
      "SELECT COUNT(*) AS n FROM lead_rate_limit WHERE fingerprint='ci-fresh-hmac'"
    ).first()).n,1,'El cron conserva bucket vigente');
-   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,1,
+   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM leads').first()).n,2,
      'El cron jamás borra consultas guardadas');
+   assert.equal((await db.prepare(
+     'SELECT COUNT(*) AS n FROM lead_idempotency WHERE request_id=?'
+   ).bind(staleId).first()).n,0,'Eliminar clave idempotente de 8 días');
+   assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM lead_idempotency').first()).n,2,
+     'Conservar claves vigentes');
    console.log('PUBLIC_INTAKE_LOCAL_PASS: workerd=true, d1_local=true, siteverify_mock=true, scheduled_d1_local=true, remote=false');
   }finally{await mf.dispose()}
  }finally{await rm(dir,{recursive:true,force:true})}
