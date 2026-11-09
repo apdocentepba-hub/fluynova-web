@@ -17,6 +17,17 @@ Antes de iniciar operaciones remotas, verificar por separado la titularidad del 
 5. Revisar el efecto operacional de configurar secretos: `wrangler secret put` normalmente crea/despliega una nueva versión. Para preparar sin activar, evaluar herramientas de versiones y secret conforme a la documentación vigente y exigir aprobación antes de hacer cambios.
 6. Recién cuando el entorno remoto y la privacidad estén verificados, diseñar prueba con **datos totalmente ficticios**, dos compuertas inicialmente cerradas y control de eliminación del registro de prueba. Aprobación específica antes de desplegar o habilitar.
 
+## 2.A. Limpieza segura de huellas HMAC — preparación de código, no cron remoto
+
+- El receptor público incorpora un manejador `scheduled()` que reutiliza la limpieza SQL del Worker privado, limitada a `DELETE FROM lead_rate_limit WHERE hour_bucket < ?`. **No consulta ni elimina la tabla `leads`**. Solo puede trabajar si se vincula D1 y el Scheduler lo invoca.
+- El candidato actual mantiene `wrangler.jsonc` **sin `triggers`** y el auditor los sigue rechazando: no crea un cron ni modifica Cloudflare. Los tests ejercitan solo el handler sin conectar D1 remota.
+- Precisión importante: la documentación de Cloudflare indica que, si se **omiten** `triggers`/`crons` en un despliegue, pueden **conservarse** los disparadores remotos existentes. Por eso, **la falta de `triggers` en Git no demuestra cron desactivado en un Worker que ya existe**; tampoco debe inferirse que hay cron. Revisar el apartado **Settings → Triggers → Cron Triggers** y el Worker exacto autenticadamente antes de cualquier cambio. Nunca publicar `triggers:{crons:[]}` sobre un Worker existente sin autorización, porque eso elimina sus cron.
+- La condición SQL purga buckets de hora que tienen más de 48 horas completas, pero **su permanencia real depende del intervalo entre ejecuciones**. Si se ejecuta una vez por día (por ejemplo `0 4 * * *` UTC), un registro puede durar aprox. 48–73 horas; si se ejecuta una vez por hora (`0 * * * *`), aprox. 48–49 horas. Definir retención y verificar el cron efectivo antes de anunciar un máximo garantizado.
+- Propuesta para revisión cuando se autorice el recurso público: evaluar un disparador **horario** exclusivamente en el Worker público y en la D1 que se apruebe. Si el Worker privado comparte la misma base, **verificar quién es dueño del mantenimiento** para evitar dos programaciones distintas. El alta/configuración del trigger es un cambio remoto y podría necesitar permisos/build separados; el despliegue con cron falló previamente y no hay error íntegro verificado.
+- Antes de habilitar la ingesta: comprobar cron efectivo real (versión y hora), métricas de ejecuciones, permiso y binding D1, y que una prueba local con buckets antiguos borre solo fingerprints. No borrar ni restaurar la base remota por este trabajo preparatorio.
+
+Fuentes oficiales: [Cron Triggers](https://developers.cloudflare.com/workers/configuration/cron-triggers/), [D1 Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/). Time Travel no sustituye copias independientes ni restaura datos automáticamente al revertir un Worker.
+
 ## 3. Contención / reversión si alguna vez se aprueba el servicio
 
 **Orden ante incidente**:
