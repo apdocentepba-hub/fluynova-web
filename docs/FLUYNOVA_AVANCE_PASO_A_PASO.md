@@ -20,6 +20,13 @@ Una persona envía una consulta desde la web de FLUYNOVA, el sistema valida cons
 - El hotfix preserva `app.py`, `static/main.js`, Render, FormSubmit, Guardián y el correo directo; elimina el vínculo duplicado del menú y deja explícito que la entrega del formulario sigue sin confirmarse.
 - **Sin merge ni deploy; PR #24 aún DRAFT.** Render tiene autoDeploy desde `main`: publicar cualquier PR requiere aprobación explícita. PR #21 y #23 permanecen separados y cerrados al tráfico.
 
+## FormSubmit → Gmail: recepción real confirmada — 09/11/2026
+
+- Se comprobó directamente en el Gmail conectado de FLUYNOVA `contacto.fluynova@gmail.com` un correo **recibido en INBOX** el 09/11/2026 a las **11:28 hora argentina**, asunto `FLUYNOVA | Nueva consulta: Desarrollar software`. El cuerpo confirma su origen en el formulario web y al proveedor FormSubmit. No se envió una segunda prueba. [Evidencia Gmail](https://mail.google.com/mail/u/?authuser=contacto.fluynova%40gmail.com#all/1a1c0b5b2c7cbb40).
+- **Circuito FormSubmit → Gmail probado en al menos una entrega real**. Reemplaza el bloqueo anterior de «recepción no confirmada». No hay aún control periódico de fallos ni garantía de todos los envíos, y **el receptor D1 del PR #23 sigue desactivado**.
+- El copy público «formulario automático sigue en verificación» ahora es conservador pero está desactualizado respecto de esta prueba; no se hace nuevo deploy de texto sin permiso expreso. Sin datos privados incluidos en GitHub.
+- [Informe de auditoría actualizado](./FLUYNOVA_WEB_PUBLICA_AUDITORIA_20261109.md).
+
 ## Estado previo comprobado
 - 30/10: FormSubmit había entregado dos mensajes de prueba a la casilla comercial; después se observaron errores FormSubmit / Cloudflare 522 y episodios 503/carga fría en Render. Eso **no** demuestra que el envío de clientes funcione ahora.
 - PR #17: doble bloqueo de recepción y alternativa manual; pruebas locales, sin despliegue.
