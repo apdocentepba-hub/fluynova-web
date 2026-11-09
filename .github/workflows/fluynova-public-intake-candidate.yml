@@ -36,6 +36,9 @@ jobs:
           node --check tests/fluynova-public-intake.test.mjs
           node --check tests/fluynova-public-intake.integration.test.mjs
           node --check infra/fluynova-public-intake-worker/schema-preflight.mjs
+          node --check infra/fluynova-public-intake-worker/mail-admin-report.mjs
+          node --check tests/fluynova-public-intake-mail-admin.test.mjs
+          node --test tests/fluynova-public-intake-mail-admin.test.mjs
           node --check tests/fluynova-public-intake-schema-preflight.test.mjs
           node --test tests/fluynova-public-intake.test.mjs
           node --test tests/fluynova-public-intake-release-guard.test.mjs
