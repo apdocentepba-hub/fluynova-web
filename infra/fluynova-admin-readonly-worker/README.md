@@ -27,7 +27,25 @@
 - Ensayos: identidad correcta (200 y estados), visitante anónimo (403), otra identidad (403), respuesta falsificada (sin HTML malicioso), pérdida de la tabla D1 después de ver métricas (503 y limpieza de todos los datos de pantalla). Cero accesos a red externa. Las pruebas se suman a las once ya existentes de autenticación RSA, expiración, algoritmo y rotación de JWKS.
 - El workflow de esta rama instala Chromium en GitHub Actions y ejecuta esos E2E más `wrangler deploy --dry-run`, sin credenciales ni despliegue.
 
-**Límite:** el Worker administrativo continúa con una única ruta JSON y **no sirve `dashboard.html`**. Conectar los archivos a un hostname futuro requiere configurar Access por delante, autorización real, revisión de CSP en headers, verificación de cookies, permisos D1 y aprobación de publicación. No inventar una URL ni presentar este prototipo como panel en vivo.
+**Límite histórico del Paso 06E:** en ese momento el Worker no servía `dashboard.html`. El Paso 06F agrega las tres rutas estáticas **detrás de verificación JWT**; sigue sin existir ninguna ruta o hostname publicado en Cloudflare. Ver la sección 06F más abajo.
+
+## Paso 06F — archivos del panel autenticados y paquete de revisión (sin publicar)
+
+**Hallazgo:** en el Paso 06E el navegador obtenía HTML/CSS/JS desde un servidor simulado sin autenticación; solo la API consultada después exigía JWT. Eso no representaba una protección suficiente de los recursos visuales.
+
+**Cambio aplicado en el candidato:** `index.mjs` contiene un allowlist estricto de rutas `GET /admin/dashboard.html`, `GET /admin/dashboard.css` y `GET /admin/dashboard.js`. Las tres pasan por las **mismas puertas de configuración, JWKS RS256, issuer, audience y subject** que la ruta JSON `GET /api/admin/mail-summary`. Rechaza solicitudes anónimas y otros usuarios con 403; config incompleta, sin D1, con 503; métodos de escritura o HEAD con 405; rutas y consultas inesperadas con 404. Todos los recursos tienen `Cache-Control: private, no-store`, CSP restrictiva, `X-Frame-Options: DENY`, `X-Robots-Tag: noindex` y `Cross-Origin-Resource-Policy: same-origin`.
+
+Los archivos se compilan en `admin-assets.generated.mjs` con `tools/generate-admin-assets.mjs` y se embeben **dentro del propio Worker autenticado**. El generador acepta `--check` (CI comprueba equivalencia exacta de fuentes) o `--write` (regeneración local sin deploy). No hay `assets` binding separado ni Pages públicas que salten la protección del Worker.
+
+**Paquete de revisión local:** `tools/build-review-package.mjs` valida que Wrangler sigue desactivado y produce tres archivos visuales + `manifest.json` con hashes SHA-256 + `LEER_ANTES_DE_ABRIR.txt`, sin secretos, D1, identidad real ni datos personales. La CI construye un ZIP reproducible denominado `fluynova-admin-review-NO-PUBLICAR`, disponible **como artefacto de la ejecución**, no como sitio web. Caducidad de descarga: 7 días. **No alojar ese ZIP como sitio público**: los archivos sueltos no llevan autenticación, esta reside en el Worker.
+
+**Verificación local completada — [GitHub Actions #42609509941](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42609509941):**
+- 13 pruebas de JWT/Worker, incluyendo protección de los 3 assets y cierre si no existe D1.
+- 5 pruebas Chromium: acceso legítimo con D1 local, HTML privado denegado para anónimo y otra identidad, API revocada con pantalla sin estadísticas, JSON falsificado rechazado y caída posterior de D1 que borra los conteos mostrados.
+- 2 pruebas de sincronización y empaquetado SHA-256.
+- **20/20 pruebas aprobadas, Wrangler `--dry-run` y artefacto ZIP confirmado por GitHub**, sin despliegues, rutas, migración o envío. El Worker privado de FLUYNOVA no fue modificado.
+
+**Restricción:** la autenticación observada es una simulación local del encabezado inyectado por Cloudflare Access, con JWT reales firmados por una clave RSA de laboratorio. No acredita que un dominio, política Access, subject, binding D1 o panel remoto hayan sido habilitados. Para uso real se necesita una autorización explícita y E2E remota independiente.
 
 ## Para activación futura — NO AUTORIZADA
 
