@@ -63,9 +63,20 @@ export function auditClosedRelease({candidate,privateWorker,pkg,workflow}) {
     privateWorker.d1_databases[0]?.database_name==='fluynova-leads-staging'&&
     privateWorker.d1_databases[0]?.database_id==='ce8ac477-dd77-4a1c-a42e-6096dcb78768',
     'PRIVATE_D1_CHANGED');
+  // La rama candidata NO puede invocar operaciones remotas de Cloudflare.
+  // Una actualización de versión, secretos, cron o D1 puede mutar recursos
+  // sin ejecutar el comando clásico "wrangler deploy".
+  // Solo admitimos scripts de package.json conocidos y CI de pruebas offline.
   requireSafe(pkg?.scripts?.dryrun==='wrangler deploy --dry-run','DRYRUN_COMMAND_CHANGED');
-  requireSafe(!/(?:^|\n)\s*(?:-\s*)?(?:run:\s*)?(?:npx\s+)?wrangler\s+deploy\b|(?:^|\n)\s*(?:run:\s*)?npm\s+run\s+deploy\b|CLOUDFLARE_API_TOKEN|api\.cloudflare\.com/i.test(String(workflow)),
-    'LIVE_DEPLOY_COMMAND_IN_CI');
+  requireSafe(pkg?.scripts?.check==='node --check index.mjs'&&
+    Object.keys(pkg.scripts).sort().join('|')==='check|dryrun',
+    'UNREVIEWED_PACKAGE_SCRIPT');
+  const ciText=String(workflow||'');
+  const mutatingCli=/\b(?:wrangler|cf)\s+(?:deploy\b|publish\b|rollback\b|delete\b|versions\s+(?:upload|deploy|secret\b|rollback\b)|secret\b|triggers\b|pages\s+(?:deploy|publish)\b|d1\s+(?:execute|migrations\s+apply)\b)/i;
+  const indirectPublish=/\b(?:npm|pnpm|yarn)\s+run\s+(?:deploy|publish|release|promote|apply|upload|migrate|migrations)\b/i;
+  const cloudflareCredential=/CLOUDFLARE_API_TOKEN|CF_API_TOKEN|CF_API_KEY|api\.cloudflare\.com|cloudflare\/(?:wrangler-action|pages-action)@|secrets\.(?:CLOUDFLARE|CF_)/i;
+  requireSafe(!mutatingCli.test(ciText)&&!indirectPublish.test(ciText)&&
+    !cloudflareCredential.test(ciText),'LIVE_DEPLOY_COMMAND_IN_CI');
   requireSafe(typeof workflow==='string'&&
     workflow.includes("feature/fluynova-public-intake-isolated-20261108")&&
     workflow.includes('npm run dryrun')&&
