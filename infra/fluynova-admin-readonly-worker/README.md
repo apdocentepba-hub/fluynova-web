@@ -47,6 +47,14 @@ Los archivos se compilan en `admin-assets.generated.mjs` con `tools/generate-adm
 
 **Restricción:** la autenticación observada es una simulación local del encabezado inyectado por Cloudflare Access, con JWT reales firmados por una clave RSA de laboratorio. No acredita que un dominio, política Access, subject, binding D1 o panel remoto hayan sido habilitados. Para uso real se necesita una autorización explícita y E2E remota independiente.
 
+## Paso 06G — gate de liberación y procedimiento de reversión
+
+- Se incorporó `tools/release-preflight.mjs`, un validador **totalmente offline** de Wrangler, script del Worker, assets generados, comandos del workflow y scripts npm. Rechaza flags activos, rutas, DB, triggers, correo, dominios y secretos, imports ajenos, cambios en autenticación y comandos que podrían modificar Cloudflare. Jamás configura ni habilita servicios.
+- La CI genera `ADMIN_RELEASE_READINESS.json` con bloqueos y requisitos remotos; **`safeToDeploy=false` es incondicional**. También almacena el reporte como artefacto `fluynova-admin-release-readiness-BLOCKED`. Los resultados de pruebas locales no autorizan un despliegue.
+- Cinco pruebas específicas simulan modificaciones peligrosas de configuración, workflows, scripts e imports, además del cierre ante datos corruptos. La prueba detectó inicialmente que un import de D1 parcialmente alterado podía superar una comprobación por cadena simple; el guard se corrigió y se repitió la CI.
+- [Runbook de liberación y recuperación](./RUNBOOK_06G_LIBERACION_Y_RECUPERACION.md): inspección remota, checklist de prerrequisitos, autorización por etapas, separación del rollback de Workers y restauración destructiva de D1/Time Travel; incluye criterio de aceptación local y remoto.
+- No existe evidencia de políticas de Cloudflare Access, D1, dominio o bookmark reales. Solo se mantienen los cambios en esta rama de revisión; no se usó TinyFish ni se envió correo.
+
 ## Para activación futura — NO AUTORIZADA
 
 1. Auditar Cloudflare real por una vía autorizada **sin TinyFish**. No depende de esta conexión para avanzar offline.
