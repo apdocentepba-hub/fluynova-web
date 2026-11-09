@@ -25,12 +25,17 @@
     return;
   }
   let token='',widget=null,pending=false;
+  // Reutilizar la MISMA clave cuando una respuesta se pierde tras guardar D1.
+  // Al editar datos de la consulta, se inicia una intención nueva.
+  let requestId='',draftSignature=';
   const messages={
     CAPTCHA_FAILED:'El CAPTCHA no se pudo verificar. Intentá de nuevo.',
     TOO_MANY_REQUESTS:'Demasiadas consultas. Escribinos al correo.',
     CONTACT_UNAVAILABLE:'Recepción en mantenimiento. Usá el correo.',
     PERSISTENCE_UNAVAILABLE:'No quedó guardada la consulta. Escribinos al correo.',
-    CAPTCHA_TEMPORARILY_UNAVAILABLE:'CAPTCHA no disponible. Usá el correo.'
+    CAPTCHA_TEMPORARILY_UNAVAILABLE:'CAPTCHA no disponible. Usá el correo.',
+    IDEMPOTENCY_CONFLICT:'La consulta cambió durante el reintento. Revisá los datos y volvé a verificar el CAPTCHA.',
+    INVALID_REQUEST_ID:'No pudimos identificar el envío. Probá nuevamente o usá el correo.'
   };
   const script=document.createElement('script');
   script.src='https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
@@ -76,6 +81,16 @@
       origen_campania:get('origen_campania'),origen_mensaje:get('origen_mensaje'),
       turnstile_token:token
     };
+    const stable=JSON.stringify({...body,turnstile_token:undefined});
+    if(!requestId||draftSignature!==stable){
+      if(typeof window.crypto?.randomUUID!=='function'){
+        notice('Tu navegador no puede preparar un envío seguro. Usá el correo visible.');
+        return;
+      }
+      requestId=window.crypto.randomUUID();
+      draftSignature=stable;
+    }
+    body.request_id=requestId;
     pending=true;send.disabled=true;
     const abort=new AbortController();
     const timeout=setTimeout(()=>abort.abort(),12000);
@@ -85,11 +100,14 @@
         body:JSON.stringify(body),signal:abort.signal,credentials:'omit',cache:'no-store'
       });
       let result;try{result=await response.json()}catch{result={};}
-      if(response.status!==201||result?.ok!==true||result?.stored!==true||
+      const accepted=response.status===201||
+        (response.status===200&&result?.duplicate===true);
+      if(!accepted||result?.ok!==true||result?.stored!==true||
          result?.delivery!=='database'||!/^[a-f0-9-]{36}$/i.test(String(result.id||'')))
         throw Object.assign(new Error('NOT_SAVED'),{code:result?.error||'NOT_SAVED'});
       notice('Consulta guardada con código '+result.id+'. Esto no confirma entrega por correo.','success');
       form.reset();
+      requestId='';draftSignature='';
     }catch(error){
       notice(messages[error?.code]||'No pudimos guardar tu consulta. Escribinos al correo.');
     }finally{
