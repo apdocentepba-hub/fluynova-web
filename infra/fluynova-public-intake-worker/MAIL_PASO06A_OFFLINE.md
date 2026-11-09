@@ -36,6 +36,19 @@ El módulo `mail-notification.mjs` **no está importado ni invocado** por `index
 
 **Evidencia:** [GitHub Actions del candidato](https://github.com/apdocentepba-hub/fluynova-web/actions/workflows/fluynova-public-intake-candidate.yml); los tests corren en la rama `feature/fluynova-public-intake-isolated-20261108`. En una ejecución exitosa, buscar `FLUYNOVA_MAIL_OUTBOX_LOCAL_PASS` y los resultados de Workerd/D1.
 
+## Paso 06B — recuperación tras interrupciones y rebotes (D1 LOCAL)
+
+**Problema detectado:** la cola tenía los estados `pending`, `sending`, `accepted`, `uncertain` y `delivered`. Si un proceso terminaba después de marcar `sending` pero antes de registrar el resultado, el envío quedaba indefinidamente en ese estado. Además, un rebote SMTP definitivo no tenía un estado propio. Estos casos no deben resolverse repitiendo ciegamente el envío: el proveedor podría haberlo recibido.
+
+**Solución implementada únicamente en código de laboratorio:**
+
+- `markStaleSendingUncertain()`: requiere `enabled:true`, un binding D1 y una marca de tiempo válida; mueve a `uncertain` solo registros `sending` anteriores a 30 minutos por defecto (rango configurable 5–1440 minutos). Procesa un máximo de **25 filas por ejecución**, sin tocar los correos `pending`, `accepted`, `delivered`, `bounced` ni los `sending` recientes. **No envía, no reintenta, no borra consultas ni cambia flags**. `uncertain` significa que se necesita una comprobación operativa, no un fracaso confirmado.
+- `recordVerifiedBounceEvent()`: conserva el destinatario fijo `contacto.fluynova@gmail.com` y verifica tipo `cf.email.sending.message.bounced`, origen de Email Sending, `terminal:true`, `delivery.status='bounced'` e ID del mensaje emitido. Marca `bounced` únicamente desde `accepted`; un evento repetido o relativo a otro destinatario no sobrescribe estados. **Importante:** la carga del evento no es una prueba criptográfica de origen; debe consumirse solo desde una Queue autenticada previamente autorizada.
+- `mail-outbox.schema.sql`: acepta el nuevo estado `bounced` en su `CHECK`. Como la tabla todavía no fue creada remotamente, se trata de un cambio aditivo al diseño local. **No debe aplicarse `CREATE TABLE IF NOT EXISTS` para intentar cambiar un CHECK de una tabla ya creada**, porque no lo modifica. La migración real exige preflight y estrategia de esquema separados.
+- En el test con Workerd y D1 local se crean **cuatro consultas ficticias**: una recibe un `messageId` simulado y luego un evento de rebote; una queda `sending` antigua y pasa a `uncertain`; otra es `sending` reciente y se conserva; la última sigue `pending`. Se comprueba que hubo **un único envío simulado** y que los cuatro leads permanecen almacenados.
+
+**No se integró un scheduler remoto:** esta función se invoca manualmente por las pruebas. Antes de operarla de verdad hay que diseñar la frecuencia, control de acceso, observabilidad sin PII, revisión de los estados `uncertain` y alertas de rebotes. Cloudflare documenta `message.bounced` como rechazo permanente o agotamiento de reintentos de entrega SMTP; no implica que el formulario haya fallado.
+
 ## Condiciones obligatorias para servicio real (NO AUTORIZADAS)
 
 1. Completar sesión autenticada Cloudflare y verificar cuenta, D1 correcta, los recursos de la web y los permisos.
