@@ -75,6 +75,11 @@ test('Chromium + PDF raster + Tesseract REAL; métricas por campo, sin APIs exte
    assert.equal(result.can_auto_approve,false);
    // La lectura sin formato manual perfecto es experimental. No declarar 3/3
    // si el OCR no interpreta las cifras correctamente en este ensayo.
+   assert.equal(await page.locator('#ocr-confirm').isChecked(),false);
+   await page.locator('#verify').click();
+   assert.match(await page.locator('#service-status').innerText(),/Control detenido/);
+   assert.equal(await page.locator('#result').isVisible(),false);
+   await page.locator('#ocr-confirm').check();
    await page.locator('#verify').click();
    await page.locator('#result').waitFor({state:'visible'});
    assert.match(await page.locator('#decision').innerText(),/Reglas sin IA/);
