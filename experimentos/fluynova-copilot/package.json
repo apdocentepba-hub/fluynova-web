@@ -1,0 +1,18 @@
+{
+  "name": "@fluynova/copilot-lab",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Prototipo local FLUYNOVA Copilot; PDF textual sin OCR ni publicación",
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "pdfjs-dist": "5.4.624"
+  },
+  "scripts": {
+    "test:pdf": "node --test pdf-text.test.mjs",
+    "test:corpus": "node corpus.test.mjs",
+    "benchmark": "node BENCHMARK-CORPUS.mjs"
+  }
+}
