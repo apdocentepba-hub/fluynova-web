@@ -69,3 +69,23 @@ La prueba llama al modelo descargado en `127.0.0.1:11434`, toma dos documentos *
 
 El diagnóstico anterior reveló una discrepancia sistemática en los campos monetarios. La causa exacta de la respuesta original de Ollama es desconocida porque el informe no conserva ni revela las cifras generadas. Se agregó reconciliación explicable: solo se consideran cifras corroboradas por líneas inequívocas del texto provisto, y cualquier diferencia con la IA queda indicada. Esto **no certifica la factura original** ni mejora por sí mismo el modelo. La interfaz distingue origen de montos y discrepancias.
 
+
+## Diagnóstico actualizado: 10/11/2026, tres ejecuciones en Windows
+
+Los informes locales entregados por el usuario probaron inferencia Qwen3 1.7B real con Ollama:
+- Ensayo inicial: **6/12 campos correctos** (los 6 errores fueron importes).
+- Ensayo tras reconciliación monetaria: **IA 6/12, sistema combinado 12/12** en dos facturas sintéticas, sin aprobación automática.
+- Ensayo con instrucciones de centavos reforzadas: **IA 6/12, sistema combinado 12/12**. Cuatro desvíos monetarios compatibles con diferencia de escala 100; dos netos sin causa identificada. No se obtuvo evidencia de mejora del modelo.
+
+El laboratorio decidió **no perseguir prompts más largos** para valores contables. Implementó una ruta separada de cálculo auditable y sin inferencia, manteniendo la IA opcional y supervisada.
+
+## Nuevo control totalmente independiente del LLM
+
+- `verify-money.mjs`: lectura estricta de tres valores monetarios etiquetados, suma, rechazo de etiquetas duplicadas, ausentes o inválidas, y **revisión humana obligatoria**.
+- `POST /api/verify-money`: valida sin comunicar nada con Ollama, no usa modelo simulado. La respuesta deja `model_called:false`, `mode:REGLAS_SIN_IA` y `model_used:null`; no extrapola proveedor, número ni orden de compra.
+- La interfaz incluye **Control sin IA** y **Analizar con IA local**, con etiquetas inequívocas de origen. La prueba sin IA sigue funcionando aunque Ollama esté apagado.
+- No equiparar el 12/12 de dos facturas ficticias a precisión real, ni la validación textual a autenticidad del comprobante. No integra PDF/OCR, CAE/ARCA ni registros fiscales.
+
+**Siguiente prueba útil:** emplear un corpus sintético diverso, incluyendo formatos inválidos, importes ambiguos y discrepancias contables. Para avanzar a un cliente, obtener formatos autorizados y definir pruebas de calidad; no corresponde repetir indefinidamente los mismos dos comprobantes.
+
+Evidencia de CI: consultar el workflow `fluynova-copilot-offline.yml` de la rama; la prueba del modelo real en Windows **ya se realizó**, pero la ruta nueva sin IA todavía requiere su propia validación en el equipo del usuario.
