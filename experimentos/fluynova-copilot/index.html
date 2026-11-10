@@ -21,6 +21,9 @@ input[type=file]::file-selector-button{padding:8px 11px;border:1px solid var(--e
 dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}dl div{background:#0f2025;border:1px solid var(--edge);border-radius:8px;padding:10px;min-width:0}
 dt{font-size:.73rem;color:var(--sub)}dd{margin:4px 0 0;overflow-wrap:anywhere;font-size:.91rem}ul{padding-left:20px}.flags{color:#ffe0b6}
 .footer{margin-top:24px;color:var(--sub);font-size:.85rem}.note{font-size:.82rem;color:var(--sub)}
+.ocr-review{padding:13px;border:1px solid #a68049;border-radius:10px;background:#2a2922;color:#ffe4ba;margin:13px 0}
+.ocr-review label{display:flex;align-items:start;gap:12px}.ocr-review input{margin-top:6px;flex-shrink:0}
+[hidden]{display:none!important}
 :focus-visible{outline:3px solid #ffd28c;outline-offset:3px}
 @media(max-width:780px){.columns{grid-template-columns:1fr}.box{padding:19px}textarea{height:220px}}
 </style></head>
@@ -43,6 +46,10 @@ dt{font-size:.73rem;color:var(--sub)}dd{margin:4px 0 0;overflow-wrap:anywhere;fo
 <label for="document"><strong>Texto para analizar o verificar</strong></label>
 <textarea id="document" spellcheck="false" maxlength="6000" aria-describedby="input-help"></textarea>
 <p id="input-help" class="note">El texto extraído del PDF o reconocido por OCR se muestra aquí para que puedas revisarlo antes de ejecutar cualquier control. No ingreses facturas, DNI ni CUIT reales.</p>
+<div id="ocr-review" class="ocr-review" hidden>
+  <label for="ocr-confirm"><input type="checkbox" id="ocr-confirm"><span><strong>Cotejé visualmente los importes del OCR con el documento original.</strong> Verifiqué números, signos y separadores. Esta confirmación no certifica autenticidad ni equivale a aprobación.</span></label>
+  <p id="ocr-review-status" class="note" role="status" aria-live="polite">El texto OCR es una propuesta no comprobada. Marcá esta opción solo después de comparar con el original.</p>
+</div>
 <div class="actions"><button type="button" id="sample">Cargar ejemplo</button><button type="button" id="verify">Control sin IA</button><button type="button" id="analyze" class="primary">Analizar con IA local</button></div>
 <p id="service-status" class="status" role="status" aria-live="polite">Consultando configuración local…</p></section>
 <section class="box" aria-labelledby="result-title"><h2 id="result-title">Resultado de la IA y controles</h2><p class="helper">Se distingue lo que interpreta el modelo de lo que validan las reglas programadas.</p>
@@ -60,6 +67,24 @@ const sample='Factura A-0001-00000121\nProveedor: Proveedor Demo Norte\nOrden de
 const $=id=>document.getElementById(id);
 function addLi(container,value){const li=document.createElement('li');li.textContent=String(value);container.append(li)}
 function setStatus(msg){$('service-status').textContent=msg}
+let unreviewedOcr=false;
+function flagOcrForVisualReview(){
+ unreviewedOcr=true;
+ $('ocr-confirm').checked=false;
+ $('ocr-review').hidden=false;
+ $('ocr-review-status').textContent='COTEJO VISUAL OBLIGATORIO: no ejecutar controles hasta comparar las cifras con el archivo original.';
+}
+function resetVisualReview(){
+ unreviewedOcr=false;
+ $('ocr-confirm').checked=false;
+ $('ocr-review').hidden=true;
+}
+$('document').addEventListener('input',()=>{
+ if(unreviewedOcr){
+  $('ocr-confirm').checked=false;
+  $('ocr-review-status').textContent='El texto OCR fue editado. Repetí el cotejo visual de los importes.';
+ }
+});
 function showResult(r){
  $('waiting').hidden=true;$('result').classList.add('visible');
  $('decision').textContent='Revisión humana obligatoria · '+(r.model_called===false?'Reglas sin IA':r.model_used);
@@ -91,7 +116,7 @@ function showResult(r){
  $('explanation').textContent=r.extracted.explanation||'El modelo no ofreció explicación.';
  $('disclaimer').textContent=r.disclaimer;
 }
-$('sample').addEventListener('click',()=>{$('document').value=sample;setStatus('Ejemplo ficticio cargado. Podés usar Control sin IA o comparar con Ollama.')});
+$('sample').addEventListener('click',()=>{resetVisualReview();$('document').value=sample;setStatus('Ejemplo ficticio cargado. Podés usar Control sin IA o comparar con Ollama.')});
 $('read-image').addEventListener('click',async()=>{
  const file=$('image-file').files?.[0];
  if(!file){$('ocr-status').textContent='Seleccioná primero una imagen ficticia.';return}
@@ -107,6 +132,7 @@ $('read-image').addEventListener('click',async()=>{
   const result=await res.json();
   if(!res.ok)throw Error(result.error||'OCR_PROCESSING_FAILED');
   $('document').value=result.text;
+  flagOcrForVisualReview();
   $('result').classList.remove('visible');
   $('waiting').hidden=false;
   $('waiting').textContent='OCR terminado. Revisá y corregí el texto ANTES de controlar importes.';
@@ -133,6 +159,7 @@ $('read-pdf').addEventListener('click',async()=>{
   const data=await res.json();
   if(!res.ok)throw Error(data.error||'PDF_UNREADABLE');
   $('document').value=data.text;
+  resetVisualReview();
   $('result').classList.remove('visible');
   $('waiting').hidden=false;
   $('waiting').textContent='PDF leído. Revisá el texto antes de ejecutar cualquier control.';
@@ -201,6 +228,7 @@ $('scan-pdf').addEventListener('click',async()=>{
   const extracted=texts.join('\n');
   if(extracted.length<25||extracted.length>6000)throw Error('OCR_TEXT_INVALID_LENGTH');
   $('document').value=extracted;
+  flagOcrForVisualReview();
   $('result').classList.remove('visible');
   $('waiting').hidden=false;
   $('waiting').textContent='PDF escaneado procesado: cotejá el texto con la imagen original.';
@@ -219,6 +247,11 @@ $('scan-pdf').addEventListener('click',async()=>{
  }
 });
 async function runReview(withAI){
+ if(unreviewedOcr&&!$('ocr-confirm').checked){
+  $('ocr-review-status').textContent='COTEJO_VISUAL_REQUERIDO: compará los montos con el original y confirmá antes de seguir.';
+  setStatus('Control detenido: el texto fue generado por OCR y todavía no se cotejó visualmente.');
+  return;
+ }
  const buttons=[$('analyze'),$('verify')];buttons.forEach(b=>b.disabled=true);
  $('result').classList.remove('visible');$('waiting').hidden=false;
  $('waiting').textContent=withAI
@@ -234,6 +267,9 @@ async function runReview(withAI){
   const data=await res.json();
   if(!res.ok)throw Error(data.error||'ERROR');
   showResult(data);
+  if(unreviewedOcr){
+   $('disclaimer').textContent+=' Cotejo visual DECLARADO por quien utiliza la demo; FLUYNOVA no certifica que ese cotejo sea correcto.';
+  }
   setStatus(withAI
     ?'Se recibió la propuesta de IA y las reglas revisaron los importes. No hay aprobación.'
     :'Control determinista realizado SIN IA. No se verificó la factura original ni se aprobó.');
