@@ -88,9 +88,11 @@ $('document').addEventListener('input',()=>{
 function showResult(r){
  $('waiting').hidden=true;$('result').classList.add('visible');
  $('decision').textContent='Revisión humana obligatoria · '+(r.model_called===false?'Reglas sin IA':r.model_used);
- $('result-provenance').textContent=r.model_called===false
-    ? 'Solo importes leídos mediante reglas; proveedor y número no fueron analizados.'
-    : 'Datos propuestos por la IA y contrastados con texto (revisión obligatoria).';
+ $('result-provenance').textContent=r.input_origin==='OCR'
+   ? 'Texto OCR: números interpretados, cotejo visual DECLARADO, no verificación independiente de la imagen.'
+   : r.model_called===false
+     ? 'Solo importes leídos mediante reglas; proveedor y número no fueron analizados.'
+     : 'Datos propuestos por la IA y contrastados con texto (revisión obligatoria).';
  $('fields').replaceChildren();$('issues').replaceChildren();$('evidence').replaceChildren();$('amount-checks').replaceChildren();
  const labels=[['supplier','Proveedor'],['number','Número'],['order','Orden de compra'],['net_cents','Neto en ARS'],['tax_cents','Impuesto en ARS'],['total_cents','Total en ARS']];
  const formatARS=cents=>new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(cents/100);
@@ -102,7 +104,9 @@ function showResult(r){
   wrap.append(dt,dd);$('fields').append(wrap);
   const provenance=r.amount_verification?.[key];
   if(provenance){
-    const msg=provenance.origin==='LECTURA_LITERAL_ETIQUETADA'
+    const msg=provenance.origin==='OCR_COTEJO_VISUAL_DECLARADO_NO_VERIFICADO'
+      ?'OCR: importe leído del texto y cotejo declarado por una persona; el sistema no comprobó el original.'
+      : provenance.origin==='LECTURA_LITERAL_ETIQUETADA'
       ? (r.model_called===false?'Importe leído del texto SIN IA; verificar original.':provenance.disagreement?'IA y texto discrepan: se tomó la cifra literal, revisá original.':'IA y texto coinciden: revisar original.')
       : 'No hay una línea monetaria única y válida: revisar manualmente.';
     addLi($('amount-checks'),label+': '+msg);
@@ -262,7 +266,9 @@ async function runReview(withAI){
   const endpoint=withAI?'/api/analyze':'/api/verify-money';
   const res=await fetch(endpoint,{
     method:'POST',headers:{'content-type':'application/json'},
-    body:JSON.stringify({document:$('document').value})
+    body:JSON.stringify(unreviewedOcr
+      ? {document:$('document').value,input_origin:'OCR',visual_review_declared:true}
+      : {document:$('document').value})
   });
   const data=await res.json();
   if(!res.ok)throw Error(data.error||'ERROR');
@@ -270,9 +276,11 @@ async function runReview(withAI){
   if(unreviewedOcr){
    $('disclaimer').textContent+=' Cotejo visual DECLARADO por quien utiliza la demo; FLUYNOVA no certifica que ese cotejo sea correcto.';
   }
-  setStatus(withAI
-    ?'Se recibió la propuesta de IA y las reglas revisaron los importes. No hay aprobación.'
-    :'Control determinista realizado SIN IA. No se verificó la factura original ni se aprobó.');
+  setStatus(unreviewedOcr
+    ? 'OCR: cotejo humano declarado. Las cifras NO están verificadas independientemente aunque cierren.'
+    : withAI
+      ?'Se recibió la propuesta de IA y las reglas revisaron los importes. No hay aprobación.'
+      :'Control determinista realizado SIN IA. No se verificó la factura original ni se aprobó.');
  }catch(err){
   $('waiting').textContent='No se obtuvo el resultado: '+err.message+
     (withAI?'. Verificá Ollama o usá Control sin IA.':'. Revisá el formato del texto.');
