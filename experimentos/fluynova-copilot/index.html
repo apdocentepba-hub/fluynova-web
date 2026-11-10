@@ -147,26 +147,76 @@ $('scan-pdf').addEventListener('click',async()=>{
  const file=$('pdf-file').files?.[0];
  if(!file){$('pdf-status').textContent='Seleccioná un PDF ficticio primero.';return}
  if(file.size<30||file.size>4*1024*1024){
-  $('pdf-status').textContent='PDF_INVALID_SIZE: máximo 4 MB.';return
+  $('pdf-status').textContent='PDF_INVALID_SIZE: máximo 4 MB.';return;
  }
  $('scan-pdf').disabled=true;
- $('pdf-status').textContent='Renderizando páginas y reconociendo texto mediante OCR local…';
+ $('pdf-status').textContent='Rasterizando PDF dentro del navegador, sin enviar el PDF al servidor…';
+ let doc=null,loading=null;
  try{
-  const res=await fetch('/api/pdf/ocr',{method:'POST',
-    headers:{'content-type':'application/pdf'},body:await file.arrayBuffer()});
-  const out=await res.json();
-  if(!res.ok)throw Error(out.error||'OCR_PDF_PROCESSING_FAILED');
-  $('document').value=out.text;
+  // PDF.js desde el servidor LOCAL. Nunca se importa un módulo ni PDF remoto.
+  const pdfjs=await import('/assets/pdfjs/pdf.mjs');
+  pdfjs.GlobalWorkerOptions.workerSrc='/assets/pdfjs/pdf.worker.mjs';
+  loading=pdfjs.getDocument({
+   data:new Uint8Array(await file.arrayBuffer()),
+   stopAtErrors:true,disableAutoFetch:true,disableStream:true,
+   enableXfa:false,isEvalSupported:false
+  });
+  doc=await loading.promise;
+  if(doc.numPages<1||doc.numPages>2)throw Error('OCR_PDF_TOO_MANY_PAGES');
+  const texts=[],scores=[];
+  for(let index=1;index<=doc.numPages;index++){
+   const page=await doc.getPage(index);
+   const layer=await page.getTextContent();
+   if(layer.items.some(item=>typeof item.str==='string'&&item.str.trim()))
+    throw Error('OCR_PDF_HAS_TEXT_USE_PDF_EXTRACT');
+   const viewport=page.getViewport({scale:2});
+   const width=Math.ceil(viewport.width),height=Math.ceil(viewport.height);
+   if(width<80||height<40||width>6000||height>6000||width*height>6000000)
+    throw Error('OCR_PDF_DIMENSIONS_REJECTED');
+   const canvas=document.createElement('canvas');
+   canvas.width=width;canvas.height=height;
+   try{
+    const ctx=canvas.getContext('2d',{alpha:false});
+    if(!ctx)throw Error('OCR_CANVAS_UNAVAILABLE');
+    await page.render({canvasContext:ctx,viewport,canvas}).promise;
+    const blob=await new Promise((resolve,reject)=>
+     canvas.toBlob(b=>b?resolve(b):reject(Error('OCR_RENDER_FAILED')),'image/png'));
+    if(blob.size>3*1024*1024)throw Error('OCR_PAGE_IMAGE_TOO_LARGE');
+    $('pdf-status').textContent='Reconociendo página '+index+' de '+doc.numPages+
+      ' con Tesseract local…';
+    const response=await fetch('/api/ocr/image',{
+     method:'POST',headers:{'content-type':'image/png'},
+     body:await blob.arrayBuffer()
+    });
+    const ocr=await response.json();
+    if(!response.ok)throw Error(ocr.error||'OCR_PROCESSING_FAILED');
+    if(ocr.ocr_used!==true||ocr.model_called!==false||
+       ocr.can_auto_approve!==false||typeof ocr.text!=='string'||
+       !Number.isFinite(ocr.confidence_percent))
+      throw Error('OCR_INVALID_RESULT');
+    texts.push(ocr.text.trim());
+    scores.push(ocr.confidence_percent);
+   }finally{canvas.width=0;canvas.height=0}
+  }
+  const extracted=texts.join('\n');
+  if(extracted.length<25||extracted.length>6000)throw Error('OCR_TEXT_INVALID_LENGTH');
+  $('document').value=extracted;
   $('result').classList.remove('visible');
   $('waiting').hidden=false;
-  $('waiting').textContent='PDF escaneado procesado: revisá visualmente y corregí el texto antes de cualquier control.';
-  $('pdf-status').textContent='OCR PDF de '+out.pages+' página(s), confianza orientativa '+
-    out.confidence_percent+'%. Sin análisis Qwen ni aprobación. Verificá el original.';
-  setStatus('OCR PDF local realizado. Los importes no están validados hasta que los revises.');
+  $('waiting').textContent='PDF escaneado procesado: cotejá el texto con la imagen original.';
+  const mean=scores.reduce((x,y)=>x+y,0)/scores.length;
+  $('pdf-status').textContent='OCR PDF local de '+doc.numPages+
+   ' página(s), confianza orientativa '+mean.toFixed(1)+
+   '%. Sin Qwen ni aprobación. Verificá visualmente.';
+  setStatus('OCR PDF terminado. Revisá el texto antes de controlar importes.');
  }catch(err){
-  $('pdf-status').textContent='OCR PDF no realizado: '+err.message+
-   '. Para PDF con texto seleccionable usá «Leer PDF textual».';
- }finally{$('scan-pdf').disabled=false}
+  $('pdf-status').textContent='OCR PDF no realizado: '+(err?.message||'ERROR')+
+   '. Si tiene texto seleccionable, elegí «Leer PDF textual».';
+ }finally{
+  try{await doc?.destroy()}catch{}
+  try{await loading?.destroy()}catch{}
+  $('scan-pdf').disabled=false;
+ }
 });
 async function runReview(withAI){
  const buttons=[$('analyze'),$('verify')];buttons.forEach(b=>b.disabled=true);
