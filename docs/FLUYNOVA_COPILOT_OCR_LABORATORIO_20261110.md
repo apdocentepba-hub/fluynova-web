@@ -39,4 +39,20 @@ No basta con leer texto: el OCR puede omitir, insertar o confundir importes. La 
 
 No usar fotos de personas, DNI, CUIT, facturas fiscales reales ni documentación sensible durante estas pruebas. Las imágenes y PDFs sintéticos utilizados se crean mediante código, sin copiar documentos de clientes.
 
-**Próximo criterio:** CI verde de lector de imagen y PDF escaneado vía Canvas del navegador sin peticiones externas, más validación posterior en Windows cuando el usuario tenga acceso a su PC. No instalar ni publicar sin autorización.
+## Estado validado al cerrar la revisión de OCR
+
+**CI verde:** [GitHub Actions #42814109338](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42814109338), Node 24 sobre runner de Linux.
+
+- 102/102 pruebas unitarias y HTTP con casos ficticios y fallos forzados.
+- 1/1 OCR real Tesseract con imagen PNG sintética y modelo oficial de español descargado solo en preparación de CI.
+- 1/1 diagnóstico de integración con **Ollama simulado**, no inferencia de Qwen real.
+- 6/6 pruebas reales Chromium sin conexiones externas. Incluye PDF sin capa de texto → Canvas **del navegador** → imagen PNG → endpoint OCR local **simulado** → revisión de texto → verificación monetaria sin IA.
+- El corpus anterior de 53 facturas ficticias sigue pasando; no implica exactitud en comprobantes reales.
+
+**Separación estricta de las evidencias:** sí se probó OCR verdadero sobre una imagen independiente; aún **no** se probó el recorrido de PDF escaneado con Tesseract real y reconocimiento de montos de extremo a extremo. No mezclar esas métricas.
+
+**Decisión de seguridad:** la ruta del servidor `POST /api/pdf/ocr` quedó eliminada; solo `POST /api/ocr/image` acepta PNG/JPEG controlados. Los archivos `pdf-image-ocr.mjs` y sus pruebas de renderizado Node fueron eliminados por el crash nativo reproducible. Se agregaron checks del endpoint inexistente y lista blanca de activos de PDF.js.
+
+**Limitaciones:** el navegador puede tener errores de renderizado con PDF desconocidos; la segmentación de texto y el OCR pueden equivocar importes. Actualmente **no hay sandbox de proceso ni mecanismos multiusuario** y no se hizo prueba en Windows de esta versión. No aceptar datos sensibles ni venderlo como producto terminado.
+
+**Próximos criterios:** prueba completa con OCR real para PDF escaneado (no mock) y evaluación de tasas de error sobre más imágenes sintéticas con tipografías y resoluciones diversas; después aislamiento del OCR/seguridad, autorización de datos, backups y piloto acotado. No instalar ni publicar sin autorización.
