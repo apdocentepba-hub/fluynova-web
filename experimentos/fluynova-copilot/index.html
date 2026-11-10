@@ -23,6 +23,10 @@ dt{font-size:.73rem;color:var(--sub)}dd{margin:4px 0 0;overflow-wrap:anywhere;fo
 .footer{margin-top:24px;color:var(--sub);font-size:.85rem}.note{font-size:.82rem;color:var(--sub)}
 .ocr-review{padding:13px;border:1px solid #a68049;border-radius:10px;background:#2a2922;color:#ffe4ba;margin:13px 0}
 .ocr-review label{display:flex;align-items:start;gap:12px}.ocr-review input{margin-top:6px;flex-shrink:0}
+.ocr-originals{display:grid;gap:12px;margin:12px 0}
+.ocr-originals img{display:block;width:100%;height:auto;max-height:500px;object-fit:contain;background:#fff;border:1px solid var(--edge);border-radius:8px}
+.ocr-originals figcaption{font-size:.82rem;color:var(--sub);padding-top:4px}
+.ocr-originals figure{margin:0}
 [hidden]{display:none!important}
 :focus-visible{outline:3px solid #ffd28c;outline-offset:3px}
 @media(max-width:780px){.columns{grid-template-columns:1fr}.box{padding:19px}textarea{height:220px}}
@@ -47,6 +51,8 @@ dt{font-size:.73rem;color:var(--sub)}dd{margin:4px 0 0;overflow-wrap:anywhere;fo
 <textarea id="document" spellcheck="false" maxlength="6000" aria-describedby="input-help"></textarea>
 <p id="input-help" class="note">El texto extraído del PDF o reconocido por OCR se muestra aquí para que puedas revisarlo antes de ejecutar cualquier control. No ingreses facturas, DNI ni CUIT reales.</p>
 <div id="ocr-review" class="ocr-review" hidden>
+  <p class="note">Compará cada importe y separador con el documento mostrado abajo. El sistema no puede comprobar si realizaste el cotejo correctamente.</p>
+  <div id="ocr-originals" class="ocr-originals" aria-label="Imágenes originales para cotejo visual"></div>
   <label for="ocr-confirm"><input type="checkbox" id="ocr-confirm"><span><strong>Cotejé visualmente los importes del OCR con el documento original.</strong> Verifiqué números, signos y separadores. Esta confirmación no certifica autenticidad ni equivale a aprobación.</span></label>
   <p id="ocr-review-status" class="note" role="status" aria-live="polite">El texto OCR es una propuesta no comprobada. Marcá esta opción solo después de comparar con el original.</p>
 </div>
@@ -74,10 +80,32 @@ function flagOcrForVisualReview(){
  $('ocr-review').hidden=false;
  $('ocr-review-status').textContent='COTEJO VISUAL OBLIGATORIO: no ejecutar controles hasta comparar las cifras con el archivo original.';
 }
+let ocrPreviewUrls=[];
+function clearOcrPreview(){
+ for(const url of ocrPreviewUrls)URL.revokeObjectURL(url);
+ ocrPreviewUrls=[];
+ $('ocr-originals').replaceChildren();
+}
+function showOcrOriginals(blobs){
+ clearOcrPreview();
+ blobs.forEach((blob,index)=>{
+  const url=URL.createObjectURL(blob);
+  ocrPreviewUrls.push(url);
+  const figure=document.createElement('figure');
+  const img=document.createElement('img');
+  img.src=url;img.alt='Documento ficticio original, página '+(index+1);
+  const caption=document.createElement('figcaption');
+  caption.textContent='Original local · página '+(index+1)+' de '+blobs.length+
+    ' · compará números, puntos y comas';
+  figure.append(img,caption);
+  $('ocr-originals').append(figure);
+ });
+}
 function resetVisualReview(){
  unreviewedOcr=false;
  $('ocr-confirm').checked=false;
  $('ocr-review').hidden=true;
+ clearOcrPreview();
 }
 $('document').addEventListener('input',()=>{
  if(unreviewedOcr){
@@ -136,6 +164,7 @@ $('read-image').addEventListener('click',async()=>{
   const result=await res.json();
   if(!res.ok)throw Error(result.error||'OCR_PROCESSING_FAILED');
   $('document').value=result.text;
+  showOcrOriginals([file]);
   flagOcrForVisualReview();
   $('result').classList.remove('visible');
   $('waiting').hidden=false;
@@ -194,7 +223,7 @@ $('scan-pdf').addEventListener('click',async()=>{
   });
   doc=await loading.promise;
   if(doc.numPages<1||doc.numPages>2)throw Error('OCR_PDF_TOO_MANY_PAGES');
-  const texts=[],scores=[];
+  const texts=[],scores=[],originalPages=[];
   for(let index=1;index<=doc.numPages;index++){
    const page=await doc.getPage(index);
    const layer=await page.getTextContent();
@@ -227,11 +256,13 @@ $('scan-pdf').addEventListener('click',async()=>{
       throw Error('OCR_INVALID_RESULT');
     texts.push(ocr.text.trim());
     scores.push(ocr.confidence_percent);
+    originalPages.push(blob);
    }finally{canvas.width=0;canvas.height=0}
   }
   const extracted=texts.join('\n');
   if(extracted.length<25||extracted.length>6000)throw Error('OCR_TEXT_INVALID_LENGTH');
   $('document').value=extracted;
+  showOcrOriginals(originalPages);
   flagOcrForVisualReview();
   $('result').classList.remove('visible');
   $('waiting').hidden=false;
