@@ -53,3 +53,5 @@ jobs:
           npx playwright install --with-deps --only-shell chromium
       - name: Probar interfaz con modelo simulado, solicitudes externas bloqueadas
         run: node --test experimentos/fluynova-copilot/copilot.browser.test.mjs
+      - name: PDF escaneado de extremo a extremo con Tesseract REAL y sin Qwen
+        run: node --test experimentos/fluynova-copilot/pdf-scan-ocr-real.browser.test.mjs
