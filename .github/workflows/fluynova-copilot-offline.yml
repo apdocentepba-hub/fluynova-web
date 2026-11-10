@@ -22,6 +22,8 @@ jobs:
           node-version: '22'
       - name: Instalar parser PDF fijado, solo en CI de laboratorio
         run: npm install --prefix experimentos/fluynova-copilot --ignore-scripts --no-audit --no-fund
+      - name: Preparar modelo OCR español FIJADO para prueba real
+        run: node experimentos/fluynova-copilot/PREPARAR-MODELO-OCR.mjs --autorizar-descarga
       - name: Control de sintaxis sin despliegue
         run: |
           node --check experimentos/fluynova-copilot/money-ar.mjs
@@ -31,10 +33,18 @@ jobs:
           node --check experimentos/fluynova-copilot/pdf-text.mjs
           node --check experimentos/fluynova-copilot/pdf-fixtures.mjs
           node --check experimentos/fluynova-copilot/pdf-text.test.mjs
-          node --check experimentos/fluynova-copilot/pdf-api.test.mjs
+          node --check experimentos/fluynova-copilot/pdf-api.test.mjs experimentos/fluynova-copilot/ocr-image.test.mjs experimentos/fluynova-copilot/ocr-api.test.mjs
+          node --check experimentos/fluynova-copilot/image-input.mjs
+          node --check experimentos/fluynova-copilot/ocr-image.mjs
+          node --check experimentos/fluynova-copilot/ocr-model.mjs
+          node --check experimentos/fluynova-copilot/ocr-api.test.mjs
+          node --check experimentos/fluynova-copilot/ocr-image.test.mjs
+          node --check experimentos/fluynova-copilot/ocr-real.test.mjs
           node --check experimentos/fluynova-copilot/copilot.test.mjs
       - name: Pruebas unitarias y HTTP contra modelo ficticio aislado
         run: node --test experimentos/fluynova-copilot/copilot.test.mjs experimentos/fluynova-copilot/money-ar.test.mjs experimentos/fluynova-copilot/verify-money.test.mjs experimentos/fluynova-copilot/corpus.test.mjs experimentos/fluynova-copilot/pdf-text.test.mjs experimentos/fluynova-copilot/pdf-api.test.mjs
+      - name: OCR REAL, sin mocks ni servicios durante inferencia
+        run: node --test experimentos/fluynova-copilot/ocr-real.test.mjs
       - name: Medir precisión de reglas con 53 comprobantes ficticios
         run: node experimentos/fluynova-copilot/BENCHMARK-CORPUS.mjs
       - name: Diagnóstico de inferencia con Ollama FICTICIO en localhost
