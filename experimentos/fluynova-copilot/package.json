@@ -3,16 +3,19 @@
   "private": true,
   "version": "0.1.0",
   "type": "module",
-  "description": "Prototipo local FLUYNOVA Copilot; PDF textual sin OCR ni publicación",
+  "description": "Laboratorio local FLUYNOVA Copilot: extracción PDF textual y OCR raster opcional, sin publicación",
   "engines": {
     "node": ">=22"
   },
   "dependencies": {
-    "pdfjs-dist": "5.4.624"
+    "pdfjs-dist": "5.4.624",
+    "tesseract.js": "7.0.0",
+    "@napi-rs/canvas": "1.0.13"
   },
   "scripts": {
     "test:pdf": "node --test pdf-text.test.mjs",
     "test:corpus": "node corpus.test.mjs",
-    "benchmark": "node BENCHMARK-CORPUS.mjs"
+    "benchmark": "node BENCHMARK-CORPUS.mjs",
+    "test:ocr": "node --test ocr-image.test.mjs"
   }
 }
