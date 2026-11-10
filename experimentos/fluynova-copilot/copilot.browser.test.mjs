@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {chromium} from 'playwright';
 import {createApp} from './server.mjs';
 import {CopilotError} from './analysis.mjs';
+import {buildSyntheticPdf} from './pdf-fixtures.mjs';
 let browser;
 after(async()=>{await browser?.close()});
 async function open(analyzer,width=390){
@@ -48,7 +49,7 @@ test('Chromium: IA local se presenta como revisión, citas y texto inerte',async
    assert.match(await s.page.locator('#issues').innerText(),/duplicado/i);
    assert.equal(await s.page.locator('#result img').count(),0);
    assert.match(await s.page.locator('#explanation').innerText(),/onerror/);
-   assert.equal(await s.page.locator('button').count(),3);
+   assert.equal(await s.page.locator('button').count(),4);
    for(const width of [320,390,768,1024]){
      await s.page.setViewportSize({width,height:850});
      const size=await s.page.evaluate(()=>({w:innerWidth,scroll:document.documentElement.scrollWidth}));
@@ -90,5 +91,31 @@ test('Chromium: control sin IA funciona con Ollama caído, sin aparentar inferen
   assert.equal(modelCalls,1);
   assert.equal(await s.page.locator('#result').isVisible(),false);
   assert.deepEqual(s.errors,[]);
+ }finally{await s.close()}
+});
+
+
+test('Chromium: PDF ficticio real se extrae antes del control local, sin usar Ollama',async()=>{
+ let llmCalls=0;
+ const s=await open(async()=>{llmCalls++;throw new CopilotError('AI_UNAVAILABLE',503)});
+ try{
+  const buffer=buildSyntheticPdf({pages:[[
+   'Factura de prueba DEMO-PDF-01','Proveedor: Prueba inventada',
+   'Neto: $150.000,00','IVA: $31.500,00','Total: $181.500,00'
+  ]]});
+  await s.page.locator('#pdf-file').setInputFiles({
+   name:'comprobante-ficticio.pdf',mimeType:'application/pdf',buffer
+  });
+  await s.page.locator('#read-pdf').click();
+  await s.page.getByText(/PDF textual leído: 1 páginas/).waitFor({state:'visible'});
+  assert.match(await s.page.locator('#document').inputValue(),/Neto: \$150\.000,00/);
+  assert.equal(llmCalls,0);
+  await s.page.locator('#verify').click();
+  await s.page.locator('#result').waitFor({state:'visible'});
+  assert.match(await s.page.locator('#decision').innerText(),/Reglas sin IA/);
+  assert.match(await s.page.locator('#fields').innerText(),/181\.500,00/);
+  assert.equal(llmCalls,0);
+  assert.deepEqual(s.errors,[]);
+  assert.deepEqual(s.external,[]);
  }finally{await s.close()}
 });
