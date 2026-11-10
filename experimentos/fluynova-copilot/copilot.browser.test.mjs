@@ -200,3 +200,49 @@ test('Chromium: PDF escaneado ficticio -> ruta OCR aislada -> revisión sin Olla
   assert.deepEqual(s.errors,[]);assert.deepEqual(s.external,[]);
  }finally{await s.close()}
 });
+
+
+test('Chromium adversarial: cifras OCR cambiadas con suma válida nunca se presentan como certificadas',async()=>{
+ let llmCalls=0;
+ const mistaken='FACTURA FICTICIA\nNeto: $150.800,00\nIVA: $31.500,00\nTotal: $182.300,00';
+ const s=await open(async()=>{llmCalls++;throw Error('No se esperaba Ollama')},390,{
+  imageRecognizer:async()=>({
+   text:mistaken,ocr_used:true,model_called:false,can_auto_approve:false,
+   needs_manual_review:true,characters:mistaken.length,confidence_percent:96.3
+  })
+ });
+ try{
+  const canvas=createCanvas(1100,360),ctx=canvas.getContext('2d');
+  ctx.fillStyle='white';ctx.fillRect(0,0,1100,360);
+  ctx.fillStyle='black';ctx.font='bold 55px Arial';
+  ctx.fillText('FACTURA FICTICIA',35,90);
+  ctx.fillText('NETO: $150.000,00',35,185);
+  ctx.fillText('TOTAL: $181.500,00',35,280);
+  await s.page.locator('#image-file').setInputFiles({
+   name:'factura-con-ocr-equivocado.png',mimeType:'image/png',
+   buffer:canvas.toBuffer('image/png')
+  });
+  await s.page.locator('#read-image').click();
+  await s.page.locator('#ocr-originals img').waitFor({state:'visible'});
+  assert.equal(await s.page.locator('#ocr-confirm').isChecked(),false);
+  await s.page.locator('#verify').click();
+  assert.match(await s.page.locator('#service-status').innerText(),/Control detenido/);
+  await s.page.locator('#ocr-confirm').check();
+  await s.page.locator('#verify').click();
+  await s.page.locator('#result').waitFor({state:'visible'});
+  assert.match(await s.page.locator('#fields').innerText(),/150\.800,00/);
+  assert.match(await s.page.locator('#fields').innerText(),/182\.300,00/);
+  assert.match(await s.page.locator('#amount-checks').innerText(),/no comprobó el original/i);
+  assert.match(await s.page.locator('#issues').innerText(),/un dígito puede ser incorrecto/i);
+  assert.match(await s.page.locator('#disclaimer').innerText(),/NO certificado/i);
+  assert.equal(llmCalls,0);
+  // Tras cualquier edición debe invalidarse tanto el resultado como el cotejo anterior.
+  await s.page.locator('#document').fill(mistaken+'\nTexto editado');
+  assert.equal(await s.page.locator('#ocr-confirm').isChecked(),false);
+  assert.equal(await s.page.locator('#result').isVisible(),false);
+  await s.page.locator('#verify').click();
+  assert.match(await s.page.locator('#service-status').innerText(),/Control detenido/);
+  assert.deepEqual(s.errors,[]);
+  assert.deepEqual(s.external,[]);
+ }finally{await s.close()}
+});
