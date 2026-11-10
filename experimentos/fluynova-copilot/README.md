@@ -7,6 +7,8 @@
 - Extracción de campos **mediante un modelo de lenguaje real instalado localmente**: proveedor, número, orden de compra, neto, impuesto y total expresados en centavos.
 - **Salida estructurada** de Ollama (`/api/chat` con esquema JSON); el sistema rechaza respuestas inesperadas o demasiado extensas.
 - **Motor determinista independiente** para suma de importes, orden ausente, duplicados frente a **un registro inventado** y citas que no aparecen en el texto.
+- **Nuevo control ARS:** los importes `Neto: $150.000,00`, `IVA: $31.500,00` y `Total: $181.500,00` se interpretan con un parser estricto de pesos argentinos y se convierten a centavos sin redondeo flotante. Se comparan con la propuesta del modelo y **se señala toda discrepancia**; nunca se modifica una factura real.
+- Si falta una etiqueta monetaria, hay varias con valores contradictorios o el formato es inválido, el importe queda `null` y requiere revisión. El parser solo cubre **texto etiquetado**, no todos los comprobantes ni OCR/PDF.
 - **Revisión humana obligatoria** sin ninguna ruta de aprobación automática ni escritura externa.
 - API Node vinculada exclusivamente a `127.0.0.1`, con límite de entrada, rechazo de Host ajeno al equipo, comprobación de origen, CSP, timeout y fallo cerrado.
 - HTML con carga de ejemplo, consulta real al modelo local y presentación con `textContent`, sin inyectar HTML del modelo.
@@ -40,11 +42,11 @@ node --test copilot.test.mjs
 
 Estas pruebas son ejecutables sin Ollama, mediante un **modelo de respuesta falsa para validar contratos de software**. No constituyen una prueba de inferencia real ni de exactitud de extracción. Validan casos con éxito, error, timeout, rechazo de orígenes, mensajes mal formados, límites y revisión humana.
 
-**Comprobado en GitHub Actions:** 9/9 pruebas Node del motor/API, 1/1 de extremo a extremo del diagnóstico con un **Ollama simulado** y 2/2 pruebas Chromium con analizador simulado y solicitudes externas bloqueadas. Evidencia: https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42714077911 . **No hubo inferencia de un LLM real en CI**, porque no tiene el modelo instalado. El diagnóstico `PROBAR-IA-REAL-WINDOWS.cmd` es la primera prueba con modelo real que debe ejecutarse localmente.
+**Histórico de CI:** 9/9 pruebas Node del motor/API, 1/1 de extremo a extremo del diagnóstico con un **Ollama simulado** y 2/2 pruebas Chromium con analizador simulado y solicitudes externas bloqueadas. Evidencia: https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42714077911 . **No hubo inferencia de un LLM real en CI**, porque no tiene el modelo instalado. El diagnóstico `PROBAR-IA-REAL-WINDOWS.cmd` es la primera prueba con modelo real que debe ejecutarse localmente.
 
 ## Diagnóstico local en Windows: qué hace y qué no
 
-La prueba llama al modelo descargado en `127.0.0.1:11434`, toma dos documentos **totalmente sintéticos**, compara 12 campos conocidos y verifica que la aprobación automática esté prohibida. Informa cuánto tardó y si extrajo campos correctos en **esos dos ejemplos**. No mide velocidad o precisión general ni demuestra soporte de GPU; tampoco instala software ni modelos ni envía mensajes externos. Guardá el informe y compartilo para ajustar el motor.
+La prueba llama al modelo descargado en `127.0.0.1:11434`, toma dos documentos **totalmente sintéticos** y compara 12 campos conocidos. El informe muestra **dos métricas distintas**: aciertos de la salida original de la IA y aciertos después de contrastar los montos con texto etiquetado. Un 12/12 tras aplicar reglas **no significa que la IA haya acertado 12/12**. También verifica que la aprobación automática esté prohibida. Informa cuánto tardó y si extrajo campos correctos en **esos dos ejemplos**. No mide velocidad o precisión general ni demuestra soporte de GPU; tampoco instala software ni modelos ni envía mensajes externos. Guardá el informe y compartilo para ajustar el motor.
 
 ## Próximo desarrollo basado en una venta real
 
@@ -62,3 +64,8 @@ La prueba llama al modelo descargado en `127.0.0.1:11434`, toma dos documentos *
 - Guía de IA responsable AAIP: https://www.argentina.gob.ar/noticias/guia-de-la-aaip-para-usar-la-inteligencia-artificial-de-manera-responsable
 
 **Ninguna oferta o contacto a terceros sin autorización previa.**
+
+## Limitaciones del control monetario (noviembre de 2026)
+
+El diagnóstico anterior reveló una discrepancia sistemática en los campos monetarios. La causa exacta de la respuesta original de Ollama es desconocida porque el informe no conserva ni revela las cifras generadas. Se agregó reconciliación explicable: solo se consideran cifras corroboradas por líneas inequívocas del texto provisto, y cualquier diferencia con la IA queda indicada. Esto **no certifica la factura original** ni mejora por sí mismo el modelo. La interfaz distingue origen de montos y discrepancias.
+
