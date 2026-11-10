@@ -34,7 +34,7 @@ export function extractLiteralAmounts(source){
   }
   return found;
 }
-export function reconcileArgentineMoney(source,modelExtracted){
+export function reconcileArgentineMoney(source,modelExtracted,{modelSupplied=true}={}){
   const found=extractLiteralAmounts(source);
   const extracted={...modelExtracted};
   const verification={};
@@ -44,12 +44,13 @@ export function reconcileArgentineMoney(source,modelExtracted){
     if(matches.length===1 && matches[0].valid){
       const literal=matches[0].value;
       extracted[key]=literal;
-      const disagreement=modelProposal!==literal;
+      // El modo sin IA nunca supone que la ausencia de una propuesta es una discrepancia.
+      const disagreement=modelSupplied?modelProposal!==literal:null;
       verification[key]={
-        origin:'LECTURA_LITERAL_ETIQUETADA',model_proposal_cents:modelProposal,
+        origin:'LECTURA_LITERAL_ETIQUETADA',model_proposal_cents:modelSupplied?modelProposal:null,
         verified_text_cents:literal,disagreement
       };
-      if(disagreement)issues.push(
+      if(disagreement===true)issues.push(
         'El importe '+WORDS[key]+' sugerido por la IA difiere de la línea literal; se utilizó el valor textual, sujeto a revisión humana'
       );
     }else{
@@ -57,7 +58,7 @@ export function reconcileArgentineMoney(source,modelExtracted){
       extracted[key]=null;
       verification[key]={
         origin:matches.length===0?'NO_ENCONTRADO':'AMBIGUO_O_INVALIDO',
-        model_proposal_cents:modelProposal,verified_text_cents:null,disagreement:null
+        model_proposal_cents:modelSupplied?modelProposal:null,verified_text_cents:null,disagreement:null
       };
       issues.push(
         'El importe '+WORDS[key]+' no se pudo corroborar con una línea etiquetada única y válida; requiere revisión humana'
