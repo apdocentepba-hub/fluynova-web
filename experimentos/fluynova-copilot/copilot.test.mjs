@@ -38,7 +38,10 @@ test('error de importe, orden ausente y falta de citas se señalan sin decisión
  const m=mockModel({...FIELDS,order:null,total_cents:18140000,evidence:['Texto inventado']});
  const r=await analyzeDocument(SOURCE,{fetchImpl:m.handler});
  assert.ok(r.issues.some(x=>/orden/i.test(x)));
- assert.ok(r.issues.some(x=>/Neto \+ impuestos/i.test(x)));
+  assert.ok(r.issues.some(x=>/importe total sugerido por la IA difiere/i.test(x)));
+  assert.equal(r.extracted.total_cents,18150000);
+  assert.equal(r.amount_verification.total_cents.model_proposal_cents,18140000);
+  assert.equal(r.amount_verification.total_cents.origin,'LECTURA_LITERAL_ETIQUETADA');
  assert.ok(r.issues.some(x=>/citas textuales/i.test(x)));
  assert.equal(r.extracted.evidence_rejected,1);assert.equal(r.can_auto_approve,false);
 });
@@ -49,6 +52,23 @@ test('campos numéricos alucinados o estructura extra causan fallo seguro',async
     e=>e instanceof CopilotError&&e.code==='AI_INVALID_RESPONSE'&&e.status===502);
  }
 });
+test('error genuino en el texto sigue provocando alerta aritmética',async()=>{
+  const wrongSource=SOURCE.replace('Total: $181.500,00','Total: $181.400,00');
+  const m=mockModel({...FIELDS,total_cents:18140000});
+  const r=await analyzeDocument(wrongSource,{fetchImpl:m.handler});
+  assert.equal(r.extracted.total_cents,18140000);
+  assert.ok(r.issues.some(x=>/Neto \+ impuestos/i.test(x)));
+  assert.equal(r.can_auto_approve,false);
+});
+test('sin montos etiquetados, los números propuestos por IA quedan no verificados',async()=>{
+  const unlabelled='Factura ejemplo A-0001-00000121\nProveedor: Proveedor Demo Norte\nOrden de compra: OC-1001\nLa suma debe analizarse manualmente';
+  const m=mockModel(FIELDS);
+  const r=await analyzeDocument(unlabelled,{fetchImpl:m.handler});
+  assert.equal(r.extracted.total_cents,null);
+  assert.equal(r.amount_verification.total_cents.origin,'NO_ENCONTRADO');
+  assert.ok(r.issues.some(x=>/no se pudo corroborar/i.test(x)));
+});
+
 test('modelo no instalado responde 503, sin simular resultado',async()=>{
  const m=mockModel(FIELDS,{unavailable:true});
  await assert.rejects(analyzeDocument(SOURCE,{fetchImpl:m.handler}),
