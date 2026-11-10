@@ -108,6 +108,9 @@ function resetVisualReview(){
  clearOcrPreview();
 }
 $('document').addEventListener('input',()=>{
+ $('result').classList.remove('visible');
+ $('waiting').hidden=false;
+ $('waiting').textContent='Texto modificado. El resultado anterior ya no corresponde al contenido actual.';
  if(unreviewedOcr){
   $('ocr-confirm').checked=false;
   $('ocr-review-status').textContent='El texto OCR fue editado. Repetí el cotejo visual de los importes.';
