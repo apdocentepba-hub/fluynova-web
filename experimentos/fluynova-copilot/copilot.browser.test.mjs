@@ -61,7 +61,7 @@ test('Chromium: modelo indisponible es error visible, no falso éxito',async()=>
  const s=await open(async()=>{throw new CopilotError('AI_UNAVAILABLE',503)});
  try{
    await s.page.locator('#analyze').click();
-   await s.page.getByText(/Sin resultado de IA: AI_UNAVAILABLE/).waitFor({state:'visible'});
+   await s.page.getByText(/No se obtuvo el resultado: AI_UNAVAILABLE/).waitFor({state:'visible'});
    assert.equal(await s.page.locator('#result').isVisible(),false);
    assert.match(await s.page.locator('#service-status').innerText(),/No se obtuvo inferencia válida/);
    assert.deepEqual(s.errors,[]);assert.deepEqual(s.external,[]);
