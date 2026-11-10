@@ -3,6 +3,7 @@ import {readFile} from 'node:fs/promises';
 import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
 import {analyzeDocument,CopilotError} from './analysis.mjs';
+import {verifyMoneyOnly} from './verify-money.mjs';
 
 const HEADERS={
   'cache-control':'no-store',
@@ -42,7 +43,7 @@ export function createApp({analyzer=analyzeDocument,model='qwen3:1.7b'}={}){
         model_connection:'NO_VERIFICADA',human_review_required:true});
       return;
     }
-    if(req.url!=='/api/analyze'||req.method!=='POST'){
+    if(!['/api/analyze','/api/verify-money'].includes(req.url)||req.method!=='POST'){
       json(res,404,{error:'NOT_FOUND'});return;
     }
     const origin=req.headers.origin;
@@ -57,7 +58,10 @@ export function createApp({analyzer=analyzeDocument,model='qwen3:1.7b'}={}){
         Object.keys(body).length!==1||!Object.hasOwn(body,'document')){
         throw new CopilotError('INVALID_REQUEST',422);
       }
-      const result=await analyzer(body.document,{model});
+      // La verificación aritmética funciona sin modelo, sin descarga ni red.
+      const result=req.url==='/api/verify-money'
+        ?verifyMoneyOnly(body.document)
+        :await analyzer(body.document,{model});
       json(res,200,result);
     }catch(err){
       if(err instanceof CopilotError){json(res,err.status,{error:err.code,decision:'REQUIERE_REVISION_HUMANA'});return}
