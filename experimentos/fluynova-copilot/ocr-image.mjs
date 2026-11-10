@@ -19,6 +19,8 @@ export async function recognizeImage(input,{
  workerFactory=realWorkerFactory,languageDir=OCR_DATA_DIR,timeoutMs=90000,
  minimumConfidence=35,checkModel=assertOfflineModel
 }={}){
+ if(Number(process.versions.node.split('.')[0])<24)
+   throw new CopilotError('OCR_REQUIRES_NODE_24',503);
  const image=inspectImageBytes(input);
  if(!Number.isInteger(timeoutMs)||timeoutMs<1||timeoutMs>180000)
    throw new CopilotError('OCR_INVALID_TIMEOUT',500);
