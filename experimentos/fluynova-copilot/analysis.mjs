@@ -1,4 +1,5 @@
 // FLUYNOVA Copilot: extracción asistida por LLM LOCAL, validación determinista y revisión humana.
+import {reconcileArgentineMoney} from './money-ar.mjs';
 const MAX_CENTS = 100_000_000_000_000;
 const textField = {type:['string','null']};
 const moneyField = {type:['integer','null']};
@@ -103,7 +104,13 @@ export async function analyzeDocument(source,{fetchImpl=fetch,model='qwen3:1.7b'
     const wrapper=JSON.parse(rawBody);
     payload=JSON.parse(wrapper.message.content);
   }catch{throw new CopilotError('AI_INVALID_RESPONSE',502)}
-  const extracted=cleanStructured(payload,source);
-  const review=validateReview(extracted,source);
-  return {...review,model_used:model};
+  const proposed=cleanStructured(payload,source);
+  const amounts=reconcileArgentineMoney(source,proposed);
+  const review=validateReview(amounts.extracted,source);
+  return {
+    ...review,
+    issues:[...amounts.issues,...review.issues],
+    amount_verification:amounts.verification,
+    model_used:model
+  };
 }
