@@ -153,8 +153,8 @@ test('Chromium: imagen raster ficticia -> OCR LOCAL simulado -> texto revisable 
 test('Chromium: PDF escaneado ficticio -> ruta OCR aislada -> revisión sin Ollama',async()=>{
  let llmCalls=0,ocrCalls=0;
  const s=await open(async()=>{llmCalls++;throw new Error('LLM no esperado')},390,{
-  scannedPdfRecognizer:async()=>{
-   ocrCalls++;return {
+  imageRecognizer:async png=>{
+   ocrCalls++;assert.ok(png.subarray(0,8).equals(Buffer.from([137,80,78,71,13,10,26,10])));return {
     text:'FACTURA FICTICIA\nNeto: $150.000,00\nIVA: $31.500,00\nTotal: $181.500,00',
     pages:1,confidence_percent:86.5,ocr_used:true,model_called:false,
     can_auto_approve:false
