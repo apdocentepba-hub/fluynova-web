@@ -6,7 +6,6 @@ import {analyzeDocument,CopilotError} from './analysis.mjs';
 import {verifyMoneyOnly} from './verify-money.mjs';
 import {extractPdfText,PDF_MAX_BYTES} from './pdf-text.mjs';
 import {recognizeImage} from './ocr-image.mjs';
-import {recognizeScannedPdf} from './pdf-image-ocr.mjs';
 import {inspectImageBytes,IMAGE_MAX_BYTES} from './image-input.mjs';
 
 const HEADERS={
@@ -14,7 +13,7 @@ const HEADERS={
   'x-content-type-options':'nosniff',
   'referrer-policy':'no-referrer',
   'x-frame-options':'DENY',
-  'content-security-policy':"default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'none';"
+  'content-security-policy':"default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; script-src 'unsafe-inline' 'self'; worker-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'none';"
 };
 const json=(res,status,body)=>{
   res.writeHead(status,{...HEADERS,'content-type':'application/json; charset=utf-8'});
@@ -41,7 +40,7 @@ async function readBinary(req,maxBytes,errorCode='PDF_INVALID_SIZE'){
 }
 export function createApp({
  analyzer=analyzeDocument,model='qwen3:1.7b',pdfExtractor=extractPdfText,
- imageRecognizer=recognizeImage,scannedPdfRecognizer=recognizeScannedPdf
+ imageRecognizer=recognizeImage
 }={}){
   let ocrBusy=false;
   return createServer(async(req,res)=>{
@@ -55,12 +54,28 @@ export function createApp({
       res.end(await readFile(new URL('./index.html',import.meta.url)));
       return;
     }
+    // Módulos oficiales de PDF.js servidos desde archivos locales de npm.
+    // No se aceptan rutas dinámicas, URLs de terceros ni directorios del usuario.
+    if(req.method==='GET'&&
+       ['/assets/pdfjs/pdf.mjs','/assets/pdfjs/pdf.worker.mjs'].includes(req.url)){
+      const file=req.url==='/assets/pdfjs/pdf.mjs'
+        ?new URL('./node_modules/pdfjs-dist/build/pdf.mjs',import.meta.url)
+        :new URL('./node_modules/pdfjs-dist/build/pdf.worker.mjs',import.meta.url);
+      try{
+        const body=await readFile(file);
+        res.writeHead(200,{...HEADERS,'content-type':'text/javascript; charset=utf-8'});
+        res.end(body);
+      }catch{
+        json(res,503,{error:'PDF_ENGINE_NOT_INSTALLED'});
+      }
+      return;
+    }
     if(req.url==='/api/status' && req.method==='GET'){
       json(res,200,{service:'FLUYNOVA Copilot',runtime:'LOCAL_ONLY',model_configured:model,
         model_connection:'NO_VERIFICADA',human_review_required:true});
       return;
     }
-    if(!['/api/analyze','/api/verify-money','/api/pdf/extract','/api/ocr/image','/api/pdf/ocr'].includes(req.url)||req.method!=='POST'){
+    if(!['/api/analyze','/api/verify-money','/api/pdf/extract','/api/ocr/image'].includes(req.url)||req.method!=='POST'){
       json(res,404,{error:'NOT_FOUND'});return;
     }
     const origin=req.headers.origin;
@@ -69,23 +84,12 @@ export function createApp({
     const ct=String(req.headers['content-type']||'').toLowerCase().trim();
     const isPdf=req.url==='/api/pdf/extract';
     const isImage=req.url==='/api/ocr/image';
-    const isScanPdf=req.url==='/api/pdf/ocr';
-    if(isPdf||isScanPdf?ct!=='application/pdf':
+    if(isPdf?ct!=='application/pdf':
        isImage?!['image/png','image/jpeg'].includes(ct):
        !ct.startsWith('application/json')){
       json(res,415,{error:'CONTENT_TYPE_NOT_SUPPORTED'});return;
     }
     try {
-      if(isScanPdf){
-        if(ocrBusy){json(res,429,{error:'OCR_BUSY',decision:'REQUIERE_REVISION_HUMANA'});return;}
-        ocrBusy=true;
-        try{
-          const bytes=await readBinary(req,PDF_MAX_BYTES);
-          const result=await scannedPdfRecognizer(bytes);
-          json(res,200,result);
-        }finally{ocrBusy=false}
-        return;
-      }
       if(isImage){
         // Como máximo una inferencia OCR a la vez para limitar consumo de memoria.
         if(ocrBusy){json(res,429,{error:'OCR_BUSY',decision:'REQUIERE_REVISION_HUMANA'});return;}
