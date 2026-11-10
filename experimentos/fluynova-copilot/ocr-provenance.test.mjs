@@ -59,7 +59,7 @@ test('API exige declaración y marca importes OCR como NO verificados por el sis
     document:wrongButBalanced,input_origin:'OCR',visual_review_declared:false
   });
   assert.equal(missing.status,422);
-  assert.equal(missing.data.error,'INVALID_REQUEST');
+  assert.equal(missing.data.error,'OCR_VISUAL_REVIEW_REQUIRED');
   const exact=await post('/api/verify-money',{
     document:wrongButBalanced,input_origin:'OCR',visual_review_declared:true
   });
