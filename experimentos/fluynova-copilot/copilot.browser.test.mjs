@@ -143,6 +143,9 @@ test('Chromium: imagen raster ficticia -> OCR LOCAL simulado -> texto revisable 
   await s.page.getByText(/OCR local: 75 caracteres/).waitFor({state:'visible'});
   assert.match(await s.page.locator('#document').inputValue(),/Neto: \$150\.000,00/);
   assert.equal(ocrCalls,1);assert.equal(llmCalls,0);
+  await s.page.locator('#ocr-originals img').waitFor({state:'visible'});
+  assert.equal(await s.page.locator('#ocr-originals img').count(),1);
+  assert.match(await s.page.locator('#ocr-originals img').getAttribute('src'),/^blob:http:\/\/127\.0\.0\.1:/);
   assert.equal(await s.page.locator('#ocr-confirm').isChecked(),false);
   await s.page.locator('#verify').click();
   assert.match(await s.page.locator('#service-status').innerText(),/Control detenido/);
@@ -182,6 +185,9 @@ test('Chromium: PDF escaneado ficticio -> ruta OCR aislada -> revisión sin Olla
   assert.match(status,/OCR PDF local de 1 página\(s\)/,status);
   assert.match(await s.page.locator('#document').inputValue(),/Neto: \$150\.000,00/);
   assert.equal(ocrCalls,1);assert.equal(llmCalls,0);
+  await s.page.locator('#ocr-originals img').waitFor({state:'visible'});
+  assert.equal(await s.page.locator('#ocr-originals img').count(),1);
+  assert.match(await s.page.locator('#ocr-originals img').getAttribute('src'),/^blob:http:\/\/127\.0\.0\.1:/);
   assert.equal(await s.page.locator('#ocr-confirm').isChecked(),false);
   await s.page.locator('#verify').click();
   assert.match(await s.page.locator('#service-status').innerText(),/Control detenido/);
