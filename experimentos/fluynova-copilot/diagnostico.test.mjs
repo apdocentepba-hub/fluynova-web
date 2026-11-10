@@ -32,7 +32,11 @@ test('diagnóstico usa HTTP local, dos documentos ficticios y no expone textos e
      const source=data.messages[1].content;
      const fixture=source.includes('Comprobante B-0004-00000105')?B:A;
      called++;
-     res.end(JSON.stringify({message:{content:JSON.stringify(fixture)}}));return;
+     // Reproduce un fallo del modelo: propone PESOS donde la API espera CENTAVOS.
+     // El diagnóstico tiene que distinguir fallos de IA de cifras corroboradas por texto.
+     const modelOutput={...fixture,net_cents:fixture.net_cents/100,
+       tax_cents:fixture.tax_cents/100,total_cents:fixture.total_cents/100};
+     res.end(JSON.stringify({message:{content:JSON.stringify(modelOutput)}}));return;
    }
    res.writeHead(404).end();
  });
@@ -54,7 +58,7 @@ test('diagnóstico usa HTTP local, dos documentos ficticios y no expone textos e
    assert.equal(code,0,output+'\n'+stderr);
    assert.equal(called,2);
    assert.match(output,/Respuestas obtenidas: 2\/2/);
-   assert.match(output,/Extracción propuesta por IA: 12\/12/);
+   assert.match(output,/Extracción propuesta por IA: 6\/12/);
    assert.match(output,/Extracción tras reglas de texto: 12\/12/);
    assert.match(output,/RESULTADO: CONTRASTE TEXTUAL APROBADO/);
    assert.doesNotMatch(output,/Proveedor Demo Norte|Factura A-0001-00000121/);
