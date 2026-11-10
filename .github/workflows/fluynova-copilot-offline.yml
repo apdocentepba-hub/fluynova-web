@@ -30,10 +30,11 @@ jobs:
           node --check experimentos/fluynova-copilot/server.mjs
           node --check experimentos/fluynova-copilot/pdf-text.mjs
           node --check experimentos/fluynova-copilot/pdf-fixtures.mjs
-          node --check experimentos/fluynova-copilot/pdf-text.test.mjs experimentos/fluynova-copilot/pdf-api.test.mjs
+          node --check experimentos/fluynova-copilot/pdf-text.test.mjs
+          node --check experimentos/fluynova-copilot/pdf-api.test.mjs
           node --check experimentos/fluynova-copilot/copilot.test.mjs
       - name: Pruebas unitarias y HTTP contra modelo ficticio aislado
-        run: node --test experimentos/fluynova-copilot/copilot.test.mjs experimentos/fluynova-copilot/money-ar.test.mjs experimentos/fluynova-copilot/verify-money.test.mjs experimentos/fluynova-copilot/corpus.test.mjs experimentos/fluynova-copilot/pdf-text.test.mjs
+        run: node --test experimentos/fluynova-copilot/copilot.test.mjs experimentos/fluynova-copilot/money-ar.test.mjs experimentos/fluynova-copilot/verify-money.test.mjs experimentos/fluynova-copilot/corpus.test.mjs experimentos/fluynova-copilot/pdf-text.test.mjs experimentos/fluynova-copilot/pdf-api.test.mjs
       - name: Medir precisión de reglas con 53 comprobantes ficticios
         run: node experimentos/fluynova-copilot/BENCHMARK-CORPUS.mjs
       - name: Diagnóstico de inferencia con Ollama FICTICIO en localhost
