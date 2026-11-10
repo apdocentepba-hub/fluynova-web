@@ -36,7 +36,7 @@ Ambas columnas cumplen la suma exacta. Si solo se dispone del texto equivocado, 
 
 ## Evidencia de pruebas
 
-La última ejecución que comprende todos estos cambios se verifica en el workflow `.github/workflows/fluynova-copilot-offline.yml` de la rama. No considerar una ejecución cancelada como aprobada.
+**Comprobado con CI:** [GitHub Actions #42827719302](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42827719302), ejecutado sobre el commit `0c8f8406576bcf7f23b9ca42cce590f8b081b5a0`, terminó en **success**. El workflow aprobó **121/121 pruebas**: 106 unitarias/HTTP, 1 OCR de imagen Tesseract real, 5 de aislamiento de procesos, 1 diagnóstico con Ollama simulado, 7 Chromium y 1 prueba integral de PDF escaneado con Tesseract real. Los dos bancos adicionales de reglas y OCR sintético también finalizaron correctamente. La prueba integral conservó 3/3 importes del PDF ficticio. **Los cuatro casos adversariales de procedencia y la prueba Chromium con cifras compensadas son pruebas de seguridad/comportamiento, no demostraciones de detección automática de una cifra falsa.**
 
 ## Próximos criterios de aceptación
 
