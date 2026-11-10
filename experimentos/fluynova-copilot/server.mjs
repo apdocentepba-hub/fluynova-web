@@ -6,6 +6,7 @@ import {analyzeDocument,CopilotError} from './analysis.mjs';
 import {verifyMoneyOnly} from './verify-money.mjs';
 import {extractPdfText,PDF_MAX_BYTES} from './pdf-text.mjs';
 import {recognizeImage} from './ocr-image.mjs';
+import {recognizeScannedPdf} from './pdf-image-ocr.mjs';
 import {inspectImageBytes,IMAGE_MAX_BYTES} from './image-input.mjs';
 
 const HEADERS={
@@ -40,7 +41,7 @@ async function readBinary(req,maxBytes,errorCode='PDF_INVALID_SIZE'){
 }
 export function createApp({
  analyzer=analyzeDocument,model='qwen3:1.7b',pdfExtractor=extractPdfText,
- imageRecognizer=recognizeImage
+ imageRecognizer=recognizeImage,scannedPdfRecognizer=recognizeScannedPdf
 }={}){
   let ocrBusy=false;
   return createServer(async(req,res)=>{
@@ -59,7 +60,7 @@ export function createApp({
         model_connection:'NO_VERIFICADA',human_review_required:true});
       return;
     }
-    if(!['/api/analyze','/api/verify-money','/api/pdf/extract','/api/ocr/image'].includes(req.url)||req.method!=='POST'){
+    if(!['/api/analyze','/api/verify-money','/api/pdf/extract','/api/ocr/image','/api/pdf/ocr'].includes(req.url)||req.method!=='POST'){
       json(res,404,{error:'NOT_FOUND'});return;
     }
     const origin=req.headers.origin;
@@ -68,12 +69,23 @@ export function createApp({
     const ct=String(req.headers['content-type']||'').toLowerCase().trim();
     const isPdf=req.url==='/api/pdf/extract';
     const isImage=req.url==='/api/ocr/image';
-    if(isPdf?ct!=='application/pdf':
+    const isScanPdf=req.url==='/api/pdf/ocr';
+    if(isPdf||isScanPdf?ct!=='application/pdf':
        isImage?!['image/png','image/jpeg'].includes(ct):
        !ct.startsWith('application/json')){
       json(res,415,{error:'CONTENT_TYPE_NOT_SUPPORTED'});return;
     }
     try {
+      if(isScanPdf){
+        if(ocrBusy){json(res,429,{error:'OCR_BUSY',decision:'REQUIERE_REVISION_HUMANA'});return;}
+        ocrBusy=true;
+        try{
+          const bytes=await readBinary(req,PDF_MAX_BYTES);
+          const result=await scannedPdfRecognizer(bytes);
+          json(res,200,result);
+        }finally{ocrBusy=false}
+        return;
+      }
       if(isImage){
         // Como máximo una inferencia OCR a la vez para limitar consumo de memoria.
         if(ocrBusy){json(res,429,{error:'OCR_BUSY',decision:'REQUIERE_REVISION_HUMANA'});return;}
