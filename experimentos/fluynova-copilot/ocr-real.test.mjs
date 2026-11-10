@@ -1,0 +1,30 @@
+// Primera prueba VERDADERA de OCR: Tesseract local reconoce píxeles, sin mocks.
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {createCanvas} from '@napi-rs/canvas';
+import {recognizeImage} from './ocr-image.mjs';
+import {assertOfflineModel} from './ocr-model.mjs';
+test('OCR Tesseract REAL: imagen PNG sintética y modelo español verificado offline',async()=>{
+ await assertOfflineModel();
+ const canvas=createCanvas(1400,650);
+ const ctx=canvas.getContext('2d');
+ ctx.fillStyle='#FFFFFF';ctx.fillRect(0,0,1400,650);
+ ctx.fillStyle='#000000';
+ ctx.font='bold 76px Arial';
+ ctx.fillText('FACTURA FICTICIA',65,130);
+ ctx.font='bold 66px Arial';
+ ctx.fillText('NETO: $150.000,00',65,280);
+ ctx.fillText('IVA: $31.500,00',65,410);
+ ctx.fillText('TOTAL: $181.500,00',65,540);
+ const png=canvas.toBuffer('image/png');
+ const r=await recognizeImage(png,{minimumConfidence:25,timeoutMs:100000});
+ assert.equal(r.ocr_used,true);
+ assert.equal(r.model_called,false);
+ assert.equal(r.can_auto_approve,false);
+ assert.equal(r.needs_manual_review,true);
+ assert.ok(Number.isFinite(r.confidence_percent));
+ assert.match(r.text,/FACTURA/i);
+ assert.match(r.text,/TOTAL/i);
+ assert.ok(r.characters>=30);
+ assert.equal(r.image_format,'PNG');
+});
