@@ -42,7 +42,7 @@ export async function extractPdfText(input,{pdfLoader}={}){
         if(!str)continue;
         const y=Array.isArray(item.transform)?Number(item.transform[5]):null;
         const lineChanged=lastY!==null&&y!==null&&Math.abs(lastY-y)>2;
-        if(lineChanged||line && item.hasEOL){
+        if(lineChanged){
           if(line.trim())lines.push(line.trim());
           line='';
         }
