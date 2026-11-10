@@ -113,13 +113,40 @@ export function createApp({
       }
       const body=await readBody(req);
       if(!body||typeof body!=='object'||Array.isArray(body)||
-        Object.keys(body).length!==1||!Object.hasOwn(body,'document')){
+         !Object.hasOwn(body,'document')){
         throw new CopilotError('INVALID_REQUEST',422);
       }
-      // La verificación aritmética funciona sin modelo, sin descarga ni red.
+      const keys=Object.keys(body);
+      const ordinary=keys.length===1;
+      const declaredOcr=keys.length===3&&
+        Object.hasOwn(body,'input_origin')&&
+        Object.hasOwn(body,'visual_review_declared')&&
+        body.input_origin==='OCR'&&body.visual_review_declared===true;
+      if(!ordinary&&!declaredOcr)throw new CopilotError('INVALID_REQUEST',422);
+      // La declaración NO verifica la imagen: registra procedencia y obliga al usuario
+      // a cotejarla. Un cliente podría mentir: este laboratorio NO autentica usuarios.
+      if(body.input_origin==='OCR'&&body.visual_review_declared!==true)
+        throw new CopilotError('OCR_VISUAL_REVIEW_REQUIRED',422);
       const result=req.url==='/api/verify-money'
-        ?verifyMoneyOnly(body.document)
+        ?verifyMoneyOnly(body.document,{
+          inputOrigin:declaredOcr?'OCR':'TEXT',
+          visualReviewDeclared:declaredOcr
+        })
         :await analyzer(body.document,{model});
+      if(declaredOcr&&req.url==='/api/analyze'){
+        json(res,200,{
+          ...result,
+          input_origin:'OCR',
+          visual_review_declared:true,
+          original_document_verified:false,
+          can_auto_approve:false,
+          issues:[...(Array.isArray(result.issues)?result.issues:[]),
+            'Texto OCR: aunque las cifras coincidan, esta IA no verificó el documento visual original. Revisión humana obligatoria.'],
+          disclaimer:(result.disclaimer||'')+
+            ' Procedencia OCR declarada; no es una certificación visual.'
+        });
+        return;
+      }
       json(res,200,result);
     }catch(err){
       if(err instanceof CopilotError){json(res,err.status,{error:err.code,decision:'REQUIERE_REVISION_HUMANA'});return}
