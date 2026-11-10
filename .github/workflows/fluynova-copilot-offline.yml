@@ -9,11 +9,14 @@ on:
     paths:
       - 'experimentos/fluynova-copilot/**'
       - '.github/workflows/fluynova-copilot-offline.yml'
+concurrency:
+  group: fluynova-copilot-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:
   copilot-local:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
