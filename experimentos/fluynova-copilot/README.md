@@ -89,3 +89,22 @@ El laboratorio decidió **no perseguir prompts más largos** para valores contab
 **Siguiente prueba útil:** emplear un corpus sintético diverso, incluyendo formatos inválidos, importes ambiguos y discrepancias contables. Para avanzar a un cliente, obtener formatos autorizados y definir pruebas de calidad; no corresponde repetir indefinidamente los mismos dos comprobantes.
 
 Evidencia de CI: consultar el workflow `fluynova-copilot-offline.yml` de la rama; la prueba del modelo real en Windows **ya se realizó**, pero la ruta nueva sin IA todavía requiere su propia validación en el equipo del usuario.
+
+
+## Lector local PDF textual (10/11/2026)
+
+Se agregó un **lector PDF acotado basado en Mozilla PDF.js**, separado de Ollama y sin almacenamiento de documentos. La biblioteca de análisis está fijada a `pdfjs-dist@5.4.624`, disponible desde npm. Se carga solo cuando se consulta el endpoint de PDF.
+
+**Características efectivas:**
+- `POST /api/pdf/extract`: recibe bytes con `Content-Type: application/pdf`, verifica firma `%PDF-`, límite de **4 MiB**, máximo **6 páginas**, máximo **6000 caracteres**, y devuelve texto extraído más cantidad de páginas. Funciona solo en `127.0.0.1`.
+- No acepta URLs, datos multipart, OCR, imágenes escaneadas, ni PDF protegido por contraseña; rechaza archivos sin texto en cualquier página. No guarda ni imprime el contenido del documento.
+- La interfaz permite seleccionar **PDF ficticios**, revisar el texto extraído y decidir después si aplica **Control sin IA** o **Analizar con IA local**. Subir un archivo no activa la IA ni aprueba operaciones.
+- Las pruebas incluyen un **PDF binario genuino construido en memoria**, extracción sobre dos páginas, rechazo de siete páginas, archivos corruptos y sin texto, y pruebas de API local. Chromium comprueba la secuencia PDF → texto → controles ARS con un modelo apagado.
+- El modo manual y los controles siguen disponibles si no está instalado PDF.js.
+
+**Para usar la lectura PDF en Windows, cuando quieras:** ejecutá `PREPARAR-PDF-WINDOWS.cmd`. Te **pide autorización antes de descargar** PDF.js desde npm. Después iniciá `INICIAR-COPILOT-WINDOWS.cmd`; Ollama no es necesario para leer PDF textual o revisar importes con reglas.
+
+**Límites importantes:** la extracción de texto PDF no garantiza la lectura en orden correcto de diseños complejos, tablas o columnas; no autentica el documento. El proceso aún no está aislado en un sandbox ni endurecido para procesar archivos no confiables de clientes. Por eso sigue siendo un laboratorio para PDF sintéticos y no debe exponerse públicamente ni utilizar documentación real/sensible.
+
+**Documentación técnica de referencia:** https://mozilla.github.io/pdf.js/examples/ y https://www.npmjs.com/package/pdfjs-dist
+
