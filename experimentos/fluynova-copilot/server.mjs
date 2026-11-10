@@ -4,8 +4,8 @@ import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
 import {analyzeDocument,CopilotError} from './analysis.mjs';
 import {verifyMoneyOnly} from './verify-money.mjs';
-import {extractPdfText,PDF_MAX_BYTES} from './pdf-text.mjs';
-import {recognizeImage} from './ocr-image.mjs';
+import {PDF_MAX_BYTES} from './pdf-text.mjs';
+import {isolatedPdf,isolatedOcr} from './isolated-processing.mjs';
 import {inspectImageBytes,IMAGE_MAX_BYTES} from './image-input.mjs';
 
 const HEADERS={
@@ -39,8 +39,8 @@ async function readBinary(req,maxBytes,errorCode='PDF_INVALID_SIZE'){
   return Buffer.concat(chunks);
 }
 export function createApp({
- analyzer=analyzeDocument,model='qwen3:1.7b',pdfExtractor=extractPdfText,
- imageRecognizer=recognizeImage
+ analyzer=analyzeDocument,model='qwen3:1.7b',pdfExtractor=isolatedPdf,
+ imageRecognizer=isolatedOcr
 }={}){
   let ocrBusy=false;
   return createServer(async(req,res)=>{
