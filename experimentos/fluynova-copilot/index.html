@@ -30,6 +30,11 @@ dt{font-size:.73rem;color:var(--sub)}dd{margin:4px 0 0;overflow-wrap:anywhere;fo
 <div class="notice">Prototipo de laboratorio. Usá solo datos ficticios. No se guardan documentos ni se envían a servicios externos; el texto se comunica únicamente con el modelo Ollama local que configures.</div>
 <div class="columns">
 <section class="box" aria-labelledby="input-title"><h2 id="input-title">Documento de prueba</h2><p class="helper">Cargá un ejemplo y probá primero «Control sin IA» (rápido y sin Ollama). Después podés comparar con «Analizar con IA local».</p>
+<label for="image-file"><strong>Imagen PNG/JPEG ficticia (OCR local opcional)</strong></label>
+<input type="file" id="image-file" accept="image/png,image/jpeg,.png,.jpg,.jpeg" aria-describedby="ocr-help">
+<p class="note" id="ocr-help">Máximo 3 MB y 6 millones de píxeles. Requiere Tesseract y modelo español preparados con autorización. No envía la foto a servicios externos ni usa Qwen.</p>
+<div class="actions"><button type="button" id="read-image">Leer imagen con OCR local</button></div>
+<p id="ocr-status" class="status" role="status" aria-live="polite">El OCR es experimental: el texto que reconoce necesita verificación visual.</p>
 <label for="pdf-file"><strong>PDF con texto seleccionable (opcional)</strong></label>
 <input type="file" id="pdf-file" accept=".pdf,application/pdf" aria-describedby="pdf-help">
 <p class="note" id="pdf-help">Máximo 4 MB, 6 páginas. Solo para pruebas con PDF ficticios. Sin OCR ni archivos escaneados; se lee en este servidor local.</p>
@@ -37,7 +42,7 @@ dt{font-size:.73rem;color:var(--sub)}dd{margin:4px 0 0;overflow-wrap:anywhere;fo
 <p id="pdf-status" class="status" role="status" aria-live="polite">Seleccioná un PDF ficticio para convertirlo a texto en memoria.</p>
 <label for="document"><strong>Texto para analizar o verificar</strong></label>
 <textarea id="document" spellcheck="false" maxlength="6000" aria-describedby="input-help"></textarea>
-<p id="input-help" class="note">El texto extraído del PDF se muestra aquí para que puedas revisarlo antes de ejecutar cualquier control. No ingreses facturas, DNI ni CUIT reales.</p>
+<p id="input-help" class="note">El texto extraído del PDF o reconocido por OCR se muestra aquí para que puedas revisarlo antes de ejecutar cualquier control. No ingreses facturas, DNI ni CUIT reales.</p>
 <div class="actions"><button type="button" id="sample">Cargar ejemplo</button><button type="button" id="verify">Control sin IA</button><button type="button" id="analyze" class="primary">Analizar con IA local</button></div>
 <p id="service-status" class="status" role="status" aria-live="polite">Consultando configuración local…</p></section>
 <section class="box" aria-labelledby="result-title"><h2 id="result-title">Resultado de la IA y controles</h2><p class="helper">Se distingue lo que interpreta el modelo de lo que validan las reglas programadas.</p>
@@ -87,6 +92,32 @@ function showResult(r){
  $('disclaimer').textContent=r.disclaimer;
 }
 $('sample').addEventListener('click',()=>{$('document').value=sample;setStatus('Ejemplo ficticio cargado. Podés usar Control sin IA o comparar con Ollama.')});
+$('read-image').addEventListener('click',async()=>{
+ const file=$('image-file').files?.[0];
+ if(!file){$('ocr-status').textContent='Seleccioná primero una imagen ficticia.';return}
+ if(!['image/png','image/jpeg'].includes(file.type) || file.size<32 || file.size>3*1024*1024){
+  $('ocr-status').textContent='IMAGE_INVALID_SIZE_OR_FORMAT: solo PNG/JPEG hasta 3 MB.';
+  return;
+ }
+ $('read-image').disabled=true;
+ $('ocr-status').textContent='Leyendo imagen con Tesseract y modelo español local…';
+ try{
+  const res=await fetch('/api/ocr/image',{method:'POST',
+    headers:{'content-type':file.type},body:await file.arrayBuffer()});
+  const result=await res.json();
+  if(!res.ok)throw Error(result.error||'OCR_PROCESSING_FAILED');
+  $('document').value=result.text;
+  $('result').classList.remove('visible');
+  $('waiting').hidden=false;
+  $('waiting').textContent='OCR terminado. Revisá y corregí el texto ANTES de controlar importes.';
+  $('ocr-status').textContent='OCR local: '+result.characters+' caracteres; confianza orientativa '+
+    result.confidence_percent+'%. Sin aprobación ni análisis Qwen. Verificá el original.';
+  setStatus('Texto reconocido por OCR, no confirmado. Elegí el siguiente paso manualmente.');
+ }catch(err){
+  $('ocr-status').textContent='OCR no realizado: '+err.message+
+   '. Si falta el modelo, se prepara por separado con permiso; no hubo descarga automática.';
+ }finally{$('read-image').disabled=false}
+});
 $('read-pdf').addEventListener('click',async()=>{
  const file=$('pdf-file').files?.[0];
  if(!file){$('pdf-status').textContent='Seleccioná un archivo PDF ficticio primero.';return}
