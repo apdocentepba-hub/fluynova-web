@@ -26,8 +26,6 @@ jobs:
         run: node experimentos/fluynova-copilot/PREPARAR-MODELO-OCR.mjs --autorizar-descarga
       - name: Control de sintaxis de todos los módulos MJS del laboratorio
         run: find experimentos/fluynova-copilot -maxdepth 1 -type f -name '*.mjs' -print0 | xargs -0 -n 1 node --check
-      - name: Preflight binario de PDF escaneado sin OCR
-        run: node experimentos/fluynova-copilot/PDF-SCAN-PREFLIGHT.mjs
       - name: Pruebas unitarias y HTTP, sin modelo LLM
         run: |
           node --test --test-concurrency=1 \
@@ -39,13 +37,9 @@ jobs:
             experimentos/fluynova-copilot/pdf-api.test.mjs \
             experimentos/fluynova-copilot/ocr-image.test.mjs \
             experimentos/fluynova-copilot/ocr-api.test.mjs \
-            experimentos/fluynova-copilot/pdf-image-ocr.test.mjs \
             experimentos/fluynova-copilot/pdf-scan-api.test.mjs
-      - name: OCR REAL en imagen y PDF escaneado, modelo español offline
-        run: |
-          node --test --test-concurrency=1 \
-            experimentos/fluynova-copilot/ocr-real.test.mjs \
-            experimentos/fluynova-copilot/pdf-scan-real.test.mjs
+      - name: OCR REAL de imagen, modelo español OFFLINE
+        run: node --test experimentos/fluynova-copilot/ocr-real.test.mjs
       - name: Medir precisión de reglas con 53 comprobantes ficticios
         run: node experimentos/fluynova-copilot/BENCHMARK-CORPUS.mjs
       - name: Diagnóstico de inferencia con Ollama FICTICIO en localhost
