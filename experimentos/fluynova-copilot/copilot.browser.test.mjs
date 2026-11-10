@@ -48,7 +48,7 @@ test('Chromium: IA local se presenta como revisión, citas y texto inerte',async
    assert.match(await s.page.locator('#issues').innerText(),/duplicado/i);
    assert.equal(await s.page.locator('#result img').count(),0);
    assert.match(await s.page.locator('#explanation').innerText(),/onerror/);
-   assert.equal(await s.page.locator('button').count(),2);
+   assert.equal(await s.page.locator('button').count(),3);
    for(const width of [320,390,768,1024]){
      await s.page.setViewportSize({width,height:850});
      const size=await s.page.evaluate(()=>({w:innerWidth,scroll:document.documentElement.scrollWidth}));
@@ -65,5 +65,30 @@ test('Chromium: modelo indisponible es error visible, no falso éxito',async()=>
    assert.equal(await s.page.locator('#result').isVisible(),false);
    assert.match(await s.page.locator('#service-status').innerText(),/No se obtuvo inferencia válida/);
    assert.deepEqual(s.errors,[]);assert.deepEqual(s.external,[]);
+ }finally{await s.close()}
+});
+
+
+test('Chromium: control sin IA funciona con Ollama caído, sin aparentar inferencia',async()=>{
+ let modelCalls=0;
+ const s=await open(async()=>{modelCalls++;throw new CopilotError('AI_UNAVAILABLE',503)});
+ try{
+  await s.page.locator('#sample').click();
+  await s.page.locator('#verify').click();
+  await s.page.locator('#result').waitFor({state:'visible'});
+  assert.equal(modelCalls,0);
+  assert.match(await s.page.locator('#decision').innerText(),/Reglas sin IA/);
+  assert.match(await s.page.locator('#result-provenance').innerText(),/no fueron analizados/);
+  assert.match(await s.page.locator('#fields').innerText(),/181\.500,00/);
+  assert.match(await s.page.locator('#amount-checks').innerText(),/SIN IA/);
+  assert.match(await s.page.locator('#evidence').innerText(),/No se ejecutó un modelo/);
+  assert.match(await s.page.locator('#service-status').innerText(),/SIN IA/);
+  assert.deepEqual(s.errors,[]);
+  assert.deepEqual(s.external,[]);
+  await s.page.locator('#analyze').click();
+  await s.page.getByText(/No se obtuvo el resultado: AI_UNAVAILABLE/).waitFor({state:'visible'});
+  assert.equal(modelCalls,1);
+  assert.equal(await s.page.locator('#result').isVisible(),false);
+  assert.deepEqual(s.errors,[]);
  }finally{await s.close()}
 });
