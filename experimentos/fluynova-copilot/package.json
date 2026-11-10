@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "pdfjs-dist": "5.4.624",
-    "tesseract.js": "7.0.0",
+    "tesseract.js": "6.0.1",
     "@napi-rs/canvas": "1.0.13"
   },
   "scripts": {
@@ -17,5 +17,8 @@
     "test:corpus": "node corpus.test.mjs",
     "benchmark": "node BENCHMARK-CORPUS.mjs",
     "test:ocr": "node --test ocr-image.test.mjs"
+  },
+  "overrides": {
+    "tesseract.js-core": "6.0.0"
   }
 }
