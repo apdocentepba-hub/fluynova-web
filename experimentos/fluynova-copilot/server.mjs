@@ -4,6 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
 import {analyzeDocument,CopilotError} from './analysis.mjs';
 import {verifyMoneyOnly} from './verify-money.mjs';
+import {extractPdfText,PDF_MAX_BYTES} from './pdf-text.mjs';
 
 const HEADERS={
   'cache-control':'no-store',
@@ -26,7 +27,16 @@ async function readBody(req,maxBytes=8000){
   try{return JSON.parse(Buffer.concat(chunks).toString('utf8'))}
   catch{throw new CopilotError('INVALID_JSON',400)}
 }
-export function createApp({analyzer=analyzeDocument,model='qwen3:1.7b'}={}){
+async function readBinary(req,maxBytes){
+  let size=0;const chunks=[];
+  for await (const chunk of req){
+    size+=chunk.length;
+    if(size>maxBytes)throw new CopilotError('PDF_INVALID_SIZE',413);
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
+export function createApp({analyzer=analyzeDocument,model='qwen3:1.7b',pdfExtractor=extractPdfText}={}){
   return createServer(async(req,res)=>{
     // Evita que una página externa use DNS rebinding para acceder al servidor local.
     const expectedHost='127.0.0.1:'+req.socket.localPort;
@@ -43,16 +53,25 @@ export function createApp({analyzer=analyzeDocument,model='qwen3:1.7b'}={}){
         model_connection:'NO_VERIFICADA',human_review_required:true});
       return;
     }
-    if(!['/api/analyze','/api/verify-money'].includes(req.url)||req.method!=='POST'){
+    if(!['/api/analyze','/api/verify-money','/api/pdf/extract'].includes(req.url)||req.method!=='POST'){
       json(res,404,{error:'NOT_FOUND'});return;
     }
     const origin=req.headers.origin;
     const expected='http://127.0.0.1:'+req.socket.localPort;
     if(origin && origin!==expected){json(res,403,{error:'ORIGIN_REJECTED'});return}
-    if(!String(req.headers['content-type']||'').toLowerCase().startsWith('application/json')){
+    const ct=String(req.headers['content-type']||'').toLowerCase().trim();
+    const isPdf=req.url==='/api/pdf/extract';
+    if(isPdf?ct!=='application/pdf':!ct.startsWith('application/json')){
       json(res,415,{error:'CONTENT_TYPE_NOT_SUPPORTED'});return;
     }
     try {
+      if(isPdf){
+        // Bytes transportados por HTTP SOLO hacia 127.0.0.1; no se guardan en disco.
+        const bytes=await readBinary(req,PDF_MAX_BYTES);
+        const result=await pdfExtractor(bytes);
+        json(res,200,result);
+        return;
+      }
       const body=await readBody(req);
       if(!body||typeof body!=='object'||Array.isArray(body)||
         Object.keys(body).length!==1||!Object.hasOwn(body,'document')){
