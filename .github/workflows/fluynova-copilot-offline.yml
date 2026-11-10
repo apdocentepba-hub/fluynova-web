@@ -40,6 +40,7 @@ jobs:
             experimentos/fluynova-copilot/pdf-api.test.mjs \
             experimentos/fluynova-copilot/ocr-image.test.mjs \
             experimentos/fluynova-copilot/ocr-api.test.mjs \
+            experimentos/fluynova-copilot/ocr-provenance.test.mjs \
             experimentos/fluynova-copilot/pdf-scan-api.test.mjs
       - name: OCR REAL de imagen, modelo español OFFLINE
         run: node --test experimentos/fluynova-copilot/ocr-real.test.mjs
