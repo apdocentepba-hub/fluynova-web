@@ -36,7 +36,8 @@ dt{font-size:.73rem;color:var(--sub)}dd{margin:4px 0 0;overflow-wrap:anywhere;fo
 <section class="box" aria-labelledby="result-title"><h2 id="result-title">Resultado de la IA y controles</h2><p class="helper">Se distingue lo que interpreta el modelo de lo que validan las reglas programadas.</p>
 <div id="waiting" class="dim">Todavía no se ejecutó ningún modelo.</div>
 <div id="result" class="result" aria-live="polite"><div class="decision" id="decision"></div>
-<p class="label">Información sugerida por la IA (verificar original)</p><dl id="fields"></dl>
+<p class="label">Datos propuestos por la IA y contrastados con el texto (revisión obligatoria)</p><dl id="fields"></dl>
+<h3>Origen y discrepancias de importes</h3><ul id="amount-checks" class="flags"></ul>
 <h3>Alertas de control</h3><ul id="issues" class="flags"></ul>
 <h3>Explicación del modelo</h3><p class="summary" id="explanation"></p>
 <h3>Fragmentos textuales que reconoció</h3><ul id="evidence"></ul>
@@ -50,9 +51,24 @@ function setStatus(msg){$('service-status').textContent=msg}
 function showResult(r){
  $('waiting').hidden=true;$('result').classList.add('visible');
  $('decision').textContent='Revisión humana obligatoria · '+r.model_used;
- $('fields').replaceChildren();$('issues').replaceChildren();$('evidence').replaceChildren();
- const labels=[['supplier','Proveedor'],['number','Número'],['order','Orden de compra'],['net_cents','Neto (centavos)'],['tax_cents','Impuesto (centavos)'],['total_cents','Total (centavos)']];
- for(const [key,label] of labels){const wrap=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');dt.textContent=label;dd.textContent=r.extracted[key]??'No identificado';wrap.append(dt,dd);$('fields').append(wrap)}
+ $('fields').replaceChildren();$('issues').replaceChildren();$('evidence').replaceChildren();$('amount-checks').replaceChildren();
+ const labels=[['supplier','Proveedor'],['number','Número'],['order','Orden de compra'],['net_cents','Neto en ARS'],['tax_cents','Impuesto en ARS'],['total_cents','Total en ARS']];
+ const formatARS=cents=>new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(cents/100);
+ for(const [key,label] of labels){
+  const wrap=document.createElement('div'),dt=document.createElement('dt'),dd=document.createElement('dd');
+  dt.textContent=label;
+  const v=r.extracted[key];
+  dd.textContent=key.endsWith('_cents') ? (Number.isSafeInteger(v)?formatARS(v):'No corroborado') : (v??'No identificado');
+  wrap.append(dt,dd);$('fields').append(wrap);
+  const provenance=r.amount_verification?.[key];
+  if(provenance){
+    const msg=provenance.origin==='LECTURA_LITERAL_ETIQUETADA'
+      ? (provenance.disagreement?'IA y texto discrepan: se tomó la cifra literal, revisá original.':'IA y texto coinciden: revisar original.')
+      : 'No hay una línea monetaria única y válida: revisar manualmente.';
+    addLi($('amount-checks'),label+': '+msg);
+  }
+ }
+ if(!$('amount-checks').children.length)addLi($('amount-checks'),'La demostración de este modo no incluyó verificación monetaria independiente.');
  for(const issue of r.issues.length?r.issues:['Sin alertas automáticas; aún requiere revisión'])addLi($('issues'),issue);
  for(const snippet of r.extracted.evidence)addLi($('evidence'),snippet);
  if(!r.extracted.evidence.length)addLi($('evidence'),'Sin citas textuales reconocibles');
