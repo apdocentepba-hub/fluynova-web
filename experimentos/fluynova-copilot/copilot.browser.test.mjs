@@ -166,7 +166,12 @@ test('Chromium: PDF escaneado ficticio -> ruta OCR aislada -> revisión sin Olla
    name:'scan-ficticio.pdf',mimeType:'application/pdf',buffer:buildScannedPdf()
   });
   await s.page.locator('#scan-pdf').click();
-  await s.page.getByText(/OCR PDF de 1 página/).waitFor({state:'visible'});
+  await s.page.waitForFunction(()=>{
+    const status=document.querySelector('#pdf-status')?.textContent||'';
+    return status.includes('OCR PDF local de')||status.includes('OCR PDF no realizado');
+  },null,{timeout:20000});
+  const status=await s.page.locator('#pdf-status').innerText();
+  assert.match(status,/OCR PDF local de 1 página\(s\)/,status);
   assert.match(await s.page.locator('#document').inputValue(),/Neto: \$150\.000,00/);
   assert.equal(ocrCalls,1);assert.equal(llmCalls,0);
   await s.page.locator('#verify').click();
