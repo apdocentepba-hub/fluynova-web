@@ -152,6 +152,9 @@ test('Chromium: imagen raster ficticia -> OCR LOCAL simulado -> texto revisable 
   await s.page.locator('#result').waitFor({state:'visible'});
   assert.match(await s.page.locator('#decision').innerText(),/Reglas sin IA/);
   assert.match(await s.page.locator('#fields').innerText(),/181\.500,00/);
+  assert.match(await s.page.locator('#result-provenance').innerText(),/no verificación independiente/i);
+  assert.match(await s.page.locator('#amount-checks').innerText(),/OCR.*no comprobó el original/i);
+  assert.match(await s.page.locator('#disclaimer').innerText(),/NO certificado/i);
   assert.deepEqual(s.errors,[]);assert.deepEqual(s.external,[]);
  }finally{await s.close()}
 });
@@ -187,6 +190,7 @@ test('Chromium: PDF escaneado ficticio -> ruta OCR aislada -> revisión sin Olla
   await s.page.locator('#verify').click();
   await s.page.locator('#result').waitFor({state:'visible'});
   assert.match(await s.page.locator('#decision').innerText(),/Reglas sin IA/);
+  assert.match(await s.page.locator('#result-provenance').innerText(),/no verificación independiente/i);
   assert.deepEqual(s.errors,[]);assert.deepEqual(s.external,[]);
  }finally{await s.close()}
 });
