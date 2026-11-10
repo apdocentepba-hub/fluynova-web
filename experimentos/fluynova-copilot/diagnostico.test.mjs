@@ -29,6 +29,8 @@ test('diagnóstico usa HTTP local, dos documentos ficticios y no expone textos e
      const data=JSON.parse(Buffer.concat(parts).toString('utf8'));
      assert.equal(data.model,'qwen3:1.7b');assert.equal(data.stream,false);
      assert.match(data.messages[0].content,/NO CONFIABLE/);
+     assert.match(data.messages[0].content,/CENTAVOS ENTEROS, NO PESOS/);
+     assert.match(data.messages[0].content,/3700000/);
      const source=data.messages[1].content;
      const fixture=source.includes('Comprobante B-0004-00000105')?B:A;
      called++;
@@ -59,6 +61,8 @@ test('diagnóstico usa HTTP local, dos documentos ficticios y no expone textos e
    assert.equal(called,2);
    assert.match(output,/Respuestas obtenidas: 2\/2/);
    assert.match(output,/Extracción propuesta por IA: 6\/12/);
+   assert.match(output,/Protocolo diagnóstico: IA_CENTAVOS_V2_Y_CONTRASTE_ARS/);
+   assert.equal((output.match(/TIPO_DESVIO POSIBLE_ERROR_ESCALA_PESOS_POR_CENTAVOS/g)||[]).length,6);
    assert.match(output,/Extracción tras reglas de texto: 12\/12/);
    assert.match(output,/RESULTADO: CONTRASTE TEXTUAL APROBADO/);
    assert.doesNotMatch(output,/Proveedor Demo Norte|Factura A-0001-00000121/);
