@@ -13,7 +13,7 @@ const HEADERS={
   'x-content-type-options':'nosniff',
   'referrer-policy':'no-referrer',
   'x-frame-options':'DENY',
-  'content-security-policy':"default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; script-src 'unsafe-inline' 'self'; worker-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src 'none';"
+  'content-security-policy':"default-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'; script-src 'unsafe-inline' 'self'; worker-src 'self'; style-src 'unsafe-inline'; connect-src 'self'; img-src blob:;"
 };
 const json=(res,status,body)=>{
   res.writeHead(status,{...HEADERS,'content-type':'application/json; charset=utf-8'});
