@@ -4,11 +4,13 @@ import {chromium} from 'playwright';
 import {createApp} from './server.mjs';
 import {CopilotError} from './analysis.mjs';
 import {buildSyntheticPdf} from './pdf-fixtures.mjs';
+import {buildScannedPdf} from './pdf-scan-fixtures.mjs';
+import {createCanvas} from '@napi-rs/canvas';
 let browser;
 after(async()=>{await browser?.close()});
-async function open(analyzer,width=390){
+async function open(analyzer,width=390,extra={}){
  browser??=await chromium.launch({headless:true});
- const server=createApp({analyzer});
+ const server=createApp({analyzer,...extra});
  await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve));
  const base='http://127.0.0.1:'+server.address().port;
  const context=await browser.newContext({viewport:{width,height:850}});
@@ -49,7 +51,7 @@ test('Chromium: IA local se presenta como revisión, citas y texto inerte',async
    assert.match(await s.page.locator('#issues').innerText(),/duplicado/i);
    assert.equal(await s.page.locator('#result img').count(),0);
    assert.match(await s.page.locator('#explanation').innerText(),/onerror/);
-   assert.equal(await s.page.locator('button').count(),4);
+   assert.equal(await s.page.locator('#sample,#verify,#analyze,#read-image,#read-pdf,#scan-pdf').count(),6);
    for(const width of [320,390,768,1024]){
      await s.page.setViewportSize({width,height:850});
      const size=await s.page.evaluate(()=>({w:innerWidth,scroll:document.documentElement.scrollWidth}));
@@ -117,5 +119,59 @@ test('Chromium: PDF ficticio real se extrae antes del control local, sin usar Ol
   assert.equal(llmCalls,0);
   assert.deepEqual(s.errors,[]);
   assert.deepEqual(s.external,[]);
+ }finally{await s.close()}
+});
+
+
+test('Chromium: imagen raster ficticia -> OCR LOCAL simulado -> texto revisable -> control',async()=>{
+ let llmCalls=0,ocrCalls=0;
+ const s=await open(async()=>{llmCalls++;throw new Error('LLM no esperado')},390,{
+  imageRecognizer:async()=>{ocrCalls++;return {
+   text:'FACTURA FICTICIA\nNeto: $150.000,00\nIVA: $31.500,00\nTotal: $181.500,00',
+   ocr_used:true,model_called:false,can_auto_approve:false,
+   characters:75,confidence_percent:84.1
+  }}
+ });
+ try{
+  const canvas=createCanvas(1000,300),ctx=canvas.getContext('2d');
+  ctx.fillStyle='white';ctx.fillRect(0,0,1000,300);
+  ctx.fillStyle='black';ctx.font='bold 60px Arial';ctx.fillText('FACTURA FICTICIA',30,100);
+  await s.page.locator('#image-file').setInputFiles({
+   name:'foto-ficticia.png',mimeType:'image/png',buffer:canvas.toBuffer('image/png')
+  });
+  await s.page.locator('#read-image').click();
+  await s.page.getByText(/OCR local: 75 caracteres/).waitFor({state:'visible'});
+  assert.match(await s.page.locator('#document').inputValue(),/Neto: \$150\.000,00/);
+  assert.equal(ocrCalls,1);assert.equal(llmCalls,0);
+  await s.page.locator('#verify').click();
+  await s.page.locator('#result').waitFor({state:'visible'});
+  assert.match(await s.page.locator('#decision').innerText(),/Reglas sin IA/);
+  assert.match(await s.page.locator('#fields').innerText(),/181\.500,00/);
+  assert.deepEqual(s.errors,[]);assert.deepEqual(s.external,[]);
+ }finally{await s.close()}
+});
+test('Chromium: PDF escaneado ficticio -> ruta OCR aislada -> revisión sin Ollama',async()=>{
+ let llmCalls=0,ocrCalls=0;
+ const s=await open(async()=>{llmCalls++;throw new Error('LLM no esperado')},390,{
+  scannedPdfRecognizer:async()=>{
+   ocrCalls++;return {
+    text:'FACTURA FICTICIA\nNeto: $150.000,00\nIVA: $31.500,00\nTotal: $181.500,00',
+    pages:1,confidence_percent:86.5,ocr_used:true,model_called:false,
+    can_auto_approve:false
+   };
+  }
+ });
+ try{
+  await s.page.locator('#pdf-file').setInputFiles({
+   name:'scan-ficticio.pdf',mimeType:'application/pdf',buffer:buildScannedPdf()
+  });
+  await s.page.locator('#scan-pdf').click();
+  await s.page.getByText(/OCR PDF de 1 página/).waitFor({state:'visible'});
+  assert.match(await s.page.locator('#document').inputValue(),/Neto: \$150\.000,00/);
+  assert.equal(ocrCalls,1);assert.equal(llmCalls,0);
+  await s.page.locator('#verify').click();
+  await s.page.locator('#result').waitFor({state:'visible'});
+  assert.match(await s.page.locator('#decision').innerText(),/Reglas sin IA/);
+  assert.deepEqual(s.errors,[]);assert.deepEqual(s.external,[]);
  }finally{await s.close()}
 });
