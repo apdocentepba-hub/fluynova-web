@@ -26,6 +26,8 @@ jobs:
         run: node experimentos/fluynova-copilot/PREPARAR-MODELO-OCR.mjs --autorizar-descarga
       - name: Control de sintaxis de todos los módulos MJS del laboratorio
         run: find experimentos/fluynova-copilot -maxdepth 1 -type f -name '*.mjs' -print0 | xargs -0 -n 1 node --check
+      - name: Preflight binario de PDF escaneado sin OCR
+        run: node experimentos/fluynova-copilot/PDF-SCAN-PREFLIGHT.mjs
       - name: Pruebas unitarias y HTTP, sin modelo LLM
         run: |
           node --test --test-concurrency=1 \
