@@ -148,6 +148,16 @@ function showResult(r){
  $('explanation').textContent=r.extracted.explanation||'El modelo no ofreció explicación.';
  $('disclaimer').textContent=r.disclaimer;
 }
+function invalidateDocumentOnFileSelection(){
+ resetVisualReview();
+ $('document').value='';
+ $('result').classList.remove('visible');
+ $('waiting').hidden=false;
+ $('waiting').textContent='Archivo nuevo seleccionado; el análisis anterior se descartó.';
+ setStatus('Archivo cambiado. Primero extraé el texto nuevo; después revisalo.');
+}
+$('image-file').addEventListener('change',invalidateDocumentOnFileSelection);
+$('pdf-file').addEventListener('change',invalidateDocumentOnFileSelection);
 $('sample').addEventListener('click',()=>{resetVisualReview();$('document').value=sample;setStatus('Ejemplo ficticio cargado. Podés usar Control sin IA o comparar con Ollama.')});
 $('read-image').addEventListener('click',async()=>{
  const file=$('image-file').files?.[0];
