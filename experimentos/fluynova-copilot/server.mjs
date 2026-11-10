@@ -134,8 +134,19 @@ export function createApp({
         })
         :await analyzer(body.document,{model});
       if(declaredOcr&&req.url==='/api/analyze'){
+        // Que el modelo coincida con un texto OCR NO es evidencia independiente.
+        // Las cifras de ambas capas pueden compartir el mismo error de origen.
+        const amountVerification={};
+        for(const [key,value] of Object.entries(result.amount_verification||{})){
+          amountVerification[key]=value&&typeof value==='object'&&
+            value.origin==='LECTURA_LITERAL_ETIQUETADA'
+            ?{...value,origin:'OCR_COTEJO_VISUAL_DECLARADO_NO_VERIFICADO',
+               independent_source_verified:false}
+            :value;
+        }
         json(res,200,{
           ...result,
+          amount_verification:amountVerification,
           input_origin:'OCR',
           visual_review_declared:true,
           original_document_verified:false,
