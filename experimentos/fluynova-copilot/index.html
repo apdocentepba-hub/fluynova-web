@@ -27,16 +27,16 @@ dt{font-size:.73rem;color:var(--sub)}dd{margin:4px 0 0;overflow-wrap:anywhere;fo
 <section class="hero"><p class="eyebrow">INTELIGENCIA ARTIFICIAL LOCAL CON CONTROL HUMANO</p><h1>De un comprobante a una <em>revisión explicable.</em></h1><p class="lede">Un modelo de lenguaje extrae datos del texto; un segundo motor independiente verifica importes, documentos faltantes y duplicados de ejemplo. Ninguna decisión se aprueba automáticamente.</p></section>
 <div class="notice">Prototipo de laboratorio. Usá solo datos ficticios. No se guardan documentos ni se envían a servicios externos; el texto se comunica únicamente con el modelo Ollama local que configures.</div>
 <div class="columns">
-<section class="box" aria-labelledby="input-title"><h2 id="input-title">Documento de prueba</h2><p class="helper">Presioná «Cargar ejemplo» y después «Analizar con IA local». No requiere API de pago, sí Ollama y el modelo instalado en tu PC.</p>
+<section class="box" aria-labelledby="input-title"><h2 id="input-title">Documento de prueba</h2><p class="helper">Cargá un ejemplo y probá primero «Control sin IA» (rápido y sin Ollama). Después podés comparar con «Analizar con IA local».</p>
 <label for="document"><strong>Texto del comprobante ficticio</strong></label>
 <textarea id="document" spellcheck="false" maxlength="6000" aria-describedby="input-help"></textarea>
 <p id="input-help" class="note">Prueba de texto, no es un lector PDF/OCR. No ingreses facturas, DNI ni CUIT reales.</p>
-<div class="actions"><button type="button" id="sample">Cargar ejemplo</button><button type="button" id="analyze" class="primary">Analizar con IA local</button></div>
+<div class="actions"><button type="button" id="sample">Cargar ejemplo</button><button type="button" id="verify">Control sin IA</button><button type="button" id="analyze" class="primary">Analizar con IA local</button></div>
 <p id="service-status" class="status" role="status" aria-live="polite">Consultando configuración local…</p></section>
 <section class="box" aria-labelledby="result-title"><h2 id="result-title">Resultado de la IA y controles</h2><p class="helper">Se distingue lo que interpreta el modelo de lo que validan las reglas programadas.</p>
 <div id="waiting" class="dim">Todavía no se ejecutó ningún modelo.</div>
 <div id="result" class="result" aria-live="polite"><div class="decision" id="decision"></div>
-<p class="label">Datos propuestos por la IA y contrastados con el texto (revisión obligatoria)</p><dl id="fields"></dl>
+<p class="label" id="result-provenance">Datos propuestos por la IA y contrastados con el texto (revisión obligatoria)</p><dl id="fields"></dl>
 <h3>Origen y discrepancias de importes</h3><ul id="amount-checks" class="flags"></ul>
 <h3>Alertas de control</h3><ul id="issues" class="flags"></ul>
 <h3>Explicación del modelo</h3><p class="summary" id="explanation"></p>
@@ -50,7 +50,10 @@ function addLi(container,value){const li=document.createElement('li');li.textCon
 function setStatus(msg){$('service-status').textContent=msg}
 function showResult(r){
  $('waiting').hidden=true;$('result').classList.add('visible');
- $('decision').textContent='Revisión humana obligatoria · '+r.model_used;
+ $('decision').textContent='Revisión humana obligatoria · '+(r.model_called===false?'Reglas sin IA':r.model_used);
+ $('result-provenance').textContent=r.model_called===false
+    ? 'Solo importes leídos mediante reglas; proveedor y número no fueron analizados.'
+    : 'Datos propuestos por la IA y contrastados con texto (revisión obligatoria).';
  $('fields').replaceChildren();$('issues').replaceChildren();$('evidence').replaceChildren();$('amount-checks').replaceChildren();
  const labels=[['supplier','Proveedor'],['number','Número'],['order','Orden de compra'],['net_cents','Neto en ARS'],['tax_cents','Impuesto en ARS'],['total_cents','Total en ARS']];
  const formatARS=cents=>new Intl.NumberFormat('es-AR',{style:'currency',currency:'ARS'}).format(cents/100);
@@ -63,7 +66,7 @@ function showResult(r){
   const provenance=r.amount_verification?.[key];
   if(provenance){
     const msg=provenance.origin==='LECTURA_LITERAL_ETIQUETADA'
-      ? (provenance.disagreement?'IA y texto discrepan: se tomó la cifra literal, revisá original.':'IA y texto coinciden: revisar original.')
+      ? (r.model_called===false?'Importe leído del texto SIN IA; verificar original.':provenance.disagreement?'IA y texto discrepan: se tomó la cifra literal, revisá original.':'IA y texto coinciden: revisar original.')
       : 'No hay una línea monetaria única y válida: revisar manualmente.';
     addLi($('amount-checks'),label+': '+msg);
   }
@@ -71,24 +74,39 @@ function showResult(r){
  if(!$('amount-checks').children.length)addLi($('amount-checks'),'La demostración de este modo no incluyó verificación monetaria independiente.');
  for(const issue of r.issues.length?r.issues:['Sin alertas automáticas; aún requiere revisión'])addLi($('issues'),issue);
  for(const snippet of r.extracted.evidence)addLi($('evidence'),snippet);
- if(!r.extracted.evidence.length)addLi($('evidence'),'Sin citas textuales reconocibles');
+ if(!r.extracted.evidence.length)addLi($('evidence'),
+    r.model_called===false?'No se ejecutó un modelo de IA.':'Sin citas textuales reconocibles');
  $('explanation').textContent=r.extracted.explanation||'El modelo no ofreció explicación.';
  $('disclaimer').textContent=r.disclaimer;
 }
 $('sample').addEventListener('click',()=>{$('document').value=sample;setStatus('Ejemplo ficticio cargado. Analizalo con el modelo local.')});
-$('analyze').addEventListener('click',async()=>{
- $('analyze').disabled=true;$('result').classList.remove('visible');$('waiting').hidden=false;
- $('waiting').textContent='Consultando el modelo Ollama instalado localmente…';
- setStatus('Analizando; los datos no salen de esta PC mediante FLUYNOVA.');
- try{
-  const res=await fetch('/api/analyze',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({document:$('document').value})});
+async function runReview(withAI){
+ const buttons=[$('analyze'),$('verify')];buttons.forEach(b=>b.disabled=true);
+ $('result').classList.remove('visible');$('waiting').hidden=false;
+ $('waiting').textContent=withAI
+   ?'Consultando el modelo Ollama instalado localmente…'
+   :'Validando importes del texto sin consultar inteligencia artificial…';
+ setStatus(withAI?'Analizando localmente con Ollama.':'Verificando solamente mediante código local.');
+ try {
+  const endpoint=withAI?'/api/analyze':'/api/verify-money';
+  const res=await fetch(endpoint,{
+    method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({document:$('document').value})
+  });
   const data=await res.json();
   if(!res.ok)throw Error(data.error||'ERROR');
-  showResult(data);setStatus('Respuesta recibida del modelo configurado. Verificá cada campo: no es aprobación.');
- }catch(err){$('waiting').textContent='Sin resultado de IA: '+err.message+'. Revisá que Ollama esté instalado, que el modelo exista y que hayas ingresado texto ficticio válido.';
- setStatus('No se obtuvo inferencia válida. No se aprobó ningún documento.')}
- finally{$('analyze').disabled=false}
-});
+  showResult(data);
+  setStatus(withAI
+    ?'Se recibió la propuesta de IA y las reglas revisaron los importes. No hay aprobación.'
+    :'Control determinista realizado SIN IA. No se verificó la factura original ni se aprobó.');
+ }catch(err){
+  $('waiting').textContent='No se obtuvo el resultado: '+err.message+
+    (withAI?'. Verificá Ollama o usá Control sin IA.':'. Revisá el formato del texto.');
+  setStatus('No se obtuvo una validación exitosa. No se aprobó ningún documento.');
+ }finally{buttons.forEach(b=>b.disabled=false)}
+}
+$('analyze').addEventListener('click',()=>runReview(true));
+$('verify').addEventListener('click',()=>runReview(false));
 fetch('/api/status').then(r=>r.json()).then(s=>setStatus('Modelo configurado: '+s.model_configured+' · Estado real de Ollama todavía no comprobado.')).catch(()=>setStatus('Iniciá el servidor Node local para utilizar la IA.'));
 $('document').value=sample;
 </script></body></html>
