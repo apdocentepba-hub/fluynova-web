@@ -14,6 +14,8 @@ h2{font-size:1.4rem;margin:0 0 10px}.helper{color:var(--sub);font-size:.88rem;ma
 textarea{width:100%;height:256px;resize:vertical;color:var(--ink);border:1px solid #628087;background:#0d1e24;padding:14px;border-radius:9px;line-height:1.55;font:inherit}
 button{cursor:pointer;border:1px solid #54736b;border-radius:10px;background:#20363c;color:var(--ink);padding:12px 16px;font:inherit;font-weight:750}
 button.primary{background:var(--accent);color:#132119;border-color:var(--accent)}button:disabled{opacity:.5;cursor:wait}
+input[type=file]{display:block;width:100%;max-width:100%;border:1px dashed #52737d;border-radius:9px;padding:10px;margin-top:8px;color:var(--ink);font:inherit}
+input[type=file]::file-selector-button{padding:8px 11px;border:1px solid var(--edge);border-radius:8px;background:#243f46;color:var(--ink);cursor:pointer;margin-right:10px}
 .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}.status{border:1px solid var(--edge);padding:10px;border-radius:9px;color:var(--sub);margin:15px 0 0;min-height:46px}
 .result{display:none}.result.visible{display:block}.result .label{color:var(--sub);font-size:.83rem}.result .decision{color:var(--warn);font-weight:800}.summary{color:var(--sub);margin:0 0 16px}
 dl{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:10px 0}dl div{background:#0f2025;border:1px solid var(--edge);border-radius:8px;padding:10px;min-width:0}
@@ -28,9 +30,14 @@ dt{font-size:.73rem;color:var(--sub)}dd{margin:4px 0 0;overflow-wrap:anywhere;fo
 <div class="notice">Prototipo de laboratorio. Usá solo datos ficticios. No se guardan documentos ni se envían a servicios externos; el texto se comunica únicamente con el modelo Ollama local que configures.</div>
 <div class="columns">
 <section class="box" aria-labelledby="input-title"><h2 id="input-title">Documento de prueba</h2><p class="helper">Cargá un ejemplo y probá primero «Control sin IA» (rápido y sin Ollama). Después podés comparar con «Analizar con IA local».</p>
-<label for="document"><strong>Texto del comprobante ficticio</strong></label>
+<label for="pdf-file"><strong>PDF con texto seleccionable (opcional)</strong></label>
+<input type="file" id="pdf-file" accept=".pdf,application/pdf" aria-describedby="pdf-help">
+<p class="note" id="pdf-help">Máximo 4 MB, 6 páginas. Solo para pruebas con PDF ficticios. Sin OCR ni archivos escaneados; se lee en este servidor local.</p>
+<div class="actions"><button type="button" id="read-pdf">Leer PDF textual</button></div>
+<p id="pdf-status" class="status" role="status" aria-live="polite">Seleccioná un PDF ficticio para convertirlo a texto en memoria.</p>
+<label for="document"><strong>Texto para analizar o verificar</strong></label>
 <textarea id="document" spellcheck="false" maxlength="6000" aria-describedby="input-help"></textarea>
-<p id="input-help" class="note">Prueba de texto, no es un lector PDF/OCR. No ingreses facturas, DNI ni CUIT reales.</p>
+<p id="input-help" class="note">El texto extraído del PDF se muestra aquí para que puedas revisarlo antes de ejecutar cualquier control. No ingreses facturas, DNI ni CUIT reales.</p>
 <div class="actions"><button type="button" id="sample">Cargar ejemplo</button><button type="button" id="verify">Control sin IA</button><button type="button" id="analyze" class="primary">Analizar con IA local</button></div>
 <p id="service-status" class="status" role="status" aria-live="polite">Consultando configuración local…</p></section>
 <section class="box" aria-labelledby="result-title"><h2 id="result-title">Resultado de la IA y controles</h2><p class="helper">Se distingue lo que interpreta el modelo de lo que validan las reglas programadas.</p>
@@ -79,7 +86,32 @@ function showResult(r){
  $('explanation').textContent=r.extracted.explanation||'El modelo no ofreció explicación.';
  $('disclaimer').textContent=r.disclaimer;
 }
-$('sample').addEventListener('click',()=>{$('document').value=sample;setStatus('Ejemplo ficticio cargado. Analizalo con el modelo local.')});
+$('sample').addEventListener('click',()=>{$('document').value=sample;setStatus('Ejemplo ficticio cargado. Podés usar Control sin IA o comparar con Ollama.')});
+$('read-pdf').addEventListener('click',async()=>{
+ const file=$('pdf-file').files?.[0];
+ if(!file){$('pdf-status').textContent='Seleccioná un archivo PDF ficticio primero.';return}
+ if(file.size<30||file.size>4*1024*1024){
+  $('pdf-status').textContent='PDF_INVALID_SIZE: máximo 4 MB, mínimo 30 bytes.';
+  return;
+ }
+ $('read-pdf').disabled=true;
+ $('pdf-status').textContent='Extrayendo texto de PDF en este equipo, sin IA…';
+ try{
+  const res=await fetch('/api/pdf/extract',{method:'POST',
+   headers:{'content-type':'application/pdf'},body:await file.arrayBuffer()});
+  const data=await res.json();
+  if(!res.ok)throw Error(data.error||'PDF_UNREADABLE');
+  $('document').value=data.text;
+  $('result').classList.remove('visible');
+  $('waiting').hidden=false;
+  $('waiting').textContent='PDF leído. Revisá el texto antes de ejecutar cualquier control.';
+  $('pdf-status').textContent='PDF textual leído: '+data.pages+' páginas, '+data.characters+
+     ' caracteres. NO se ejecutó OCR ni IA; no se guardó el archivo.';
+  setStatus('PDF leído localmente. Ahora elegí Control sin IA o Analizar con IA local.');
+ }catch(err){
+  $('pdf-status').textContent='No se pudo leer el PDF: '+err.message+'. No se hizo OCR ni inferencia.';
+ }finally{$('read-pdf').disabled=false}
+});
 async function runReview(withAI){
  const buttons=[$('analyze'),$('verify')];buttons.forEach(b=>b.disabled=true);
  $('result').classList.remove('visible');$('waiting').hidden=false;
