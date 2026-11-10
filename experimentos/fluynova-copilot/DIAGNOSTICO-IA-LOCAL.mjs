@@ -19,10 +19,21 @@ const FIXTURES=[
   }
 ];
 const fmt=t=>Math.round(t/1000)+' segundos';
+function classifyMonetaryDeviation(proposed,expected){
+  if(proposed===null)return 'SIN_PROPUESTA_DE_IA';
+  if(!Number.isSafeInteger(proposed)||!Number.isSafeInteger(expected))return 'NO_COMPARABLE';
+  if(proposed===expected)return 'COINCIDE';
+  if(expected>0 && proposed>0){
+    if(BigInt(proposed)*100n===BigInt(expected))return 'POSIBLE_ERROR_ESCALA_PESOS_POR_CENTAVOS';
+    if(BigInt(expected)*100n===BigInt(proposed))return 'POSIBLE_ERROR_ESCALA_CENTAVOS_POR_PESOS';
+  }
+  return 'DIFERENCIA_DE_IMPORTE_SIN_CAUSA_IDENTIFICADA';
+}
 async function main(){
   console.log('FLUYNOVA COPILOT - PRUEBA LOCAL DE INFERENCIA REAL');
   console.log('Fecha:',new Date().toISOString());
   console.log('Runtime:',process.version,'| Modelo configurado:',MODEL);
+  console.log('Protocolo diagnóstico: IA_CENTAVOS_V2_Y_CONTRASTE_ARS');
   console.log('Datos: SOLAMENTE COMPROBANTES INVENTADOS; NO se imprimen ni guardan textos ni respuestas.');
   console.log('Destino de red usado por este diagnóstico: 127.0.0.1:11434.');
   if(Number(process.versions.node.split('.')[0])<22){
@@ -66,7 +77,9 @@ async function main(){
         console.log('Campo '+field+
           ': MODELO '+(modelHit?'OK':'REVISAR')+
           (amount?', TEXTO '+(verifiedHit?'OK':'REVISAR')+
-            ', ORIGEN '+sourceInfo.origin:''));
+            ', ORIGEN '+sourceInfo.origin+
+            (!modelHit?', TIPO_DESVIO '+classifyMonetaryDeviation(fromModel,expected):''):''));
+
       }
       const found=output.issues.some(x=>x.toLocaleLowerCase('es-AR').includes(fixture.issue));
       console.log('Alerta esperada: '+(found?'DETECTADA':'NO DETECTADA'));
