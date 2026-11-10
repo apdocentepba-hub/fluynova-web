@@ -1,6 +1,6 @@
 @echo off
 setlocal
-title FLUYNOVA Copilot - DEMO LOCAL
+title FLUYNOVA Copilot - DEMO LOCAL IA OPCIONAL
 cd /d "%~dp0"
 echo =======================================================
 echo   FLUYNOVA Copilot - DEMOSTRACION LOCAL DE IA
@@ -16,21 +16,19 @@ if errorlevel 1 (
 )
 where ollama >nul 2>&1
 if errorlevel 1 (
-  echo ERROR: No se encontro Ollama.
-  echo Instalalo desde https://ollama.com/download
-  pause
-  exit /b 1
+  echo INFO: Ollama no encontrado. El control monetario sin IA funcionara igualmente.
+) else (
+  ollama list 2>nul | findstr /C:"qwen3:1.7b" >nul
+  if errorlevel 1 (
+    echo INFO: qwen3:1.7b no disponible. El control sin IA sigue funcionando.
+  ) else (
+    echo INFO: Modelo local detectado. Podes usar ambas modalidades.
+  )
 )
-ollama list 2>nul | findstr /C:"qwen3:1.7b" >nul
-if errorlevel 1 (
-  echo FALTA EL MODELO: abre otra terminal y ejecuta:
-  echo   ollama pull qwen3:1.7b
-  echo Inicia Ollama si no esta activo y volve a abrir este archivo.
-  pause
-  exit /b 1
+if not exist "%~dp0node_modules\pdfjs-dist\package.json" (
+  echo INFO: Lector PDF opcional no instalado. Para usarlo ejecuta PREPARAR-PDF-WINDOWS.cmd.
 )
-echo Modelo detectado. Iniciando servidor solo en 127.0.0.1...
-echo Si tu GPU no es compatible, Ollama puede funcionar por CPU.
+echo Iniciando servidor local en 127.0.0.1...
 echo.
 start "" "http://127.0.0.1:8767/"
 node server.mjs
