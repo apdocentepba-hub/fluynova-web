@@ -1,0 +1,26 @@
+{
+  "name": "fluynova-contact-staging-only",
+  "main": "infra/fluynova-contact-worker/index.mjs",
+  "compatibility_date": "2026-11-07",
+  "workers_dev": false,
+  "observability": {
+    "enabled": false
+  },
+  "vars": {
+    "ALLOWED_ORIGINS": "https://REPLACE-WITH-FLUYNOVA-STAGING.invalid",
+    "TURNSTILE_HOSTNAMES": "REPLACE-WITH-FLUYNOVA-STAGING.invalid",
+    "ENABLE_CONTACT_SUBMISSIONS": "false"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "fluynova-leads-staging",
+      "database_id": "ce8ac477-dd77-4a1c-a42e-6096dcb78768"
+    }
+  ],
+  "triggers": {
+    "crons": [
+      "0 4 * * *"
+    ]
+  }
+}
