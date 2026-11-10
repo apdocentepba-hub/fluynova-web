@@ -44,7 +44,7 @@ async function main(){
     console.log('ACCIÓN: instalá/abrí Ollama. Código:',err.name==='TimeoutError'?'TIMEOUT':'SIN_SERVICIO');
     process.exitCode=3;return;
   }
-  let successes=0,correct=0,total=0;
+  let successes=0,modelCorrect=0,verifiedCorrect=0,total=0;
   for(const fixture of FIXTURES){
     console.log('\n'+fixture.name);
     const started=Date.now();
@@ -54,18 +54,27 @@ async function main(){
       successes++;
       const elapsed=Date.now()-started;
       console.log('Inferencia real: RECIBIDA en',fmt(elapsed));
-      let hits=0;
+      let hits=0,rawHits=0;
       for(const [field,expected] of Object.entries(fixture.expected)){
-        const match=output.extracted[field]===expected;
-        hits+=Number(match);correct+=Number(match);total++;
-        console.log('Campo '+field+': '+(match?'OK':'REVISAR'));
+        const amount=field.endsWith('_cents');
+        const sourceInfo=amount?output.amount_verification[field]:null;
+        const fromModel=amount?sourceInfo.model_proposal_cents:output.extracted[field];
+        const modelHit=fromModel===expected;
+        const verifiedHit=output.extracted[field]===expected;
+        hits+=Number(verifiedHit);rawHits+=Number(modelHit);
+        modelCorrect+=Number(modelHit);verifiedCorrect+=Number(verifiedHit);total++;
+        console.log('Campo '+field+
+          ': MODELO '+(modelHit?'OK':'REVISAR')+
+          (amount?', TEXTO '+(verifiedHit?'OK':'REVISAR')+
+            ', ORIGEN '+sourceInfo.origin:''));
       }
       const found=output.issues.some(x=>x.toLocaleLowerCase('es-AR').includes(fixture.issue));
       console.log('Alerta esperada: '+(found?'DETECTADA':'NO DETECTADA'));
       console.log('Citas literales:',output.extracted.evidence.length,
         '| Citas rechazadas:',output.extracted.evidence_rejected);
       console.log('Decisión automática:',output.can_auto_approve?'ERROR INSEGURO':'BLOQUEADA');
-      console.log('Campos correctos:',hits+'/'+Object.keys(fixture.expected).length);
+      console.log('Campos correctos según modelo:',rawHits+'/'+Object.keys(fixture.expected).length);
+      console.log('Campos correctos tras contraste textual:',hits+'/'+Object.keys(fixture.expected).length);
       if(!found||output.can_auto_approve)process.exitCode=2;
     }catch(err){
       console.log('Inferencia real: ERROR',err instanceof CopilotError?err.code:'INTERNAL_ERROR',
@@ -75,11 +84,13 @@ async function main(){
   }
   console.log('\nRESUMEN');
   console.log('Respuestas obtenidas:',successes+'/'+FIXTURES.length);
-  console.log('Extracción correcta:',correct+'/'+total,
+  console.log('Extracción propuesta por IA:',modelCorrect+'/'+total);
+  console.log('Extracción tras reglas de texto:',verifiedCorrect+'/'+total,
     '(solo casos sintéticos, no extrapolar precisión).');
+  console.log('NOTA: un acierto por reglas de texto NO significa que la IA interpretó correctamente el importe.');
   console.log('Publicación: NINGUNA. No hay aprobación ni escrituras externas.');
-  if(successes!==FIXTURES.length||correct!==total)process.exitCode=2;
-  if(!process.exitCode)console.log('RESULTADO: LABORATORIO APROBADO PARA ESTOS DOS EJEMPLOS; no es validación comercial.');
+  if(successes!==FIXTURES.length||verifiedCorrect!==total)process.exitCode=2;
+  if(!process.exitCode)console.log('RESULTADO: CONTRASTE TEXTUAL APROBADO PARA ESTOS DOS EJEMPLOS; modelo evaluado por separado. No es validación comercial.');
   else console.log('RESULTADO: HAY INCONSISTENCIAS; revisar modelo o extracción antes de usar el prototipo.');
 }
 await main();
