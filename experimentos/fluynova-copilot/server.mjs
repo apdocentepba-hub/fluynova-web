@@ -122,11 +122,11 @@ export function createApp({
         Object.hasOwn(body,'input_origin')&&
         Object.hasOwn(body,'visual_review_declared')&&
         body.input_origin==='OCR'&&body.visual_review_declared===true;
-      if(!ordinary&&!declaredOcr)throw new CopilotError('INVALID_REQUEST',422);
       // La declaración NO verifica la imagen: registra procedencia y obliga al usuario
       // a cotejarla. Un cliente podría mentir: este laboratorio NO autentica usuarios.
       if(body.input_origin==='OCR'&&body.visual_review_declared!==true)
         throw new CopilotError('OCR_VISUAL_REVIEW_REQUIRED',422);
+      if(!ordinary&&!declaredOcr)throw new CopilotError('INVALID_REQUEST',422);
       const result=req.url==='/api/verify-money'
         ?verifyMoneyOnly(body.document,{
           inputOrigin:declaredOcr?'OCR':'TEXT',
