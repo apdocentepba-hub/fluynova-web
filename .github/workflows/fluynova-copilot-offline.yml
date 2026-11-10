@@ -22,11 +22,12 @@ jobs:
           node-version: '22'
       - name: Control de sintaxis sin despliegue
         run: |
+          node --check experimentos/fluynova-copilot/money-ar.mjs
           node --check experimentos/fluynova-copilot/analysis.mjs
           node --check experimentos/fluynova-copilot/server.mjs
           node --check experimentos/fluynova-copilot/copilot.test.mjs
       - name: Pruebas unitarias y HTTP contra modelo ficticio aislado
-        run: node --test experimentos/fluynova-copilot/copilot.test.mjs
+        run: node --test experimentos/fluynova-copilot/copilot.test.mjs experimentos/fluynova-copilot/money-ar.test.mjs
       - name: Diagnóstico de inferencia con Ollama FICTICIO en localhost
         run: node --test experimentos/fluynova-copilot/diagnostico.test.mjs
       - name: Instalar Chromium para pruebas de interfaz sin API externa
