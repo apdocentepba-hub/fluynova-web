@@ -19,7 +19,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Instalar parser PDF fijado, solo en CI de laboratorio
         run: npm install --prefix experimentos/fluynova-copilot --ignore-scripts --no-audit --no-fund
       - name: Preparar modelo OCR español FIJADO para prueba real
