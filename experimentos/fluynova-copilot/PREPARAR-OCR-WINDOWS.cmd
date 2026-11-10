@@ -13,6 +13,13 @@ if errorlevel 1 (
  pause
  exit /b 3
 )
+for /f %%V in ('node -p "process.versions.node.split('.')[0]"') do set "NODE_MAJOR=%%V"
+if %NODE_MAJOR% LSS 24 (
+ echo ERROR: para el OCR se requiere Node.js 24 o superior.
+ echo El control sin IA puede seguir funcionando con tu instalacion actual.
+ pause
+ exit /b 3
+)
 where npm >nul 2>&1
 if errorlevel 1 (
  echo ERROR: npm no esta disponible.
