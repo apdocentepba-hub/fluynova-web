@@ -63,7 +63,7 @@ test('Chromium: modelo indisponible es error visible, no falso éxito',async()=>
    await s.page.locator('#analyze').click();
    await s.page.getByText(/No se obtuvo el resultado: AI_UNAVAILABLE/).waitFor({state:'visible'});
    assert.equal(await s.page.locator('#result').isVisible(),false);
-   assert.match(await s.page.locator('#service-status').innerText(),/No se obtuvo inferencia válida/);
+   assert.match(await s.page.locator('#service-status').innerText(),/No se obtuvo una validación exitosa/);
    assert.deepEqual(s.errors,[]);assert.deepEqual(s.external,[]);
  }finally{await s.close()}
 });
