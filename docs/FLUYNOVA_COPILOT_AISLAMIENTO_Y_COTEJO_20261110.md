@@ -27,7 +27,7 @@ PDF.js y librerías de imagen pueden encontrar archivos corruptos, consumir CPU/
 - El resultado aclara que el usuario **declaró** el cotejo; no afirma que el software haya comprobado visualmente la factura, ni que sea auténtica.
 - El control monetario sigue usando reglas deterministas; el OCR nunca aprueba una factura por sí solo.
 
-**Prueba pendiente de cierre en este registro:** Chromium del último commit `e358229c8c3e0791a471d5f0294def108160d77a`, ejecución https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42819202088 . Se verificará que el recorrido con OCR real respete la restricción.
+**Comprobado:** [GitHub Actions #42819202088](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/42819202088), commit `e358229c8c3e0791a471d5f0294def108160d77a`: 102/102 unitarias y HTTP, 1/1 OCR de imagen real, 5/5 aislamiento PDF/OCR con crash y timeout, 1/1 diagnóstico de Ollama SIMULADO, 6/6 Chromium (incluido bloqueo por OCR sin confirmar), 1/1 PDF escaneado con OCR Tesseract real, y benchmarks adicionales aprobados. **116/116 tests**. El ensayo integral de PDF escaneado recuperó 3/3 importes del ejemplo sintético. No es validación de documentos comerciales.
 
 ## Límites que permanecen
 
