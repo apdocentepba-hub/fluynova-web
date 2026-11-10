@@ -43,7 +43,7 @@ jobs:
             experimentos/fluynova-copilot/pdf-scan-api.test.mjs
       - name: OCR REAL de imagen, modelo español OFFLINE
         run: node --test experimentos/fluynova-copilot/ocr-real.test.mjs
-      - name: Procesadores aislados: OCR/PDF real, crash y timeout
+      - name: 'Procesadores aislados: OCR/PDF real, crash y timeout'
         run: node --test experimentos/fluynova-copilot/isolated-processing.test.mjs
       - name: Medir errores OCR reales en cuatro imágenes ficticias diferentes
         run: node experimentos/fluynova-copilot/OCR-BENCHMARK-REAL.mjs
