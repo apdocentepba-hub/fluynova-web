@@ -44,7 +44,9 @@ test('API exige declaración y marca importes OCR como NO verificados por el sis
  let calls=0;
  const app=createApp({analyzer:async()=>{
   calls++;
-  return {issues:[],can_auto_approve:false,model_used:'simulado',extracted:{}};
+  return {issues:[],can_auto_approve:false,model_used:'simulado',extracted:{},
+    amount_verification:{total_cents:{origin:'LECTURA_LITERAL_ETIQUETADA',
+      verified_text_cents:18230000,disagreement:false}}};
  }});
  await new Promise(resolve=>app.listen(0,'127.0.0.1',resolve));
  const base='http://127.0.0.1:'+app.address().port;
@@ -77,6 +79,9 @@ test('API exige declaración y marca importes OCR como NO verificados por el sis
   assert.equal(withAi.data.input_origin,'OCR');
   assert.equal(withAi.data.original_document_verified,false);
   assert.equal(withAi.data.can_auto_approve,false);
+  assert.equal(withAi.data.amount_verification.total_cents.origin,
+    'OCR_COTEJO_VISUAL_DECLARADO_NO_VERIFICADO');
+  assert.equal(withAi.data.amount_verification.total_cents.independent_source_verified,false);
   assert.equal(calls,1);
   assert.ok(withAi.data.issues.some(s=>s.includes('Texto OCR')));
   const injected=await post('/api/verify-money',{
