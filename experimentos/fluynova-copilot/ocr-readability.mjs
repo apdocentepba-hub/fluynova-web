@@ -22,10 +22,13 @@ export function assessOcrReadability(text,confidence){
   const reasons=[];
   if(lowConfidence)reasons.push('CONFIANZA_GLOBAL_BAJA');
   if(readable===0)reasons.push('SIN_IMPORTES_LEGIBLES');
+  else if(readable===1)reasons.push('DOS_O_MAS_IMPORTES_INLEGIBLES');
   else if(readable<3)reasons.push('CAMPOS_MONETARIOS_INCOMPLETOS');
   if(sumConsistent===false)reasons.push('ARITMETICA_INCONSISTENTE');
   let nextAction='COTEJAR_VISUALMENTE';
-  if(lowConfidence||readable===0)nextAction='RECAPTURAR_SUGERIDO';
+  // La confianza global puede ser 95 incluso si Tesseract perdió 2/3 montos.
+  // En ese caso recomendar nueva captura o transcripción manual del original.
+  if(lowConfidence||readable<=1)nextAction='RECAPTURAR_SUGERIDO';
   else if(readable<3||sumConsistent===false)nextAction='CORREGIR_O_RECAPTURAR';
   return {
     classification:nextAction,
