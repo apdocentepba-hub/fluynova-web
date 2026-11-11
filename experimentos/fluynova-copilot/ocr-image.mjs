@@ -3,6 +3,7 @@
 import {CopilotError} from './analysis.mjs';
 import {inspectImageBytes,OCR_MAX_TEXT_CHARS} from './image-input.mjs';
 import {assertOfflineModel,OCR_DATA_DIR} from './ocr-model.mjs';
+import {assessOcrReadability} from './ocr-readability.mjs';
 
 async function realWorkerFactory(lang,dir){
  const {createWorker}=await import('tesseract.js');
@@ -47,10 +48,12 @@ export async function recognizeImage(input,{
      throw new CopilotError('OCR_TEXT_TOO_LONG',422);
    if(text.length<25)throw new CopilotError('OCR_INSUFFICIENT_TEXT',422);
    if(confidence<minimumConfidence)throw new CopilotError('OCR_LOW_CONFIDENCE',422);
+   const reading_quality=assessOcrReadability(text,confidence);
    return {
      document_origin:'IMAGE_OCR_LOCAL',image_format:image.format,
      pixels:{width:image.width,height:image.height},
      text,characters:text.length,confidence_percent:Math.round(confidence*10)/10,
+     reading_quality,
      ocr_used:true,ocr_engine:'TESSERACT_LOCAL_SPA',
      model_called:false,needs_manual_review:true,can_auto_approve:false,
      disclaimer:'Texto aproximado por OCR. Los importes y datos deben comprobarse con el documento visual original. Sin validación fiscal ni decisión automática.'
