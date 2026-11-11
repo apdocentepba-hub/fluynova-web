@@ -83,8 +83,10 @@ function render(f){
     }
   }
   if(f.mode==='crop'){
+    // Borrar deliberadamente los caracteres finales de los importes, NO el margen vacío.
+    // Con 620 px se intercepta el campo numérico en esta tipografía sintética.
     ctx.fillStyle='#fbfaf6';
-    ctx.fillRect(925,160,W-925,H-160);
+    ctx.fillRect(620,160,W-620,H-160);
   }
   const buffer=c.toBuffer(f.mode==='noise-jpeg'?'image/jpeg':'image/png');
   return buffer;
