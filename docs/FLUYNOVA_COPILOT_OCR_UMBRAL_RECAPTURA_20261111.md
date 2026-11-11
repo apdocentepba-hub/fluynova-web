@@ -31,7 +31,7 @@ El umbral **75** es una **heurística experimental conservadora elegida a partir
 - `OCR-ESTRES-REAL.mjs`: verifica con Tesseract **real** que el caso de desenfoque severo recomiende recaptura y que nunca se afirme haber certificado el original.
 - El workflow de GitHub ejecuta las pruebas unitarias y el banco OCR real.
 
-**Ejecución de CI asociada:** https://github.com/apdocentepba-hub/fluynova-web/actions/runs/43120473901 . Consultar su conclusión; no tratar una ejecución pendiente como aprobada.
+**Ejecución CI verificada:** [GitHub Actions #43120473901](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/43120473901), finalizó en **success**. 118/118 pruebas unitarias y de API, 1/1 OCR Tesseract real, 5/5 pruebas de aislamiento de procesos, 1/1 diagnóstico Ollama simulado, 7/7 pruebas Chromium y 1/1 PDF escaneado con Tesseract real: **133/133 pruebas**. Los bancos de documentos sintéticos también se ejecutaron correctamente como scripts independientes. En el caso S06 de desenfoque severo, la clasificación real fue **RECAPTURAR_SUGERIDO**, con confianza global 63, 0/3 importes correctos, 3 abstenciones y 0 importes numéricos mal aceptados. En los ocho casos del banco: 21/24 correctos, 3 abstenciones, 0 errores numéricos legibles y 0 aprobaciones automáticas. El umbral de 75 sigue siendo experimental y no calibrado sobre datos reales.
 
 ## Límites pendientes
 
