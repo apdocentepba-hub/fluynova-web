@@ -52,6 +52,8 @@ jobs:
         run: node experimentos/fluynova-copilot/OCR-BENCHMARK-REAL.mjs
       - name: Evaluar estrés de OCR real con imágenes degradadas y cifras similares
         run: node experimentos/fluynova-copilot/OCR-ESTRES-REAL.mjs
+      - name: Medir OCR real en sombra, reflejo, perspectiva, columnas y recorte
+        run: node experimentos/fluynova-copilot/OCR-ESCENARIOS-DIFICILES.mjs
       - name: Medir precisión de reglas con 53 comprobantes ficticios
         run: node experimentos/fluynova-copilot/BENCHMARK-CORPUS.mjs
       - name: Diagnóstico de inferencia con Ollama FICTICIO en localhost
