@@ -113,6 +113,10 @@ for(const f of CASES){
     throw Error('UNSAFE_OCR_APPROVAL_OR_CERTIFICATION');
   }
   score=scoreOcrAmounts(expected,reviewed.extracted);
+  // Dos o más etiquetas monetarias perdidas no deben quedar disimuladas por
+  // confianza global de 92-95. Es una invariante, no una expectativa de aciertos.
+  if(score.abstentions>=2&&out.reading_quality?.classification!=='RECAPTURAR_SUGERIDO')
+    throw Error('OCR_LECTURA_INCOMPLETA_SIN_SUGERENCIA_RECAPTURA');
   totals.correct+=score.correct;
   totals.abstentions+=score.abstentions;
   totals.wrongPlausible+=score.wrongPlausible;
