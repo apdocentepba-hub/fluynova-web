@@ -73,6 +73,11 @@ for(const f of FIXTURES){
  }
  const expected=Object.fromEntries(KEYS.map((k,i)=>[k,f.expected[i]]));
  const score=scoreOcrAmounts(expected,parsed.extracted);
+ const quality=out.reading_quality;
+ if(!quality||quality.original_document_verified!==false||
+    quality.can_auto_approve!==false)throw Error('CALIDAD_OCR_FALSAMENTE_CERTIFICADA');
+ if(f.id==='S06'&&quality.classification!=='RECAPTURAR_SUGERIDO')
+   throw Error('FALTO_SUGERIR_RECAPTURA_CON_DESENFOQUE_SEVERO');
  totals.correct+=score.correct;totals.abstentions+=score.abstentions;
  totals.wrongPlausible+=score.wrongPlausible;
  totals.arithmeticRisk+=Number(score.silentArithmeticRisk);
@@ -80,6 +85,7 @@ for(const f of FIXTURES){
   '| abstenciones',score.abstentions,'| cifras_erróneas_legibles',score.wrongPlausible,
   '| error_con_suma_coherente',score.silentArithmeticRisk,
   '| confianza_media',out.confidence_percent,
+  '| recomendacion',quality.classification,
   '| ms',Date.now()-started);
 }
 console.log('RESUMEN corpus',totals.documents,'documentos,',totals.fields,'campos');
