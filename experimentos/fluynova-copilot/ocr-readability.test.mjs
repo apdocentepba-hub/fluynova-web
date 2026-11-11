@@ -28,6 +28,15 @@ test('un importe faltante o inválido implica corregir o recapturar',()=>{
   assert.equal(x.readable_amounts,2);
   assert.equal(x.arithmetic_consistent,null);
 });
+test('dos importes ilegibles exigen recaptura o transcripción aunque Tesseract informe 95%',()=>{
+  const incomplete='Factura ficticia control\nNeto: $150.000,00\nIVA: no reconocido\nTOTAL: no reconocido';
+  const x=assessOcrReadability(incomplete,95);
+  assert.equal(x.classification,'RECAPTURAR_SUGERIDO');
+  assert.equal(x.readable_amounts,1);
+  assert.equal(x.missing_amounts,2);
+  assert.equal(x.original_document_verified,false);
+  assert.deepEqual(x.reasons,['DOS_O_MAS_IMPORTES_INLEGIBLES']);
+});
 test('inconsistencia aritmética implica revisión aunque tres campos sean legibles',()=>{
   const x=assessOcrReadability(GOOD.replace('181.500','181.400'),91);
   assert.equal(x.classification,'CORREGIR_O_RECAPTURAR');
