@@ -76,7 +76,7 @@ function setStatus(msg){$('service-status').textContent=msg}
 function ocrReadabilityNotice(q){
  if(!q||typeof q!=='object')return 'La legibilidad de importes no fue evaluada automáticamente.';
  if(q.classification==='RECAPTURAR_SUGERIDO')
-   return 'LECTURA DUDOSA: se recomienda obtener otra foto o escaneo más nítido antes de usar sus cifras.';
+   return 'LECTURA INSUFICIENTE: repetí la captura o transcribí manualmente los importes cotejando el original. Una confianza OCR alta no garantiza números correctos.';
  if(q.classification==='CORREGIR_O_RECAPTURAR')
    return 'IMPORTES INCOMPLETOS O INCONSISTENTES: corregí el texto con el original o repetí la captura.';
  return 'Importes legibles según las reglas, pero NO comprobados contra la imagen original.';
