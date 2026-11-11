@@ -73,6 +73,14 @@ const sample='Factura A-0001-00000121\nProveedor: Proveedor Demo Norte\nOrden de
 const $=id=>document.getElementById(id);
 function addLi(container,value){const li=document.createElement('li');li.textContent=String(value);container.append(li)}
 function setStatus(msg){$('service-status').textContent=msg}
+function ocrReadabilityNotice(q){
+ if(!q||typeof q!=='object')return 'La legibilidad de importes no fue evaluada automáticamente.';
+ if(q.classification==='RECAPTURAR_SUGERIDO')
+   return 'LECTURA DUDOSA: se recomienda obtener otra foto o escaneo más nítido antes de usar sus cifras.';
+ if(q.classification==='CORREGIR_O_RECAPTURAR')
+   return 'IMPORTES INCOMPLETOS O INCONSISTENTES: corregí el texto con el original o repetí la captura.';
+ return 'Importes legibles según las reglas, pero NO comprobados contra la imagen original.';
+}
 let unreviewedOcr=false;
 function flagOcrForVisualReview(){
  unreviewedOcr=true;
@@ -183,7 +191,8 @@ $('read-image').addEventListener('click',async()=>{
   $('waiting').hidden=false;
   $('waiting').textContent='OCR terminado. Revisá y corregí el texto ANTES de controlar importes.';
   $('ocr-status').textContent='OCR local: '+result.characters+' caracteres; confianza orientativa '+
-    result.confidence_percent+'%. Sin aprobación ni análisis Qwen. Verificá el original.';
+    result.confidence_percent+'%. '+ocrReadabilityNotice(result.reading_quality)+
+    ' Sin aprobación ni análisis Qwen.';
   setStatus('Texto reconocido por OCR, no confirmado. Elegí el siguiente paso manualmente.');
  }catch(err){
   $('ocr-status').textContent='OCR no realizado: '+err.message+
@@ -236,7 +245,7 @@ $('scan-pdf').addEventListener('click',async()=>{
   });
   doc=await loading.promise;
   if(doc.numPages<1||doc.numPages>2)throw Error('OCR_PDF_TOO_MANY_PAGES');
-  const texts=[],scores=[],originalPages=[];
+  const texts=[],scores=[],originalPages=[],recapturePages=[];
   for(let index=1;index<=doc.numPages;index++){
    const page=await doc.getPage(index);
    const layer=await page.getTextContent();
@@ -269,6 +278,8 @@ $('scan-pdf').addEventListener('click',async()=>{
       throw Error('OCR_INVALID_RESULT');
     texts.push(ocr.text.trim());
     scores.push(ocr.confidence_percent);
+    if(ocr.reading_quality?.classification==='RECAPTURAR_SUGERIDO')
+      recapturePages.push(index);
     originalPages.push(blob);
    }finally{canvas.width=0;canvas.height=0}
   }
@@ -283,7 +294,9 @@ $('scan-pdf').addEventListener('click',async()=>{
   const mean=scores.reduce((x,y)=>x+y,0)/scores.length;
   $('pdf-status').textContent='OCR PDF local de '+doc.numPages+
    ' página(s), confianza orientativa '+mean.toFixed(1)+
-   '%. Sin Qwen ni aprobación. Verificá visualmente.';
+   '%. '+(recapturePages.length
+     ?'RECAPTURA SUGERIDA para página(s) '+recapturePages.join(', ')+'. '
+     :'')+'Sin Qwen ni aprobación. Verificá visualmente.';
   setStatus('OCR PDF terminado. Revisá el texto antes de controlar importes.');
  }catch(err){
   $('pdf-status').textContent='OCR PDF no realizado: '+(err?.message||'ERROR')+
