@@ -41,6 +41,7 @@ jobs:
             experimentos/fluynova-copilot/ocr-image.test.mjs \
             experimentos/fluynova-copilot/ocr-api.test.mjs \
             experimentos/fluynova-copilot/ocr-provenance.test.mjs \
+            experimentos/fluynova-copilot/ocr-score.test.mjs \
             experimentos/fluynova-copilot/pdf-scan-api.test.mjs
       - name: OCR REAL de imagen, modelo español OFFLINE
         run: node --test experimentos/fluynova-copilot/ocr-real.test.mjs
@@ -48,6 +49,8 @@ jobs:
         run: node --test experimentos/fluynova-copilot/isolated-processing.test.mjs
       - name: Medir errores OCR reales en cuatro imágenes ficticias diferentes
         run: node experimentos/fluynova-copilot/OCR-BENCHMARK-REAL.mjs
+      - name: Evaluar estrés de OCR real con imágenes degradadas y cifras similares
+        run: node experimentos/fluynova-copilot/OCR-ESTRES-REAL.mjs
       - name: Medir precisión de reglas con 53 comprobantes ficticios
         run: node experimentos/fluynova-copilot/BENCHMARK-CORPUS.mjs
       - name: Diagnóstico de inferencia con Ollama FICTICIO en localhost
