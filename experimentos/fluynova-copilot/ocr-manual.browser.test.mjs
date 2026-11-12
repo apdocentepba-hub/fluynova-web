@@ -98,6 +98,7 @@ test('Chromium: un valor extranjero nunca sustituye OCR ni genera resultado',asy
    await s.page.locator('#'+id).fill(v);
   await s.page.locator('#ocr-confirm').check();
   await s.page.locator('#manual-control').click();
+  await s.page.waitForFunction(()=>document.querySelector('#manual-status')?.textContent.includes('MANUAL_AMOUNT_INVALID'),null,{timeout:10000});
   assert.match(await s.page.locator('#manual-status').innerText(),/MANUAL_AMOUNT_INVALID/);
   assert.equal(await s.page.locator('#document').inputValue(),original);
   assert.equal(await s.page.locator('#result').isVisible(),false);
