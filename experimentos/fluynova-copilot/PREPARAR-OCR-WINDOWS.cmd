@@ -35,7 +35,7 @@ echo Al usar el OCR no se consultan servicios externos.
 echo.
 choice /C SN /N /M "Autorizar la descarga opcional [S/N]? "
 if errorlevel 2 exit /b 0
-call npm install --prefix "%~dp0" --ignore-scripts --no-audit --no-fund
+call npm install --ignore-scripts --no-audit --no-fund
 if errorlevel 1 (
  echo ERROR: No se pudieron instalar las dependencias.
  pause

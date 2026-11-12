@@ -48,6 +48,9 @@ jobs:
       - name: Diagnostico y CMD nativo Windows sin descargas
         shell: pwsh
         run: node --test experimentos/fluynova-copilot/startup-preflight.test.mjs experimentos/fluynova-copilot/windows-preflight-native.test.mjs
+      - name: Regresion preparadores npm en carpeta con espacios, sin descargar paquetes
+        shell: pwsh
+        run: node --test experimentos/fluynova-copilot/preparadores-windows.test.mjs
       - name: Smoke integral de servidor 127.0.0.1 con comprobantes ficticios
         shell: pwsh
         run: node --test experimentos/fluynova-copilot/windows-smoke.test.mjs

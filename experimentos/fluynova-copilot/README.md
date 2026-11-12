@@ -121,3 +121,8 @@ Ejecuta DIAGNOSTICAR-COPILOT-WINDOWS.cmd para comprobar Node, puerto 127.0.0.1 y
 ## Paquete de prueba Windows (sin publicar en Render)
 
 El workflow Windows genera tras pasar sus pruebas un ZIP como artifacto temporal GitHub Actions (retencion 7 dias) que contiene exclusivamente codigo de laboratorio y un LEEME-PRIMERO.txt. Quedan excluidos documentos reales, credenciales, node_modules y modelos OCR. Se extrae y prueba arrancar el servidor local sin IA; sigue requiriendo Node.js instalado en la PC y autorizacion separada para descargar PDF/OCR opcionales. No es un instalador firmado ni certifica seguridad comercial.
+
+
+### Correccion del comando npm en preparadores Windows (12/11/2026)
+
+En rutas con espacios, `--prefix "%~dp0"` podia entregar un nombre de carpeta mal formado porque `%~dp0` termina con barra invertida. Los dos preparadores ahora ejecutan `call npm install --ignore-scripts --no-audit --no-fund` luego de `cd /d "%~dp0"`; no instala paquetes globales ni precisa node-gyp por este cambio. Las descargas opcionales siguen requiriendo autorizacion. Se agrega una regresion nativa con carpeta que contiene espacios y npm falso, sin red externa. No usar en PC ajena sin permiso.

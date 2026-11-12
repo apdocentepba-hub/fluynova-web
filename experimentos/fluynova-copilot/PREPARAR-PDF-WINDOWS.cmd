@@ -30,7 +30,7 @@ echo No requiere Ollama. No abre puertos, no publica, no carga archivos.
 echo.
 choice /C SN /N /M "Autorizar descarga local de PDF.js [S/N]? "
 if errorlevel 2 exit /b 0
-call npm install --prefix "%~dp0" --ignore-scripts --no-audit --no-fund
+call npm install --ignore-scripts --no-audit --no-fund
 if errorlevel 1 (
   echo ERROR: No se pudo obtener el paquete. El modo de texto manual sigue funcionando.
   pause
