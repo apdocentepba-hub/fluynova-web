@@ -4,7 +4,7 @@ import {CopilotError} from './analysis.mjs';
 import {inspectImageBytes,OCR_MAX_TEXT_CHARS} from './image-input.mjs';
 import {assertOfflineModel,OCR_DATA_DIR} from './ocr-model.mjs';
 import {assessOcrReadability} from './ocr-readability.mjs';
-import {planOcrRegionRetry,reconcileOcrRegionTexts} from './ocr-layout.mjs';
+import {planOcrRegionRetries,assessOcrRegionEvidence,reconcileOcrRegionTexts} from './ocr-layout.mjs';
 
 async function realWorkerFactory(lang,dir){
  const {createWorker}=await import('tesseract.js');
@@ -56,35 +56,61 @@ export async function recognizeImage(input,{
      region_retry_attempted:false,recovered_fields:[],conflict_fields:[],
      region_confidence_percent:null,independent_source_verified:false
    };
-   // Segunda pasada SOLO si el primer OCR perdió etiquetas y el ancho permite
-   // un bloque derecho. Tesseract vuelve a leer el MISMO documento, no una
-   // fuente independiente. Nunca reemplazar valores primarios contradictorios.
-   const plan=planOcrRegionRetry(text,image.width,image.height);
-   if(plan&&timeLeft()>5000){
+   // Hasta 3 regiones (derecha, centro, izquierda), solo ante montos faltantes.
+   // Cada lectura nueva proviene del MISMO documento, nunca es corroboración
+   // independiente. No aceptar candidatos aislados o importes contradictorios.
+   const zones=planOcrRegionRetries(text,image.width,image.height);
+   const recovered=new Set(),conflicts=new Set();
+   layout.regions_checked=[];
+   for(const zone of zones){
+     if(timeLeft()<=5000)break;
+     // No buscar más valores en otros recortes cuando el texto ya contiene
+     // todas las etiquetas monetarias únicas: menos falsos positivos.
+     if(!planOcrRegionRetries(finalText,image.width,image.height).length)break;
      layout.region_retry_attempted=true;
+     const attempt={zone:zone.name,merged:false,reason:'NOT_PROCESSED'};
+     layout.regions_checked.push(attempt);
      try{
        const extra=await withDeadline(Promise.resolve().then(
-         ()=>worker.recognize(image.bytes,{rectangle:plan.rectangle})),timeLeft());
+         ()=>worker.recognize(image.bytes,{rectangle:zone.rectangle})),timeLeft());
        const candidate=extra?.data?.text;
        const candidateConf=extra?.data?.confidence;
-       if(typeof candidate==='string'&&Number.isFinite(candidateConf)&&
-         candidateConf>=minimumConfidence&&candidate.length<=OCR_MAX_TEXT_CHARS){
-         const normalized=candidate.replace(/\r\n?/g,'\n')
-          .replace(/[^\S\n]+/g,' ')
-          .replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g,'').trim();
-         const merged=reconcileOcrRegionTexts(text,normalized);
-         if(merged.text.length<=OCR_MAX_TEXT_CHARS){
-           finalText=merged.text;
-           layout.recovered_fields=merged.recovered_fields;
-           layout.conflict_fields=merged.conflict_fields;
-           layout.region_confidence_percent=Math.round(candidateConf*10)/10;
-         }
+       if(typeof candidate!=='string'||!Number.isFinite(candidateConf)||
+          candidateConf<minimumConfidence||candidate.length>OCR_MAX_TEXT_CHARS){
+         attempt.reason='LOW_CONFIDENCE_OR_INVALID_RESULT';
+         continue;
        }
+       const normalized=candidate.replace(/\r\n?/g,'\n')
+         .replace(/[^\S\n]+/g,' ')
+         .replace(/[\u0000-\u0008\u000B-\u001F\u007F]/g,'').trim();
+       const evidence=assessOcrRegionEvidence(normalized,2);
+       attempt.valid_fields=evidence.valid_fields;
+       if(!evidence.sufficient){
+         // Observado en prueba REAL: un recorte parcial aislado puede
+         // producir un número equivocado pero bien formado con confianza alta.
+         attempt.reason=evidence.reason;
+         continue;
+       }
+       const merged=reconcileOcrRegionTexts(finalText,normalized);
+       if(merged.text.length>OCR_MAX_TEXT_CHARS){
+         attempt.reason='OUTPUT_LIMIT';
+         continue;
+       }
+       finalText=merged.text;
+       for(const key of merged.recovered_fields)recovered.add(key);
+       for(const key of merged.conflict_fields)conflicts.add(key);
+       attempt.merged=true;
+       attempt.reason=merged.additional_labeled_lines?'PROPOSED_LABELED_VALUES':'NO_NEW_VALUES';
+       attempt.recovered_fields=merged.recovered_fields;
+       attempt.conflict_fields=merged.conflict_fields;
+       layout.region_confidence_percent=Math.round(candidateConf*10)/10;
      }catch{
-       // El OCR principal y sus alertas siguen disponibles; no inventar montos.
+       attempt.reason='RETRY_FAILED';
        layout.region_retry_failed=true;
      }
    }
+   layout.conflict_fields=[...conflicts];
+   layout.recovered_fields=[...recovered].filter(key=>!conflicts.has(key));
    const reading_quality=assessOcrReadability(finalText,confidence);
    if(layout.region_retry_attempted){
      reading_quality.reasons.push('SEGUNDA_PASADA_OCR_REGIONAL');
