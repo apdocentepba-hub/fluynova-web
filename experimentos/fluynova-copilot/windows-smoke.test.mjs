@@ -26,9 +26,12 @@ function makeImage(){
  ctx.fillText('TOTAL: $181.500,00',48,460);
  return c.toBuffer('image/png');
 }
-function assertNotApproved(data){
+function assertNotApproved(data,{extractionOnly=false}={}){
  assert.equal(data.model_called,false);
- assert.equal(data.can_auto_approve,false);
+ // La extracción PDF solo entrega texto; no expone una decisión ni certificación.
+ // Los CONTROLES monetarios, OCR y la revisión manual sí deben fijar false.
+ if(extractionOnly)assert.notEqual(data.can_auto_approve,true);
+ else assert.equal(data.can_auto_approve,false);
 }
 test('Windows nativo: servidor local, PDF real, OCR real, revisión humana y seguridad HTTP',
  {timeout:240000},async()=>{
@@ -70,7 +73,7 @@ test('Windows nativo: servidor local, PDF real, OCR real, revisión humana y seg
   const pdfResponse=await post('/api/pdf/extract',pdf,'application/pdf');
   assert.equal(pdfResponse.status,200);
   const extracted=await pdfResponse.json();
-  assertNotApproved(extracted);
+  assertNotApproved(extracted,{extractionOnly:true});
   assert.equal(extracted.document_origin,'PDF_TEXTO_LOCAL');
   assert.match(extracted.text,/Neto: \$150.000,00/);
   const pdfMoney=await post('/api/verify-money',
