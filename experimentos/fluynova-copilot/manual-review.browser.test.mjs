@@ -64,6 +64,7 @@ test('Chromium: corrección humana separada de OCR, cotejo, discrepancias e inva
   assert.equal(await page.locator('#result').isVisible(),false);
   await page.locator('#ocr-confirm').check();
   await page.locator('#manual-control').click();
+  await page.waitForFunction(()=>document.querySelector('#manual-status')?.textContent.includes('MANUAL_AMOUNT_INVALID'),null,{timeout:10000});
   assert.match(await page.locator('#manual-status').innerText(),/MANUAL_AMOUNT_INVALID/);
   assert.equal(await page.locator('#result').isVisible(),false);
   await page.locator('#image-file').setInputFiles({
