@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {planOcrRegionRetry,reconcileOcrRegionTexts} from './ocr-layout.mjs';
+import {planOcrRegionRetry,planOcrRegionRetries,assessOcrRegionEvidence,reconcileOcrRegionTexts} from './ocr-layout.mjs';
 import {verifyMoneyOnly} from './verify-money.mjs';
 
 const complete='FACTURA FICTICIA\nNeto: $150.000,00\nIVA: $31.500,00\nTotal: $181.500,00';
@@ -74,4 +74,30 @@ test('no acepta una región con importe inválido o montos con formato extranjer
  assert.deepEqual(r.recovered_fields,[]);
  assert.deepEqual(r.conflict_fields,['tax_cents','total_cents']);
  assert.equal(parsed(r.text).extracted.tax_cents,null);
+});
+
+
+test('tres zonas de búsqueda seguras, sin suponer que montos siempre están a la derecha',()=>{
+ const zones=planOcrRegionRetries('FACTURA DEMO\nNeto: $150.000,00',1440,850);
+ assert.deepEqual(zones.map(z=>z.name),['right','center','left']);
+ assert.deepEqual(zones[0].missing_fields,['tax_cents','total_cents']);
+ for(const z of zones){
+  assert.ok(z.rectangle.left>=0&&z.rectangle.top>=0);
+  assert.ok(z.rectangle.left+z.rectangle.width<=1440);
+  assert.ok(z.rectangle.top+z.rectangle.height<=850);
+ }
+ assert.deepEqual(planOcrRegionRetries(complete,1440,850),[]);
+ assert.deepEqual(planOcrRegionRetries('Neto: $100,00',500,850),[]);
+});
+test('recorte de un único importe no se considera evidencia suficiente aunque luzca válido',()=>{
+ const bad=assessOcrRegionEvidence('NETO: $150.800,00',2);
+ assert.equal(bad.valid_count,1);
+ assert.equal(bad.sufficient,false);
+ assert.equal(bad.reason,'INSUFFICIENT_LABELED_FIELDS');
+ const pair=assessOcrRegionEvidence('Neto: $150.000,00\nIVA: $31.500,00',2);
+ assert.equal(pair.sufficient,true);
+ assert.equal(pair.valid_count,2);
+ const duplicate=assessOcrRegionEvidence('Neto: $150.000,00\nIVA: $31.500,00\nIVA: $32.500,00',2);
+ assert.equal(duplicate.sufficient,false);
+ assert.equal(duplicate.reason,'DUPLICATED_OR_INVALID_AMOUNT');
 });
