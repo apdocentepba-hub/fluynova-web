@@ -70,6 +70,22 @@ export function createApp({
       }
       return;
     }
+    // Solo dos módulos propios de revisión monetaria accesibles al navegador.
+    // No se publica el directorio completo ni se acepta un path dinámico.
+    if(req.method==='GET'&&
+       ['/assets/review/ocr-manual-review.mjs','/assets/review/money-ar.mjs'].includes(req.url)){
+      const file=req.url==='/assets/review/ocr-manual-review.mjs'
+        ?new URL('./ocr-manual-review.mjs',import.meta.url)
+        :new URL('./money-ar.mjs',import.meta.url);
+      try{
+        const body=await readFile(file);
+        res.writeHead(200,{...HEADERS,'content-type':'text/javascript; charset=utf-8'});
+        res.end(body);
+      }catch{
+        json(res,503,{error:'REVIEW_MODULE_UNAVAILABLE'});
+      }
+      return;
+    }
     if(req.url==='/api/status' && req.method==='GET'){
       json(res,200,{service:'FLUYNOVA Copilot',runtime:'LOCAL_ONLY',model_configured:model,
         model_connection:'NO_VERIFICADA',human_review_required:true});
