@@ -33,4 +33,14 @@ No existe autenticación, auditoría persistente, aislación de sistema operativ
 
 El código está subido a la rama de desarrollo de `apdocentepba-hub/fluynova-web`. En la sesión de preparación se ejecutaron localmente siete pruebas del módulo. **GitHub Actions de esta versión:** https://github.com/apdocentepba-hub/fluynova-web/actions/runs/43237487754 — verificar su conclusión antes de declarar finalizada la integración. Las ejecuciones intermedias canceladas no constituyen prueba de éxito.
 
+## Validación definitiva de esta versión
+
+[GitHub Actions #43238438541](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/43238438541) finalizó con **success**, ejecutada sobre el commit `132613d0718b462cc0d65c5f04c174f0e32b29c1`.
+
+El workflow contabiliza **170 pruebas automatizadas aprobadas** (151 unitarias/HTTP, 1 OCR real PNG, 5 aislamiento PDF/OCR, 1 diagnóstico Ollama simulado, 7 Chromium base, 3 Chromium de OCR ambiguo y editor no destructivo, 1 Chromium de revisión asistida HTTP, 1 PDF escaneado con Tesseract real). Los bancos adicionales de comprobantes ficticios y estrés OCR también completaron.
+
+Se reprodujo y corrigió un conflicto heredado en la interfaz: había **dos elementos HTML con `id="manual-review"` y duplicación de los tres IDs de importes** por coexistencia del editor anterior y la nueva transcripción. Se retiró la interfaz de corrección in-place; quedó una sola interfaz no destructiva. El módulo antiguo y sus pruebas unitarias siguen en el repositorio como código de laboratorio, pero ya no se activa su editor visual. Se corrigió además un falso negativo de Chromium por consultar un mensaje HTTP antes de que la respuesta asíncrona finalizara.
+
+La prueba integral de PDF escaneado con OCR verdadero conservó **3/3 importes correctos** en un ejemplo ficticio. Las cifras no prueban desempeño en facturas reales.
+
 **Sin merge a `main`, sin producción, sin uso de comprobantes reales ni intervención en la PC del usuario.**
