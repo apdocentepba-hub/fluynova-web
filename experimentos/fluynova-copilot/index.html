@@ -27,6 +27,11 @@ dt{font-size:.73rem;color:var(--sub)}dd{margin:4px 0 0;overflow-wrap:anywhere;fo
 .ocr-originals img{display:block;width:100%;height:auto;max-height:500px;object-fit:contain;background:#fff;border:1px solid var(--edge);border-radius:8px}
 .ocr-originals figcaption{font-size:.82rem;color:var(--sub);padding-top:4px}
 .ocr-originals figure{margin:0}
+.manual-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:12px 0}
+.manual-grid label{display:block;font-size:.87rem;color:#fff4db}
+.manual-grid input{width:100%;margin-top:5px;border:1px solid #a68049;border-radius:8px;background:#15282c;color:#fff;padding:10px;font:inherit}
+.manual-grid input:focus-visible{outline:3px solid #ffd28c}
+@media(max-width:700px){.manual-grid{grid-template-columns:1fr}}
 .manual-editor{margin:12px 0;padding:12px;border:1px solid var(--edge);border-radius:9px;background:#19282b}
 .manual-editor fieldset{border:0;padding:0;margin:0;min-width:0}
 .manual-editor legend{font-weight:750;margin-bottom:8px}
@@ -61,6 +66,17 @@ dt{font-size:.73rem;color:var(--sub)}dd{margin:4px 0 0;overflow-wrap:anywhere;fo
 <div id="ocr-review" class="ocr-review" hidden>
   <p class="note">Compará cada importe y separador con el documento mostrado abajo. El sistema no puede comprobar si realizaste el cotejo correctamente.</p>
   <div id="ocr-originals" class="ocr-originals" aria-label="Imágenes originales para cotejo visual"></div>
+  <section id="manual-review" aria-labelledby="manual-title">
+    <h3 id="manual-title">Revisión asistida · ingreso humano</h3>
+    <p class="note">Mirá la imagen original y las cifras OCR de arriba. Escribí las <strong>tres</strong> cantidades que ves en el original. No se precargan cifras dudosas. Formato: 150.000,00. Solo pruebas ficticias.</p>
+    <div class="manual-grid">
+      <label for="manual-net">Neto (ARS)<input id="manual-net" type="text" maxlength="50" inputmode="decimal" autocomplete="off" placeholder="150.000,00"></label>
+      <label for="manual-tax">IVA (ARS)<input id="manual-tax" type="text" maxlength="50" inputmode="decimal" autocomplete="off" placeholder="31.500,00"></label>
+      <label for="manual-total">Total (ARS)<input id="manual-total" type="text" maxlength="50" inputmode="decimal" autocomplete="off" placeholder="181.500,00"></label>
+    </div>
+    <button id="manual-control" type="button">Comparar transcripción con OCR · sin IA</button>
+    <p id="manual-status" class="note" role="status" aria-live="polite">Sin cifras ingresadas. No se hizo control.</p>
+  </section>
   <section id="manual-review" class="manual-editor" hidden aria-labelledby="manual-review-title">
     <h3 id="manual-review-title">Corregir importes dudosos</h3>
     <p class="note">Los valores detectados son sugerencias, no importes certificados. Completá solamente los campos que quieras reemplazar después de mirar el original. Para los demás, dejá la casilla vacía.</p>
@@ -175,9 +191,18 @@ $('manual-apply').addEventListener('click',async()=>{
    '. Usá formato argentino sin números negativos; revisá el original.';
  }
 });
+function resetManualReview(){
+ for(const id of ['manual-net','manual-tax','manual-total'])$(id).value='';
+ $('manual-status').textContent='Sin cifras ingresadas. No se hizo control.';
+}
+function manualInputs(){
+ return {net_cents:$('manual-net').value,tax_cents:$('manual-tax').value,
+  total_cents:$('manual-total').value};
+}
 let unreviewedOcr=false;
 function flagOcrForVisualReview(){
  unreviewedOcr=true;
+ resetManualReview();
  $('ocr-confirm').checked=false;
  $('ocr-review').hidden=false;
  $('ocr-review-status').textContent='COTEJO VISUAL OBLIGATORIO: no ejecutar controles hasta comparar las cifras con el archivo original.';
@@ -206,12 +231,14 @@ function showOcrOriginals(blobs){
 }
 function resetVisualReview(){
  unreviewedOcr=false;
+ resetManualReview();
  $('ocr-confirm').checked=false;
  $('ocr-review').hidden=true;
  $('manual-review').hidden=true;
  clearOcrPreview();
 }
 $('document').addEventListener('input',()=>{
+ resetManualReview();
  $('result').classList.remove('visible');
  $('waiting').hidden=false;
  $('waiting').textContent='Texto modificado. El resultado anterior ya no corresponde al contenido actual.';
@@ -222,8 +249,10 @@ $('document').addEventListener('input',()=>{
 });
 function showResult(r){
  $('waiting').hidden=true;$('result').classList.add('visible');
- $('decision').textContent='Revisión humana obligatoria · '+(r.model_called===false?'Reglas sin IA':r.model_used);
- $('result-provenance').textContent=r.input_origin==='OCR'
+ $('decision').textContent='Revisión humana obligatoria · '+(r.manual_entry_declared?'Transcripción humana sin IA':r.model_called===false?'Reglas sin IA':r.model_used);
+ $('result-provenance').textContent=r.manual_entry_declared
+   ? 'Importes escritos por una persona, comparados con texto OCR; ninguna cifra certificada contra la imagen.'
+   :r.input_origin==='OCR'
    ? 'Texto OCR: números interpretados, cotejo visual DECLARADO, no verificación independiente de la imagen.'
    : r.model_called===false
      ? 'Solo importes leídos mediante reglas; proveedor y número no fueron analizados.'
@@ -239,7 +268,9 @@ function showResult(r){
   wrap.append(dt,dd);$('fields').append(wrap);
   const provenance=r.amount_verification?.[key];
   if(provenance){
-    const msg=provenance.origin==='OCR_COTEJO_VISUAL_DECLARADO_NO_VERIFICADO'
+    const msg=provenance.origin==='INGRESADO_MANUALMENTE_NO_CERTIFICADO'
+      ? (provenance.disagreement_with_ocr===true?'Ingresado manualmente; DIFIERE del texto OCR.':provenance.disagreement_with_ocr===null?'Ingresado manualmente; OCR ausente o ambiguo.':'Ingresado manualmente; coincide con el texto OCR, NO con la imagen verificada.')
+      : provenance.origin==='OCR_COTEJO_VISUAL_DECLARADO_NO_VERIFICADO'
       ?'OCR: importe leído del texto y cotejo declarado por una persona; el sistema no comprobó el original.'
       : provenance.origin==='LECTURA_LITERAL_ETIQUETADA'
       ? (r.model_called===false?'Importe leído del texto SIN IA; verificar original.':provenance.disagreement?'IA y texto discrepan: se tomó la cifra literal, revisá original.':'IA y texto coinciden: revisar original.')
@@ -404,6 +435,48 @@ $('scan-pdf').addEventListener('click',async()=>{
   try{await loading?.destroy()}catch{}
   $('scan-pdf').disabled=false;
  }
+});
+for(const id of ['manual-net','manual-tax','manual-total']){
+ $(id).addEventListener('input',()=>{
+  $('result').classList.remove('visible');
+  $('ocr-confirm').checked=false;
+  $('manual-status').textContent='Se editó una cifra. Compará las tres nuevamente con la imagen y volvé a declarar el cotejo.';
+ });
+}
+$('ocr-confirm').addEventListener('change',()=>{
+ if(!$('ocr-confirm').checked)$('result').classList.remove('visible');
+});
+$('manual-control').addEventListener('click',async()=>{
+ if(!unreviewedOcr||!$('ocr-confirm').checked){
+  $('manual-status').textContent='Se requiere un OCR cargado y cotejo visual declarado antes de comparar los importes transcriptos.';
+  return;
+ }
+ const snapshot=$('document').value;
+ const values=manualInputs();
+ const token=JSON.stringify(values);
+ $('manual-control').disabled=true;
+ $('result').classList.remove('visible');
+ $('manual-status').textContent='Comparando las tres transcripciones con el texto OCR, sin IA…';
+ try{
+  const res=await fetch('/api/manual-review',{
+   method:'POST',headers:{'content-type':'application/json'},
+   body:JSON.stringify({document:snapshot,input_origin:'OCR',
+    visual_review_declared:true,manual_amounts:values})
+  });
+  const data=await res.json();
+  if(snapshot!==$('document').value||!$('ocr-confirm').checked||JSON.stringify(manualInputs())!==token){
+   $('manual-status').textContent='El documento o las cifras cambiaron durante el control. Resultado anterior descartado.';
+   return;
+  }
+  if(!res.ok)throw Error(data.error||'MANUAL_REVIEW_FAILED');
+  showResult(data);
+  $('manual-status').textContent='Transcripción cotejada con texto OCR; suma '+
+   (data.arithmetic_consistent?'consistente':'INCONSISTENTE')+'. La imagen NO fue certificada por el sistema.';
+  setStatus('Revisión asistida local sin IA: requiere siempre revisión humana.');
+ }catch(error){
+  $('manual-status').textContent='No se realizó el control manual: '+error.message+'. Revisá los tres importes en formato argentino.';
+  setStatus('Sin resultado manual verificado. No se aprobó ningún documento.');
+ }finally{$('manual-control').disabled=false}
 });
 async function runReview(withAI){
  if(unreviewedOcr&&!$('ocr-confirm').checked){
