@@ -45,6 +45,7 @@ jobs:
             experimentos/fluynova-copilot/ocr-readability.test.mjs \
             experimentos/fluynova-copilot/ocr-layout.test.mjs \
             experimentos/fluynova-copilot/ocr-layout.integration.test.mjs \
+            experimentos/fluynova-copilot/ocr-manual-review.test.mjs \
             experimentos/fluynova-copilot/pdf-scan-api.test.mjs
       - name: OCR REAL de imagen, modelo español OFFLINE
         run: node --test experimentos/fluynova-copilot/ocr-real.test.mjs
@@ -72,5 +73,7 @@ jobs:
           npx playwright install --with-deps --only-shell chromium
       - name: Probar interfaz con modelo simulado, solicitudes externas bloqueadas
         run: node --test experimentos/fluynova-copilot/copilot.browser.test.mjs
+      - name: Editor manual de montos OCR en Chromium con casos adversariales
+        run: node --test experimentos/fluynova-copilot/ocr-manual.browser.test.mjs
       - name: PDF escaneado de extremo a extremo con Tesseract REAL y sin Qwen
         run: node --test experimentos/fluynova-copilot/pdf-scan-ocr-real.browser.test.mjs
