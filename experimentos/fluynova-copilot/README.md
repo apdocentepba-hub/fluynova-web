@@ -13,18 +13,21 @@
 - API Node vinculada exclusivamente a `127.0.0.1`, con límite de entrada, rechazo de Host ajeno al equipo, comprobación de origen, CSP, timeout y fallo cerrado.
 - HTML con carga de ejemplo, consulta real al modelo local y presentación con `textContent`, sin inyectar HTML del modelo.
 
-La demo **NO lee imágenes/PDF**, no ejecuta OCR, no valida CAE/ARCA ni identidades de proveedores, no tiene usuario, roles, persistencia, backups, comprobación fiscal ni auditoría legal. Al faltar Ollama o el modelo, **NO inventa un resultado de IA**: informa error.
+La demo **ya puede leer PDF con capa de texto y aplicar OCR local a imágenes o PDF escaneados**, con límites de tamaño, revisión manual obligatoria y dependencias opcionales preparadas por separado. El OCR puede equivocarse incluso cuando la suma cierra. No valida CAE/ARCA, proveedores, autenticidad fiscal ni datos comerciales reales; no tiene usuarios, roles, persistencia, respaldos operativos ni auditoría legal. Si falta Ollama o el modelo, **NO inventa un resultado de IA**: el control sin IA y la revisión humana siguen disponibles.
 
 ## Requisitos sin servicios pagos
 
-- Windows/Linux/macOS con **Node.js 22 o superior**.
+- Windows/Linux/macOS con **Node.js 22 o superior** para texto; para procesamiento PDF/OCR de esta rama se valida con **Node.js 24**. El circuito Windows se comprobó en un runner Windows Server 2022, no en la PC personal del usuario.
 - [Ollama](https://ollama.com/download) instalado y activo **en la misma PC**.
 - Modelo local de prueba `qwen3:1.7b` (descarga aproximada de 1,4 GB, no incluida):
   ```powershell
   ollama pull qwen3:1.7b
   ```
-- **Primer paso en Windows:** con Ollama iniciado y el modelo descargado, ejecutá `PROBAR-IA-REAL-WINDOWS.cmd`. Crea `INFORME_FLUYNOVA_IA_LOCAL.txt` usando únicamente **dos facturas ficticias** y sin mostrar respuestas completas ni datos personales.
-- **Segundo paso:** si Ollama responde, abrí `INICIAR-COPILOT-WINDOWS.cmd` para usar la interfaz en el navegador. Alternativamente, dentro de esta carpeta:
+- **Para usar la IA local en Windows (opcional):** con Ollama iniciado y el modelo descargado, ejecutá `PROBAR-IA-REAL-WINDOWS.cmd`. Crea `INFORME_FLUYNOVA_IA_LOCAL.txt` usando únicamente **dos facturas ficticias** y sin mostrar respuestas completas ni datos personales.
+- **Sin Ollama:** abrí `INICIAR-COPILOT-WINDOWS.cmd` para usar el control monetario sin IA, PDF y revisión humana. El navegador se solicita **después** de que el servidor está escuchando, no antes. Si no se abre automáticamente, usá `http://127.0.0.1:8767/`.
+- **PDF/OCR opcionales:** `PREPARAR-PDF-WINDOWS.cmd` y `PREPARAR-OCR-WINDOWS.cmd` piden autorización antes de descargar dependencias/modelo; no se ejecutan solos al abrir el servidor. El OCR opera localmente luego de preparar el modelo.
+- **Pruebas nativas Windows CI:** [GitHub Actions #43242145918](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/43242145918) comprobó 58/58 tests (parser, API, PDF, OCR, subprocesos, launcher y Chromium) en Windows Server 2022 con Node 24. No hubo inferencia real de Qwen ni prueba en la computadora del usuario.
+- **Con o sin Ollama**, también podés iniciar el servidor dentro de esta carpeta:
   ```powershell
   node server.mjs
   ```
