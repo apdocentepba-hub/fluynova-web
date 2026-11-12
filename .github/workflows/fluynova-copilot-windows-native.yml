@@ -59,3 +59,53 @@ jobs:
       - name: Probar revision asistida en Chromium nativo Windows
         shell: pwsh
         run: node --test experimentos/fluynova-copilot/manual-review.browser.test.mjs
+- name: Empaquetar y probar ZIP offline de Windows
+        shell: pwsh
+        run: |
+          $zip=Join-Path $env:RUNNER_TEMP 'FLUYNOVA-COPILOT-ENSAYO-WINDOWS.zip'
+          & './experimentos/fluynova-copilot/CREAR-PAQUETE-PRUEBA-WINDOWS.ps1' -Destination $zip
+          $out=Join-Path $env:RUNNER_TEMP 'copilot-zip-extracted'
+          Expand-Archive -LiteralPath $zip -DestinationPath $out
+          foreach($file in @('INICIAR-COPILOT-WINDOWS.cmd','DIAGNOSTICAR-COPILOT-WINDOWS.cmd','LEEME-PRIMERO.txt','SHA256SUMS.txt','server.mjs','startup-preflight.mjs')) {
+            if(-not(Test-Path -LiteralPath (Join-Path $out $file))){throw "ZIP incompleto: $file"}
+          }
+          $bad=Get-ChildItem -LiteralPath $out -Recurse -Force | Where-Object {
+            $_.Name -match '(^\.env|node_modules|traineddata|\.test\.mjs$|\.pdf$|\.png$|\.jpe?g$)'
+          }
+          if($bad){throw 'ZIP contiene archivos fuera de la lista blanca'}
+          Get-ChildItem -LiteralPath $out -Filter '*.mjs' -File | ForEach-Object {
+            node --check $_.FullName
+            if($LASTEXITCODE -ne 0){throw "Sintaxis invalida $($_.Name)"}
+          }
+          $listener=[System.Net.Sockets.TcpListener]::new([System.Net.IPAddress]::Loopback,0)
+          $listener.Start()
+          $port=$listener.LocalEndpoint.Port
+          $listener.Stop()
+          $env:FLUYNOVA_PORT="$port"
+          $env:FLUYNOVA_OPEN_BROWSER='0'
+          $proc=Start-Process -FilePath 'node' -ArgumentList 'server.mjs' -WorkingDirectory $out -NoNewWindow -PassThru
+          try{
+            $ready=$false
+            for($i=0;$i -lt 25;$i++){
+              Start-Sleep -Milliseconds 200
+              try{
+                $status=Invoke-RestMethod -Uri "http://127.0.0.1:$port/api/status" -TimeoutSec 2
+                if($status.runtime -eq 'LOCAL_ONLY' -and $status.human_review_required -eq $true){
+                  $ready=$true;break
+                }
+              }catch{}
+              if($proc.HasExited){break}
+            }
+            if(-not $ready){throw 'No inicio el servidor desde el ZIP extraido'}
+            Write-Output 'ZIP_SMOKE: PASS | Windows | 127.0.0.1 | sin dependencias ni Ollama'
+          }finally{
+            if(-not $proc.HasExited){Stop-Process -Id $proc.Id -Force -ErrorAction SilentlyContinue}
+            Remove-Item Env:FLUYNOVA_PORT -ErrorAction SilentlyContinue
+            Remove-Item Env:FLUYNOVA_OPEN_BROWSER -ErrorAction SilentlyContinue
+          }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: FLUYNOVA-COPILOT-ENSAYO-WINDOWS
+          path: ${{ runner.temp }}/FLUYNOVA-COPILOT-ENSAYO-WINDOWS.zip
+          if-no-files-found: error
+          retention-days: 7

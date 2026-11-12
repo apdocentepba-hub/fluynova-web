@@ -116,3 +116,8 @@ Se agregó un **lector PDF acotado basado en Mozilla PDF.js**, separado de Ollam
 ## Diagnostico de arranque Windows (12/11/2026)
 
 Ejecuta DIAGNOSTICAR-COPILOT-WINDOWS.cmd para comprobar Node, puerto 127.0.0.1 y presencia de PDF/OCR opcional sin descargas. INICIAR-COPILOT-WINDOWS.cmd repite la comprobacion y no arranca si existe un bloqueo; los componentes opcionales no impiden el modo texto. FLUYNOVA_OPEN_BROWSER=0 permite probarlo sin abrir Explorer. Esto no verifica compatibilidad en la PC personal, no instala servicios ni valida comprobantes reales.
+
+
+## Paquete de prueba Windows (sin publicar en Render)
+
+El workflow Windows genera tras pasar sus pruebas un ZIP como artifacto temporal GitHub Actions (retencion 7 dias) que contiene exclusivamente codigo de laboratorio y un LEEME-PRIMERO.txt. Quedan excluidos documentos reales, credenciales, node_modules y modelos OCR. Se extrae y prueba arrancar el servidor local sin IA; sigue requiriendo Node.js instalado en la PC y autorizacion separada para descargar PDF/OCR opcionales. No es un instalador firmado ni certifica seguridad comercial.
