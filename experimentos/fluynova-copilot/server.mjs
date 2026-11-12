@@ -8,6 +8,7 @@ import {reviewManualAmounts} from './manual-review.mjs';
 import {PDF_MAX_BYTES} from './pdf-text.mjs';
 import {isolatedPdf,isolatedOcr} from './isolated-processing.mjs';
 import {inspectImageBytes,IMAGE_MAX_BYTES} from './image-input.mjs';
+import {openWindowsBrowserWhenReady} from './browser-launch-windows.mjs';
 
 const HEADERS={
   'cache-control':'no-store',
@@ -197,5 +198,8 @@ if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url))
   const model=process.env.FLUYNOVA_MODEL||'qwen3:1.7b';
   if(!Number.isSafeInteger(port)||port<1024||port>65535)throw Error('FLUYNOVA_PORT inválido');
   const server=createApp({model});
-  server.listen(port,'127.0.0.1',()=>console.log('FLUYNOVA Copilot demo local: http://127.0.0.1:'+port+'/; modelo configurado: '+model));
+  server.listen(port,'127.0.0.1',()=>{
+    console.log('FLUYNOVA Copilot demo local: http://127.0.0.1:'+port+'/; modelo configurado: '+model);
+    openWindowsBrowserWhenReady(server,{enabled:process.env.FLUYNOVA_OPEN_BROWSER==='1'});
+  });
 }
