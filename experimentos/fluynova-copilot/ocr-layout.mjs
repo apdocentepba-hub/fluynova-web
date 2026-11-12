@@ -13,19 +13,44 @@ function formatARS(cents){
  const pesos=String(Math.floor(cents/100)).replace(/\B(?=(\d{3})+(?!\d))/g,'.');
  return '$'+pesos+','+String(cents%100).padStart(2,'0');
 }
-export function planOcrRegionRetry(text,width,height){
+// Búsqueda experimental por zonas. Más zonas NO implican mejor precisión:
+// un recorte que parte un número puede devolver otro monto válido.
+export function planOcrRegionRetries(text,width,height){
  if(typeof text!=='string'||!Number.isInteger(width)||!Number.isInteger(height))
   throw new TypeError('OCR_LAYOUT_INVALID_INPUT');
- if(width<900||height<350)return null;
+ if(width<900||height<350)return [];
  const found=extractLiteralAmounts(text);
  const missing=KEYS.filter(k=>!validUnique(found[k]));
- if(!missing.length)return null;
- // Proporción medida con comprobantes sintéticos de dos columnas y una tabla.
- const left=Math.round(width*.42);
+ if(!missing.length)return [];
  const top=Math.round(height*.17);
+ const bottom=Math.min(height,top+Math.round(height*.77));
+ const zones=[
+  {name:'right',left:Math.round(width*.42),right:width},
+  {name:'center',left:Math.round(width*.28),right:Math.round(width*.80)},
+  {name:'left',left:Math.max(0,Math.round(width*.01)),right:Math.round(width*.50)}
+ ];
+ return zones.map(z=>({
+  name:z.name,missing_fields:missing,
+  rectangle:{top,left:z.left,width:z.right-z.left,height:bottom-top}
+ }));
+}
+// API anterior conservada para compatibilidad de las pruebas de la primera pasada.
+export function planOcrRegionRetry(text,width,height){
+ return planOcrRegionRetries(text,width,height)[0]??null;
+}
+export function assessOcrRegionEvidence(text,minimumFields=2){
+ if(typeof text!=='string'||!Number.isInteger(minimumFields)||minimumFields<1)
+  throw new TypeError('OCR_LAYOUT_INVALID_EVIDENCE');
+ const parsed=extractLiteralAmounts(text);
+ const valid_fields=KEYS.filter(k=>validUnique(parsed[k]));
+ const has_invalid_or_duplicate=KEYS.some(k=>
+  parsed[k].length>0&&!validUnique(parsed[k]));
  return {
-  rectangle:{top,left,width:width-left,height:Math.min(height-top,Math.round(height*.77))},
-  missing_fields:missing
+  valid_fields,
+  valid_count:valid_fields.length,
+  sufficient:valid_fields.length>=minimumFields&&!has_invalid_or_duplicate,
+  reason:has_invalid_or_duplicate?'DUPLICATED_OR_INVALID_AMOUNT':
+    valid_fields.length<minimumFields?'INSUFFICIENT_LABELED_FIELDS':'CANDIDATE_FOR_MANUAL_REVIEW'
  };
 }
 export function reconcileOcrRegionTexts(primaryText,regionalText){
