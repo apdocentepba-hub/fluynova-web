@@ -126,3 +126,8 @@ El workflow Windows genera tras pasar sus pruebas un ZIP como artifacto temporal
 ### Correccion del comando npm en preparadores Windows (12/11/2026)
 
 En rutas con espacios, `--prefix "%~dp0"` podia entregar un nombre de carpeta mal formado porque `%~dp0` termina con barra invertida. Los dos preparadores ahora ejecutan `call npm install --ignore-scripts --no-audit --no-fund` luego de `cd /d "%~dp0"`; no instala paquetes globales ni precisa node-gyp por este cambio. Las descargas opcionales siguen requiriendo autorizacion. Se agrega una regresion nativa con carpeta que contiene espacios y npm falso, sin red externa. No usar en PC ajena sin permiso.
+
+
+## Corrección del cierre inmediato de CMD (12/11/2026)
+
+El diagnóstico ahora muestra el resultado y espera una tecla antes de cerrar al hacer doble clic. Conserva el código de salida; para automatización se usa `FLUYNOVA_NO_PAUSE=1`. Si el servidor finaliza normalmente, el lanzador también espera una tecla. Los preparadores PDF/OCR siguen siendo voluntarios; no se instalan dependencias con el diagnóstico.

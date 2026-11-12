@@ -34,4 +34,6 @@ if not "%SERVER_EXIT%"=="0" (
  pause
  exit /b %SERVER_EXIT%
 )
+echo El servidor finalizo sin errores.
+if not "%FLUYNOVA_NO_PAUSE%"=="1" pause
 exit /b 0
