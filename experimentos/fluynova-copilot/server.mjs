@@ -4,6 +4,7 @@ import {fileURLToPath} from 'node:url';
 import {resolve} from 'node:path';
 import {analyzeDocument,CopilotError} from './analysis.mjs';
 import {verifyMoneyOnly} from './verify-money.mjs';
+import {reviewManualAmounts} from './manual-review.mjs';
 import {PDF_MAX_BYTES} from './pdf-text.mjs';
 import {isolatedPdf,isolatedOcr} from './isolated-processing.mjs';
 import {inspectImageBytes,IMAGE_MAX_BYTES} from './image-input.mjs';
@@ -91,7 +92,7 @@ export function createApp({
         model_connection:'NO_VERIFICADA',human_review_required:true});
       return;
     }
-    if(!['/api/analyze','/api/verify-money','/api/pdf/extract','/api/ocr/image'].includes(req.url)||req.method!=='POST'){
+    if(!['/api/analyze','/api/verify-money','/api/pdf/extract','/api/ocr/image','/api/manual-review'].includes(req.url)||req.method!=='POST'){
       json(res,404,{error:'NOT_FOUND'});return;
     }
     const origin=req.headers.origin;
@@ -133,6 +134,16 @@ export function createApp({
         throw new CopilotError('INVALID_REQUEST',422);
       }
       const keys=Object.keys(body);
+      if(req.url==='/api/manual-review'){
+        const required=['document','manual_amounts','input_origin','visual_review_declared'];
+        if(keys.length!==4||!required.every(k=>Object.hasOwn(body,k)))
+          throw new CopilotError('MANUAL_REVIEW_INVALID_REQUEST',422);
+        const result=reviewManualAmounts(body.document,body.manual_amounts,{
+          inputOrigin:body.input_origin,visualReviewDeclared:body.visual_review_declared
+        });
+        json(res,200,result);
+        return;
+      }
       const ordinary=keys.length===1;
       const declaredOcr=keys.length===3&&
         Object.hasOwn(body,'input_origin')&&
