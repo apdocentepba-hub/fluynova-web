@@ -27,6 +27,14 @@ dt{font-size:.73rem;color:var(--sub)}dd{margin:4px 0 0;overflow-wrap:anywhere;fo
 .ocr-originals img{display:block;width:100%;height:auto;max-height:500px;object-fit:contain;background:#fff;border:1px solid var(--edge);border-radius:8px}
 .ocr-originals figcaption{font-size:.82rem;color:var(--sub);padding-top:4px}
 .ocr-originals figure{margin:0}
+.manual-editor{margin:12px 0;padding:12px;border:1px solid var(--edge);border-radius:9px;background:#19282b}
+.manual-editor fieldset{border:0;padding:0;margin:0;min-width:0}
+.manual-editor legend{font-weight:750;margin-bottom:8px}
+.manual-grid{display:grid;gap:10px;grid-template-columns:repeat(3,minmax(0,1fr))}
+.manual-grid label{display:block;font-size:.9rem}
+.manual-grid input{display:block;margin-top:5px;width:100%;padding:9px;border:1px solid #759096;border-radius:6px;background:#0d1e24;color:var(--ink);font:inherit;min-width:0}
+.manual-field-status{color:var(--sub);font-size:.75rem;display:block;margin:3px 0}
+@media(max-width:780px){.manual-grid{grid-template-columns:1fr}}
 [hidden]{display:none!important}
 :focus-visible{outline:3px solid #ffd28c;outline-offset:3px}
 @media(max-width:780px){.columns{grid-template-columns:1fr}.box{padding:19px}textarea{height:220px}}
@@ -53,6 +61,25 @@ dt{font-size:.73rem;color:var(--sub)}dd{margin:4px 0 0;overflow-wrap:anywhere;fo
 <div id="ocr-review" class="ocr-review" hidden>
   <p class="note">Compará cada importe y separador con el documento mostrado abajo. El sistema no puede comprobar si realizaste el cotejo correctamente.</p>
   <div id="ocr-originals" class="ocr-originals" aria-label="Imágenes originales para cotejo visual"></div>
+  <section id="manual-review" class="manual-editor" hidden aria-labelledby="manual-review-title">
+    <h3 id="manual-review-title">Corregir importes dudosos</h3>
+    <p class="note">Los valores detectados son sugerencias, no importes certificados. Completá solamente los campos que quieras reemplazar después de mirar el original. Para los demás, dejá la casilla vacía.</p>
+    <fieldset><legend>Importes en pesos argentinos, por ejemplo: 150.000,00</legend>
+      <div class="manual-grid">
+        <label for="manual-net">Neto <span id="manual-net-status" class="manual-field-status"></span>
+          <input type="text" id="manual-net" autocomplete="off" inputmode="decimal" maxlength="70" placeholder="Sin modificación">
+        </label>
+        <label for="manual-tax">IVA / impuesto <span id="manual-tax-status" class="manual-field-status"></span>
+          <input type="text" id="manual-tax" autocomplete="off" inputmode="decimal" maxlength="70" placeholder="Sin modificación">
+        </label>
+        <label for="manual-total">Total <span id="manual-total-status" class="manual-field-status"></span>
+          <input type="text" id="manual-total" autocomplete="off" inputmode="decimal" maxlength="70" placeholder="Sin modificación">
+        </label>
+      </div>
+    </fieldset>
+    <div class="actions"><button type="button" id="manual-apply">Aplicar correcciones declaradas</button></div>
+    <p id="manual-status" class="note" role="status" aria-live="polite">Para aplicar cambios, cotejá la imagen y marcá la confirmación debajo.</p>
+  </section>
   <label for="ocr-confirm"><input type="checkbox" id="ocr-confirm"><span><strong>Cotejé visualmente los importes del OCR con el documento original.</strong> Verifiqué números, signos y separadores. Esta confirmación no certifica autenticidad ni equivale a aprobación.</span></label>
   <p id="ocr-review-status" class="note" role="status" aria-live="polite">El texto OCR es una propuesta no comprobada. Marcá esta opción solo después de comparar con el original.</p>
 </div>
@@ -90,12 +117,71 @@ function ocrRegionNotice(region){
      ' campo(s), SIN verificar el original; comprobá cada cifra en la imagen.';
  return ' La segunda lectura regional no pudo recuperar nuevos importes.';
 }
+const MANUAL_INPUTS={net_cents:'manual-net',tax_cents:'manual-tax',total_cents:'manual-total'};
+let manualModulePromise=null;
+function manualModule(){
+ manualModulePromise??=import('/assets/review/ocr-manual-review.mjs');
+ return manualModulePromise;
+}
+async function showManualReview(){
+ if(!unreviewedOcr)return;
+ try{
+  const review=await manualModule();
+  if(!unreviewedOcr)return;
+  for(const field of review.describeOcrMoneyFields($('document').value)){
+   const input=$(MANUAL_INPUTS[field.key]);
+   input.value='';
+   const id=input.id+'-status';
+   $(id).textContent=field.status==='LEGIBLE'
+     ?'OCR propuso '+field.suggested_text+' (no comprobado)'
+     :field.status==='AUSENTE'
+       ?'No identificado'
+       :'Importe ambiguo: cotejo necesario';
+  }
+  $('manual-review').hidden=false;
+  $('manual-status').textContent='Sin correcciones aplicadas. Compará los números con la imagen y completá solamente lo que quieras cambiar.';
+ }catch{
+  $('manual-review').hidden=true;
+  $('ocr-review-status').textContent='No se pudo cargar el editor de importes. Podés revisar el texto manualmente; el cotejo visual sigue siendo obligatorio.';
+ }
+}
+$('manual-apply').addEventListener('click',async()=>{
+ if(!unreviewedOcr)return;
+ if(!$('ocr-confirm').checked){
+  $('manual-status').textContent='COTEJO_REQUERIDO: primero compará el original y marcá la declaración de revisión.';
+  return;
+ }
+ const corrections={};
+ for(const [field,inputId] of Object.entries(MANUAL_INPUTS)){
+  const value=$(inputId).value.trim();
+  if(value)corrections[field]=value;
+ }
+ if(!Object.keys(corrections).length){
+  $('manual-status').textContent='No ingresaste ningún importe para corregir. Los valores OCR no se modificaron.';
+  return;
+ }
+ try{
+  const review=await manualModule();
+  const patched=review.applyManualOcrCorrections($('document').value,corrections,
+    {operatorComparedOriginal:true});
+  $('document').value=patched.text;
+  $('document').dispatchEvent(new Event('input',{bubbles:true}));
+  await showManualReview();
+  $('manual-status').textContent='Correcciones aplicadas a '+patched.corrected_fields.length+
+    ' campo(s). Se preservaron los demás importes y se invalidó la declaración anterior. Volvé a cotejar el texto final con la imagen.';
+  setStatus('Se modificó texto OCR mediante correcciones declaradas. Ningún importe quedó certificado ni aprobado.');
+ }catch(err){
+  $('manual-status').textContent='No se aplicó ningún cambio: '+(err?.message||'FORMATO_INVALIDO')+
+   '. Usá formato argentino sin números negativos; revisá el original.';
+ }
+});
 let unreviewedOcr=false;
 function flagOcrForVisualReview(){
  unreviewedOcr=true;
  $('ocr-confirm').checked=false;
  $('ocr-review').hidden=false;
  $('ocr-review-status').textContent='COTEJO VISUAL OBLIGATORIO: no ejecutar controles hasta comparar las cifras con el archivo original.';
+ void showManualReview();
 }
 let ocrPreviewUrls=[];
 function clearOcrPreview(){
@@ -122,6 +208,7 @@ function resetVisualReview(){
  unreviewedOcr=false;
  $('ocr-confirm').checked=false;
  $('ocr-review').hidden=true;
+ $('manual-review').hidden=true;
  clearOcrPreview();
 }
 $('document').addEventListener('input',()=>{
