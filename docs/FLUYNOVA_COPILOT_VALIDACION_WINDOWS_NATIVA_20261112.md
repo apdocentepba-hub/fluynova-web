@@ -28,6 +28,16 @@ Todos los pasos de CI completaron sin fallo. El modelo OCR español se descargó
 
 **Fallo detectado y corregido durante la implementación:** en la primera ejecución Windows, el smoke test esperaba `can_auto_approve:false` de una **respuesta de extracción PDF textual** que no incluye decisión de aprobación. Se corrigió la aserción: un extractor PDF no debe afirmar aprobación; el motor monetario, el OCR y la revisión humana sí deben devolver **`can_auto_approve:false` explícitamente**. La ejecución posterior quedó verde.
 
+## Validación adicional del inicio de un clic (misma fecha)
+
+En una segunda revisión se corrigió `INICIAR-COPILOT-WINDOWS.cmd`: se comprueba que Node sea al menos versión 22, se ejecuta el servidor local y **el navegador se solicita recién después del evento de escucha** de `127.0.0.1`. Antes el CMD intentaba abrirlo antes del servidor y podía mostrar un error transitorio.
+
+`browser-launch-windows.mjs` usa `explorer.exe` (sin shell ni URL controlada por usuarios), condicionado a `FLUYNOVA_OPEN_BROWSER=1`, valor que establece el CMD. El servidor abierto directamente con `node server.mjs` no dispara navegador por defecto.
+
+Se agregaron 5 tests que simulan las llamadas de Explorer y comprueban que no se invoca antes de `listen`, que el servidor sobrevive a un fallo de apertura y que no se invoca en Linux ni si no está habilitado.
+
+**Evidencia:** [Windows nativo #43242145918](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/43242145918), `success` con **58/58 tests** (50 unitarios/API, 6 OCR y procesos reales, 1 smoke integral, 1 Chromium Windows). [Linux #43242133871](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/43242133871), `success` con **175/175 tests**, incluidos los 5 nuevos de apertura controlada. Se trata de prueba del contrato de inicio y de un runner Windows; **no se abrió un navegador físico desde el CMD en la computadora del usuario**.
+
 ## Distinción entre validaciones
 
 **COMPROBADO:** servidor y dependencias PDF/OCR reales funcionando en un runner Windows, controlador HTTP, revisión manual y Chromium. La prueba de caídas de subprocesos y la simulación Ollama pertenecen a pruebas de software; el motor de lenguaje Qwen no fue ejecutado en el runner.
