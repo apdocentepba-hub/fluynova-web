@@ -41,7 +41,7 @@ jobs:
           }
       - name: Tests monetarios manuales PDF y API en Windows
         shell: pwsh
-        run: node --test --test-concurrency=1 experimentos/fluynova-copilot/money-ar.test.mjs experimentos/fluynova-copilot/verify-money.test.mjs experimentos/fluynova-copilot/manual-review.test.mjs experimentos/fluynova-copilot/manual-review.api.test.mjs experimentos/fluynova-copilot/pdf-text.test.mjs experimentos/fluynova-copilot/pdf-api.test.mjs experimentos/fluynova-copilot/ocr-image.test.mjs experimentos/fluynova-copilot/ocr-api.test.mjs
+        run: node --test --test-concurrency=1 experimentos/fluynova-copilot/money-ar.test.mjs experimentos/fluynova-copilot/verify-money.test.mjs experimentos/fluynova-copilot/manual-review.test.mjs experimentos/fluynova-copilot/manual-review.api.test.mjs experimentos/fluynova-copilot/browser-launch-windows.test.mjs experimentos/fluynova-copilot/pdf-text.test.mjs experimentos/fluynova-copilot/pdf-api.test.mjs experimentos/fluynova-copilot/ocr-image.test.mjs experimentos/fluynova-copilot/ocr-api.test.mjs
       - name: OCR real y subprocesos de PDF y OCR en Windows
         shell: pwsh
         run: node --test --test-concurrency=1 experimentos/fluynova-copilot/ocr-real.test.mjs experimentos/fluynova-copilot/isolated-processing.test.mjs
