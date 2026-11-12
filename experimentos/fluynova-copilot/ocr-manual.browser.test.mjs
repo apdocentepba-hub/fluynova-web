@@ -70,7 +70,7 @@ test('Chromium: OCR duplicado se revisa manualmente sin modificar su texto origi
   assert.match(await s.page.locator('#issues').innerText(),/no aportó un importe único/);
   assert.match(await s.page.locator('#document').inputValue(),/150.800,00/);
   assert.match(await s.page.locator('#document').inputValue(),/182.300,00/);
-  assert.match(await s.page.locator('#disclaimer').innerText(),/no está certificada/i);
+  assert.match(await s.page.locator('#disclaimer').innerText(),/ninguna cifra está certificada/i);
   assert.equal(s.aiCalls(),0);
   assert.deepEqual(s.errors,[]);assert.deepEqual(s.external,[]);
   for(const width of [320,390,1024]){
