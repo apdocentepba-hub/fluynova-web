@@ -32,6 +32,7 @@ async function setup(){
  const browser=await chromium.launch({headless:true});
  const context=await browser.newContext({viewport:{width:390,height:850}});
  const page=await context.newPage(),errors=[],external=[];
+ page.setDefaultTimeout(10000);
  page.on('pageerror',e=>errors.push(e.message));
  await page.route('**/*',async route=>{
   const u=new URL(route.request().url());
@@ -40,17 +41,25 @@ async function setup(){
   }
   await route.continue();
  });
+ try{
  await page.goto(base+'/',{waitUntil:'load'});
  await page.locator('#image-file').setInputFiles({
   name:'original-ficticio.png',mimeType:'image/png',buffer:image()
  });
  await page.locator('#read-image').click();
- await page.locator('#manual-review').waitFor({state:'visible'});
+ await page.locator('#manual-review').waitFor({state:'visible',timeout:10000});
  return {server,browser,context,page,errors,external,
   aiCalls:()=>aiCalls,async close(){
    await context.close();await browser.close();
    server.closeAllConnections();await new Promise(r=>server.close(r));
   }};
+ }catch(err){
+  await context.close().catch(()=>{});
+  await browser.close().catch(()=>{});
+  server.closeAllConnections();
+  await new Promise(r=>server.close(r)).catch(()=>{});
+  throw err;
+ }
 }
 test('Chromium: OCR duplicado se revisa manualmente sin modificar su texto original',async()=>{
  const s=await setup();
