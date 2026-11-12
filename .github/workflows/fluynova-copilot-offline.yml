@@ -54,6 +54,8 @@ jobs:
         run: node experimentos/fluynova-copilot/OCR-ESTRES-REAL.mjs
       - name: Medir OCR real en sombra, reflejo, perspectiva, columnas y recorte
         run: node experimentos/fluynova-copilot/OCR-ESCENARIOS-DIFICILES.mjs
+      - name: Experimento de OCR por regiones para columnas y tablas, con modelo REAL
+        run: node experimentos/fluynova-copilot/OCR-COLUMNAS-EXPERIMENTO.mjs
       - name: Medir precisión de reglas con 53 comprobantes ficticios
         run: node experimentos/fluynova-copilot/BENCHMARK-CORPUS.mjs
       - name: Diagnóstico de inferencia con Ollama FICTICIO en localhost
