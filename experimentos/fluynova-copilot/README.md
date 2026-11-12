@@ -111,3 +111,8 @@ Se agregó un **lector PDF acotado basado en Mozilla PDF.js**, separado de Ollam
 
 **Documentación técnica de referencia:** https://mozilla.github.io/pdf.js/examples/ y https://www.npmjs.com/package/pdfjs-dist
 
+
+
+## Diagnostico de arranque Windows (12/11/2026)
+
+Ejecuta DIAGNOSTICAR-COPILOT-WINDOWS.cmd para comprobar Node, puerto 127.0.0.1 y presencia de PDF/OCR opcional sin descargas. INICIAR-COPILOT-WINDOWS.cmd repite la comprobacion y no arranca si existe un bloqueo; los componentes opcionales no impiden el modo texto. FLUYNOVA_OPEN_BROWSER=0 permite probarlo sin abrir Explorer. Esto no verifica compatibilidad en la PC personal, no instala servicios ni valida comprobantes reales.
