@@ -91,7 +91,20 @@ async function run(){
    assert.equal(png.readUInt32BE(16),v.width);
    assert.equal(png.readUInt32BE(20),v.height);
    await writeFile(join(OUTPUT,'portfolio_'+v.name+'.png'),png);
-   result.push({viewport:v.width,height:v.height,bodyWidth:m.bodyWidth,documentWidth:m.docWidth,cards:m.cards,mailto:m.emails,result:'PASS'});
+   // Captura completa: la primera imagen solo muestra el inicio; aquí incluimos las tres tarjetas.
+   const layout=await cdp.send('Page.getLayoutMetrics');
+   const fullHeight=Math.ceil(layout.cssContentSize?.height||0);
+   assert.ok(fullHeight>=v.height&&fullHeight<=12000,'Altura total inválida: '+fullHeight);
+   const full=await cdp.send('Page.captureScreenshot',{
+    format:'png',fromSurface:true,captureBeyondViewport:true,
+    clip:{x:0,y:0,width:v.width,height:fullHeight,scale:1}
+   });
+   const fullPng=Buffer.from(full.data,'base64');
+   assert.equal(fullPng.subarray(1,4).toString(),'PNG');
+   assert.equal(fullPng.readUInt32BE(16),v.width);
+   assert.equal(fullPng.readUInt32BE(20),fullHeight);
+   await writeFile(join(OUTPUT,'portfolio_'+v.name+'_completo.png'),fullPng);
+   result.push({viewport:v.width,height:v.height,fullHeight,bodyWidth:m.bodyWidth,documentWidth:m.docWidth,cards:m.cards,mailto:m.emails,result:'PASS'});
   }
   await writeFile(join(OUTPUT,'reporte-visual.json'),JSON.stringify({result:'PASS',environment:'Chrome CDP sobre servidor local; sin red externa',screenshots:result},null,2));
   console.log('PORTFOLIO_VISUAL_PASS '+JSON.stringify(result));
