@@ -17,6 +17,20 @@
  if(["pasteleria","distribuidora"].includes(source))form.elements.servicio.value="Una página web o catálogo";
  else if(source==="crm")form.elements.servicio.value="Gestión de presupuestos y pedidos";
  const clean=v=>String(v||"").replace(/\s+/g," ").trim();
+ let currentSubject="FLUYNOVA | Consulta";
+ const syncMailto=()=>{
+  const message=text.value;
+  const url="mailto:"+email+"?subject="+encodeURIComponent(currentSubject)+"&body="+encodeURIComponent(message);
+  if(url.length<=1800 && message.trim()){
+   link.href=url;
+   link.hidden=false;
+   status.textContent="Borrador listo para abrir en tu correo. Todavía no se envió nada.";
+  }else{
+   link.hidden=true;
+   status.textContent="El texto es demasiado largo para abrirlo en el correo. Copialo y envialo manualmente a "+email+".";
+  }
+ };
+ text.addEventListener("input",syncMailto);
  form.addEventListener("submit",(event)=>{
   event.preventDefault();
   if(!form.reportValidity())return;
@@ -42,14 +56,8 @@
     "Gracias."
   ].join("\n");
   text.value=body;
-  const url="mailto:"+email+"?subject="+encodeURIComponent(subject)+"&body="+encodeURIComponent(body);
-  if(url.length<=1800){
-   link.href=url;link.hidden=false;
-   status.textContent="Borrador preparado: todavía no se envió nada.";
-  }else{
-   link.hidden=true;
-   status.textContent="El mensaje es extenso para abrirlo automáticamente. Copiá el texto y enviá un correo a "+email+".";
-  }
+  currentSubject=subject;
+  syncMailto();
   result.hidden=false;
   result.scrollIntoView({behavior:"smooth",block:"start"});
  });
