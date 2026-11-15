@@ -31,11 +31,13 @@ jobs:
         run: node scripts/build-portfolio-static.mjs
       - name: Prueba real de geometría y capturas a 320, 390 y 1440
         run: node tests/portfolio-visual-qa.mjs
-      - name: Conservar capturas y reporte sin publicar la web
+      - name: Conservar capturas, reporte y HTML autónomo sin desplegar
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fluynova-portfolio-qa-visual
-          path: qa-portfolio-capturas/
+          path: |
+            qa-portfolio-capturas/
+            dist-portfolio-static/index.html
           if-no-files-found: warn
           retention-days: 7
