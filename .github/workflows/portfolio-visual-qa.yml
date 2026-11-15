@@ -31,6 +31,12 @@ jobs:
         run: node scripts/build-portfolio-static.mjs
       - name: Prueba real de geometría y capturas a 320, 390 y 1440
         run: node tests/portfolio-visual-qa.mjs
+      - name: Verificar que el entregable contiene el recorrido completo
+        run: |
+          test -s dist-portfolio-static/index.html
+          test -s dist-portfolio-static/contacto/index.html
+          test -s dist-portfolio-static/contacto/contacto.js
+          test -s qa-portfolio-capturas/reporte-visual.json
       - name: Conservar capturas, reporte y HTML autónomo sin desplegar
         if: always()
         uses: actions/upload-artifact@v4
@@ -38,6 +44,6 @@ jobs:
           name: fluynova-portfolio-qa-visual
           path: |
             qa-portfolio-capturas/
-            dist-portfolio-static/index.html
+            dist-portfolio-static/
           if-no-files-found: warn
           retention-days: 7
