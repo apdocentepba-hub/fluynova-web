@@ -90,3 +90,15 @@ test("portfolio aislado: ejecuta regresiones de las tres demos",()=>{
   assert.match(out,/# pass 8\b/);
   assert.match(out,/# fail 0\b/);
 });
+
+
+test("portfolio portable: comprueba independencia del backend",()=>{
+ const {execFileSync}=require('node:child_process');
+ const env={...process.env};
+ delete env.NODE_TEST_CONTEXT;
+ const out=execFileSync(process.execPath,['--test','tests/portfolio-static.test.mjs'],{
+  cwd:path.join(__dirname,'..'),env,encoding:'utf8',timeout:15000
+ });
+ assert.match(out,/# pass 8\b/);
+ assert.match(out,/# fail 0\b/);
+});
