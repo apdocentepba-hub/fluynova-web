@@ -74,3 +74,20 @@ test('enlaces locales importantes tienen destinos en el proyecto actual',()=>{
  assert.ok(existsSync(resolve(staticDir,'soluciones-express/index.html')));
  assert.ok(existsSync(resolve(staticDir,'diagnostico/index.html')));
 });
+
+
+test('el contacto directo funciona como alternativa sin envíos automáticos',()=>{
+ const links=hrefs.filter(h=>h.startsWith('mailto:'));
+ assert.equal(links.length,2);
+ for (const href of links){
+  const url=new URL(href);
+  assert.equal(url.protocol,'mailto:');
+  assert.equal(url.pathname,'contacto.fluynova@gmail.com');
+  assert.match(url.searchParams.get('subject')||'',/FLUYNOVA.*Consulta desde galería/i);
+  assert.match(url.searchParams.get('body')||'',/me interesa consultar/i);
+  assert.match(url.searchParams.get('body')||'',/Qué necesita mi negocio/i);
+  assert.ok(href.length<1200);
+ }
+ assert.match(html,/vos decidís si lo enviás/);
+ assert.doesNotMatch(html,/<form\b|fetch\s*\(|XMLHttpRequest/);
+});
