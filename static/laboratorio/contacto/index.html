@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex,nofollow,noarchive">
+<meta name="theme-color" content="#0b1019">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'self'; img-src data:; base-uri 'none'; form-action 'none'; frame-ancestors 'none'">
+<title>Contanos qué necesita tu negocio | FLUYNOVA</title>
+<meta name="description" content="Prepará un correo para consultar por una web o una automatización. Revisás el borrador antes de decidir si lo enviás.">
+<style>
+:root{color-scheme:dark;--bg:#0b1019;--card:#16252c;--line:#426055;--text:#eff8f2;--sub:#bfd4cd;--accent:#c7fc7e}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(ellipse at 90% 0%,#1b4438 0%,transparent 45%),var(--bg);font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--text)}
+a{color:var(--accent)}a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:3px solid var(--accent);outline-offset:3px}
+.wrap{width:min(920px,calc(100% - 34px));margin:auto}.skip{position:absolute;left:-200vw}.skip:focus{left:12px;top:12px;background:var(--accent);color:#11231c;padding:9px;z-index:1}
+header{padding:17px 0;border-bottom:1px solid var(--line)}header .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px}header a{text-decoration:none}header b{font-size:23px;letter-spacing:-.7px}header small{color:var(--sub)}
+main{padding:38px 0 72px}.eyebrow{font-weight:800;font-size:12px;letter-spacing:1.2px;text-transform:uppercase;color:var(--accent)}h1{font-size:clamp(34px,6vw,56px);letter-spacing:-2px;line-height:1.1;margin:14px 0 15px}h2{font-size:24px;letter-spacing:-.5px;margin:0 0 15px}p{color:var(--sub)}.intro{max-width:740px;font-size:18px}.notice{border:1px solid var(--line);background:#17382f;padding:15px 18px;border-radius:11px;margin:26px 0}.notice p{margin:0;font-size:14px;color:var(--text)}
+form{padding:29px;background:var(--card);border:1px solid var(--line);border-radius:16px}.two{display:grid;grid-template-columns:1fr 1fr;gap:18px}label{display:block;font-size:14px;font-weight:750;margin-bottom:18px}label span{font-weight:400;color:var(--sub)}input,select,textarea{display:block;width:100%;border:1px solid #799389;background:#0f1c23;color:var(--text);border-radius:9px;font:inherit;padding:13px;margin-top:7px;min-height:47px}textarea{resize:vertical;min-height:140px}input::placeholder,textarea::placeholder{color:#93aca4}button,.button{display:inline-flex;align-items:center;justify-content:center;border:0;background:var(--accent);color:#102417;border-radius:9px;min-height:48px;padding:13px 20px;font:800 15px system-ui;cursor:pointer;text-decoration:none}.button.secondary{background:transparent;color:var(--accent);border:1px solid var(--line)}.buttons{display:flex;gap:13px;flex-wrap:wrap;align-items:center;margin-top:12px}.small{font-size:13px;color:var(--sub)}.check{display:flex;gap:12px;align-items:start;font-size:13px}.check input{width:18px;height:18px;min-height:auto;margin:3px 0 0;flex:none}
+.result{border:1px solid #4a8b70;border-radius:13px;padding:23px;background:#16352d;margin-top:24px}.result[hidden]{display:none}.result h2{margin-bottom:7px}.result textarea{min-height:200px;font-size:13px}.result p{margin-top:0}.status{min-height:20px;font-size:14px}.status[role=status]{color:#e6fbd1}
+footer{border-top:1px solid var(--line);padding:24px 0;font-size:13px;color:var(--sub)}footer .wrap{display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap}
+@media(max-width:650px){.two{grid-template-columns:1fr;gap:0}form{padding:18px}main{padding-top:27px}header .wrap{align-items:start;flex-direction:column;gap:4px}h1{letter-spacing:-1px}.buttons{flex-direction:column;align-items:stretch}.buttons>*{width:100%}}
+</style>
+<script defer src="contacto.js"></script>
+</head>
+<body>
+<a class="skip" href="#contenido">Ir al contenido</a>
+<header><div class="wrap"><a href="../index.html"><b>FLUY<span style="color:#c7fc7e">NOVA.</span></b></a><small>Consulta comercial sin dependencia del servidor</small></div></header>
+<main id="contenido" class="wrap">
+<span class="eyebrow">Primera orientación · Sin cargo</span>
+<h1>Contanos qué querés <span style="color:#c7fc7e">resolver.</span></h1>
+<p class="intro">Elegí el tipo de proyecto y describí el problema. Preparamos un borrador de correo en tu navegador: <strong>vos decidís si lo enviás</strong>.</p>
+<div class="notice"><p><strong>Privacidad y límites:</strong> no ingreses contraseñas, información de clientes, alumnos, pacientes ni otros datos sensibles. Este formulario no transmite, almacena ni registra información. La respuesta comercial no está garantizada hasta que envíes el correo desde tu aplicación.</p></div>
+<form id="consulta" action="#" method="get" novalidate>
+<h2>Preparar consulta</h2>
+<div class="two">
+<label>Rubro o actividad <span>(opcional)</span><input name="rubro" maxlength="80" autocomplete="organization" placeholder="Ej.: distribuidora o estudio contable"></label>
+<label>¿Qué necesitás? <span>(obligatorio)</span>
+<select name="servicio" required><option value="">Seleccioná una opción</option><option>Una página web o catálogo</option><option>Automatizar tareas repetitivas</option><option>Gestión de presupuestos y pedidos</option><option>Software a medida</option><option>No estoy seguro todavía</option></select></label>
+</div>
+<label>¿Qué problema querés resolver? <span>(mínimo 15 caracteres)</span>
+<textarea name="problema" minlength="15" maxlength="500" required placeholder="Ej.: recibimos presupuestos por WhatsApp, mail y formularios; perdemos el seguimiento de cada pedido..."></textarea></label>
+<label>Tu correo de respuesta <span>(opcional, si querés incluirlo en el mensaje)</span><input name="email" type="email" maxlength="150" autocomplete="email" placeholder="tu@empresa.com"></label>
+<label class="check"><input name="consentimiento" type="checkbox" required><span>Entiendo que se preparará un borrador y que no se envía nada automáticamente. Revisaré el contenido antes de enviarlo.</span></label>
+<div class="buttons"><button type="submit">Preparar borrador ↗</button><a class="button secondary" href="mailto:contacto.fluynova@gmail.com?subject=Consulta%20FLUYNOVA">Prefiero escribir directamente</a></div>
+<p class="small">No hay cuentas, pagos, cookies, analítica ni almacenamiento. No ingreses información confidencial.</p>
+</form>
+<section class="result" id="resultado" hidden aria-live="polite">
+<h2>Revisá el mensaje antes de enviarlo</h2>
+<p>El borrador quedó preparado en este navegador. Si tenés configurado un programa de correo, usá «Abrir en mi correo». Si no, copiá el texto y enviá a <strong>contacto.fluynova@gmail.com</strong>.</p>
+<label for="resumen">Texto del mensaje</label><textarea id="resumen" readonly></textarea>
+<div class="buttons"><a class="button" id="abrir-correo" href="mailto:contacto.fluynova@gmail.com?subject=Consulta%20FLUYNOVA">Abrir en mi correo ↗</a><button type="button" id="copiar" class="button secondary">Copiar texto</button></div>
+<p class="status" id="estado" role="status"></p>
+</section>
+<noscript><p>Para preparar un mensaje necesitás JavaScript. También podés enviar una consulta manual a <a href="mailto:contacto.fluynova@gmail.com">contacto.fluynova@gmail.com</a>.</p></noscript>
+</main>
+<footer><div class="wrap"><span>FLUYNOVA · Demostración de contacto sin servidor</span><a href="../index.html">Volver a las demostraciones</a></div></footer>
+</body>
+</html>
