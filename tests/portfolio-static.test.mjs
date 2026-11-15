@@ -29,14 +29,16 @@ test('sin rutas relativas de otros dominios en la vista portátil',()=>{
  assert.doesNotMatch(html,/\bhref="\/(?!\/)/);
  assert.ok(hrefs.includes('https://fluynova-web.onrender.com/'));
  assert.ok(hrefs.includes('https://fluynova-web.onrender.com/privacidad'));
+ assert.ok(hrefs.includes('contacto/index.html'));
+ assert.ok(hrefs.filter(x=>x.startsWith('contacto/index.html?')).length===5);
 });
-test('conserva atribución UTM al dirigir hacia la web principal',()=>{
+test('los cinco CTA con UTM dirigen al formulario estático y evitan el cold start',()=>{
  const tracked=hrefs.filter(x=>x.includes('utm_source=laboratorio'));
  assert.equal(tracked.length,5);
  for(const href of tracked){
-  const u=new URL(href);
-  assert.equal(u.origin,'https://fluynova-web.onrender.com');
-  assert.ok(['/diagnostico/','/webs/'].includes(u.pathname));
+  const u=new URL(href,'https://portfolio.test/');
+  assert.equal(u.origin,'https://portfolio.test');
+  assert.equal(u.pathname,'/contacto/index.html');
   assert.equal(u.searchParams.get('utm_medium'),'portfolio');
   assert.equal(u.searchParams.get('utm_campaign'),'demostraciones_202611');
  }
@@ -70,6 +72,22 @@ test('escribe un HTML en carpeta temporal y no sobrescribe en un segundo intento
   const rendered=await readFile(created.file,'utf8');
   assert.equal(rendered,html);
   assert.ok(created.bytes>10000);
+  const contact=await readFile(join(tmp,'salida','contacto','index.html'),'utf8');
+  const js=await readFile(join(tmp,'salida','contacto','contacto.js'),'utf8');
+  assert.match(contact,/form-action 'none'/);
+  assert.match(contact,/type="submit" disabled/);
+  assert.match(contact,/src="contacto.js"/);
+  assert.match(js,/URLSearchParams/);
+  assert.doesNotMatch(js,/fetch\s*\(|XMLHttpRequest|sendBeacon|localStorage|sessionStorage|document\.cookie/);
   await assert.rejects(()=>buildPortfolio(join(tmp,'salida')),{code:'EEXIST'});
  }finally{await rm(tmp,{recursive:true,force:true});}
+});
+
+
+test('no se transfieren consultas a Render ni se depende de scripts externos para captar',()=>{
+ const tracked=hrefs.filter(x=>x.includes('utm_source=laboratorio'));
+ assert.equal(tracked.length,5);
+ assert.ok(tracked.every(x=>x.startsWith('contacto/index.html?')));
+ assert.ok(hrefs.includes('contacto/index.html'));
+ assert.doesNotMatch(html,/href="https:\/\/fluynova-web\.onrender\.com\/diagnostico\/\?/);
 });
