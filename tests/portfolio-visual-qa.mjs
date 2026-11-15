@@ -134,6 +134,10 @@ async function run(){
    assert.ok(d.body.includes('Quiero seguir presupuestos de distintas sucursales'));
    assert.ok(d.body.includes('utm_content: crm'));
    assert.equal(new URL(d.mailto).pathname,'contacto.fluynova@gmail.com');
+   const edited=await cdp.send('Runtime.evaluate',{expression:"(()=>{const box=document.getElementById('resumen'),link=document.getElementById('abrir-correo');const original=box.value;const editable=!box.readOnly;box.value=original+'\\nDetalle adicional editable por el usuario.';box.dispatchEvent(new Event('input',{bubbles:true}));const synchronized=!link.hidden&&new URL(link.href).searchParams.get('body')===box.value;box.value='Ñ'.repeat(1100);box.dispatchEvent(new Event('input',{bubbles:true}));const blocked=link.hidden&&document.getElementById('estado').textContent.includes('demasiado largo');box.value=original;box.dispatchEvent(new Event('input',{bubbles:true}));return {editable,synchronized,blocked,restored:!link.hidden,stillLocal:location.pathname==='/contacto/index.html'};})()",returnByValue:true});
+   if(edited.exceptionDetails)throw Error('Excepción en actualización del borrador');
+   const edit=edited.result?.value;
+   assert.ok(edit&&edit.editable&&edit.synchronized&&edit.blocked&&edit.restored&&edit.stillLocal,'El borrador editable no sincroniza o no protege enlaces largos: '+JSON.stringify(edit));
    const shot=await cdp.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:true});
    const image=Buffer.from(shot.data,'base64');
    assert.equal(image.subarray(1,4).toString(),'PNG');
