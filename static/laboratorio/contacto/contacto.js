@@ -10,8 +10,12 @@
  const valid=/^[A-Za-z0-9_.-]{1,90}$/;
  const allowed=["utm_source","utm_medium","utm_campaign","utm_content"];
  const email="contacto.fluynova@gmail.com";
+ form.querySelector('button[type="submit"]').disabled=false;
  const params=new URLSearchParams(window.location.search);
  const tracking=allowed.map(k=>[k,params.get(k)]).filter(([,value])=>value&&valid.test(value));
+ const source=tracking.find(([k])=>k==="utm_content")?.[1];
+ if(["pasteleria","distribuidora"].includes(source))form.elements.servicio.value="Una página web o catálogo";
+ else if(source==="crm")form.elements.servicio.value="Gestión de presupuestos y pedidos";
  const clean=v=>String(v||"").replace(/\s+/g," ").trim();
  form.addEventListener("submit",(event)=>{
   event.preventDefault();
