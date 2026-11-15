@@ -91,3 +91,16 @@ test('no se transfieren consultas a Render ni se depende de scripts externos par
  assert.ok(hrefs.includes('contacto/index.html'));
  assert.doesNotMatch(html,/href="https:\/\/fluynova-web\.onrender\.com\/diagnostico\/\?/);
 });
+
+
+test('edición de borrador: correo y link se actualizan, sin envío automático',async()=>{
+ const contact=await readFile(join(ROOT,'static/laboratorio/contacto/index.html'),'utf8');
+ const js=await readFile(join(ROOT,'static/laboratorio/contacto/contacto.js'),'utf8');
+ assert.match(contact,/<textarea id="resumen" maxlength="1500"/);
+ assert.doesNotMatch(contact,/<textarea id="resumen"[^>]*readonly/);
+ assert.match(js,/text\.addEventListener\("input",syncMailto\)/);
+ assert.match(js,/encodeURIComponent\(message\)/);
+ assert.match(js,/url\.length<=1800 && message\.trim\(\)/);
+ assert.match(js,/link\.hidden=true/);
+ assert.doesNotMatch(js,/fetch\s*\(|XMLHttpRequest|sendBeacon|localStorage|sessionStorage|document\.cookie/);
+});
