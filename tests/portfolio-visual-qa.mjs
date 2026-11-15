@@ -49,10 +49,15 @@ async function ready(cdp){
 }
 async function run(){
  const html=await readFile(resolve('dist-portfolio-static/index.html'),'utf8');
+ const contactHTML=await readFile(resolve('dist-portfolio-static/contacto/index.html'),'utf8');
+ const contactJS=await readFile(resolve('dist-portfolio-static/contacto/contacto.js'),'utf8');
  assert.match(html,/data-portfolio-static="true"/);
  const chrome=getChrome(),profile=await mkdtemp(join(tmpdir(),'fluynova-headless-'));
  const server=createServer((req,res)=>{
-  if(req.url==='/'||req.url==='/index.html'){res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store'});res.end(html);}
+  const pathname=new URL(req.url,'http://127.0.0.1').pathname;
+  if(pathname==='/'||pathname==='/index.html'){res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store'});res.end(html);}
+  else if(pathname==='/contacto/index.html'){res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store'});res.end(contactHTML);}
+  else if(pathname==='/contacto/contacto.js'){res.writeHead(200,{'content-type':'text/javascript; charset=utf-8','cache-control':'no-store'});res.end(contactJS);}
   else{res.writeHead(404);res.end('Not Found');}
  });
  await new Promise((ok,fail)=>server.listen(0,'127.0.0.1',e=>e?fail(e):ok()));
@@ -106,7 +111,37 @@ async function run(){
    await writeFile(join(OUTPUT,'portfolio_'+v.name+'_completo.png'),fullPng);
    result.push({viewport:v.width,height:v.height,fullHeight,bodyWidth:m.bodyWidth,documentWidth:m.docWidth,cards:m.cards,mailto:m.emails,result:'PASS'});
   }
-  await writeFile(join(OUTPUT,'reporte-visual.json'),JSON.stringify({result:'PASS',environment:'Chrome CDP sobre servidor local; sin red externa',screenshots:result},null,2));
+  // Ejercitar el recorrido de venta sin Render, bajo Chrome real; ningún mensaje se envía.
+  const contactTests=[];
+  for(const v of views){
+   await cdp.send('Emulation.setDeviceMetricsOverride',{width:v.width,height:v.height,deviceScaleFactor:1,mobile:v.mobile});
+   const local='http://127.0.0.1:'+server.address().port+'/contacto/index.html?utm_source=laboratorio&utm_medium=portfolio&utm_campaign=demostraciones_202611&utm_content=crm';
+   await cdp.send('Page.navigate',{url:local});
+   let activated=false;
+   for(let attempt=0;attempt<50;attempt++){
+    const ready=await cdp.send('Runtime.evaluate',{expression:'({ready:document.readyState,enabled:!!document.querySelector("#consulta button[type=submit]:not(:disabled)")})',returnByValue:true});
+    if(ready.result?.value?.ready==='complete'&&ready.result?.value?.enabled){activated=true;break;}
+    await sleep(100);
+   }
+   assert.ok(activated,'La página de contacto no cargó el script o no habilitó el botón');
+   const evaluated=await cdp.send('Runtime.evaluate',{expression:"(()=>{const f=document.getElementById('consulta');const selected=f.elements.servicio.value;f.elements.problema.value='Quiero seguir presupuestos de distintas sucursales sin perder las consultas';f.elements.consentimiento.checked=true;f.requestSubmit();const result=document.getElementById('resultado');const link=document.getElementById('abrir-correo');return {width:innerWidth,bodyWidth:document.body.scrollWidth,documentWidth:document.documentElement.scrollWidth,selected,resultShown:!result.hidden,mailto:link.getAttribute('href'),body:document.getElementById('resumen').value,protocol:location.protocol};})()",returnByValue:true});
+   if(evaluated.exceptionDetails)throw Error('Excepción en navegador del contacto: '+JSON.stringify(evaluated.exceptionDetails));
+   const d=evaluated.result?.value;
+   assert.ok(d&&d.resultShown,'No se preparó el borrador');
+   assert.equal(d.selected,'Gestión de presupuestos y pedidos');
+   assert.equal(d.protocol,'http:','El formulario navegó involuntariamente');
+   assert.ok(d.documentWidth<=v.width+1&&d.bodyWidth<=v.width+1,'Desborde de contacto '+v.name);
+   assert.ok(d.body.includes('Quiero seguir presupuestos de distintas sucursales'));
+   assert.ok(d.body.includes('utm_content: crm'));
+   assert.equal(new URL(d.mailto).pathname,'contacto.fluynova@gmail.com');
+   const shot=await cdp.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:true});
+   const image=Buffer.from(shot.data,'base64');
+   assert.equal(image.subarray(1,4).toString(),'PNG');
+   await writeFile(join(OUTPUT,'contacto_'+v.name+'.png'),image);
+   contactTests.push({viewport:v.width,selected:d.selected,mailtoPrepared:true,samePage:true,noOverflow:true,result:'PASS'});
+  }
+  await writeFile(join(OUTPUT,'reporte-visual.json'),JSON.stringify({result:'PASS',environment:'Chrome CDP sobre localhost; sin envíos externos',screenshots:result,contact:contactTests},null,2));
+  console.log('CONTACTO_LOCAL_PASS '+JSON.stringify(contactTests));
   console.log('PORTFOLIO_VISUAL_PASS '+JSON.stringify(result));
  }finally{
   cdp?.close();child?.kill('SIGTERM');
