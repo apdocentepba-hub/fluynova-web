@@ -121,3 +121,16 @@ test("contacto directo: ejecuta regresiones independientes", () => {
   assert.match(output, /# pass 6\b/);
   assert.match(output, /# fail 0\b/);
 });
+
+
+test("readiness de contacto: exige diez pruebas sin envío externo", () => {
+ const {execFileSync} = require("node:child_process");
+ // Node TEST_CONTEXT se quita para no saltar la sub-suite silenciosamente.
+ const env = {...process.env};
+ delete env.NODE_TEST_CONTEXT;
+ const out = execFileSync(process.execPath,
+   ["--test", "tests/contact-readiness.test.js"],
+   {cwd:path.join(__dirname, ".."), env, encoding:"utf8", timeout:15000});
+ assert.match(out, /# pass 10\b/);
+ assert.match(out, /# fail 0\b/);
+});
