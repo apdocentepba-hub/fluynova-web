@@ -87,6 +87,6 @@ test("portfolio aislado: ejecuta regresiones de las tres demos",()=>{
   const out=execFileSync(process.execPath,['--test','tests/laboratorio-aislado.test.mjs'],{
     cwd:path.join(__dirname,'..'),env,encoding:'utf8',timeout:15000
   });
-  assert.match(out,/# pass 7\b/);
+  assert.match(out,/# pass 8\b/);
   assert.match(out,/# fail 0\b/);
 });
