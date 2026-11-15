@@ -111,9 +111,13 @@ test("sin píxeles, cookies, localStorage ni envío independiente", () => {
 
 test("contacto directo: ejecuta regresiones independientes", () => {
   const {execFileSync} = require("node:child_process");
+  // Node's test runner sets NODE_TEST_CONTEXT in workers; inherited context
+  // causes nested "node --test" to silently skip tests with exit code zero.
+  const env = {...process.env};
+  delete env.NODE_TEST_CONTEXT;
   const output = execFileSync(process.execPath,
     ["--test", "tests/diagnostico-contacto-directo.test.mjs"],
-    {cwd: path.join(__dirname, ".."), encoding: "utf8", timeout: 15000});
+    {cwd: path.join(__dirname, ".."), encoding: "utf8", timeout: 15000, env});
   assert.match(output, /# pass 6\b/);
   assert.match(output, /# fail 0\b/);
 });
