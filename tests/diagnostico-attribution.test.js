@@ -107,3 +107,13 @@ test("sin píxeles, cookies, localStorage ni envío independiente", () => {
   assert.ok(!js.includes("document.cookie"));
   assert.ok(!js.includes("sendBeacon("));
 });
+
+
+test("contacto directo: ejecuta regresiones independientes", () => {
+  const {execFileSync} = require("node:child_process");
+  const output = execFileSync(process.execPath,
+    ["--test", "tests/diagnostico-contacto-directo.test.mjs"],
+    {cwd: path.join(__dirname, ".."), encoding: "utf8", timeout: 15000});
+  assert.match(output, /# pass 6\b/);
+  assert.match(output, /# fail 0\b/);
+});
