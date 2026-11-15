@@ -1,0 +1,37 @@
+name: FLUYNOVA diagnostico QA visual sin despliegue
+
+on:
+  pull_request:
+    paths:
+      - 'static/diagnostico/**'
+      - 'tests/diagnostico-visual-qa.mjs'
+      - '.github/workflows/diagnostico-visual-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - name: Fuentes del PR sin fusionar
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comprobar Chrome local
+        run: |
+          (command -v google-chrome || command -v google-chrome-stable || command -v chromium)
+      - name: Chrome real, correo manual y UTM a 320, 390 y 1440
+        run: node tests/diagnostico-visual-qa.mjs
+      - name: Guardar evidencias sin publicar
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluynova-diagnostico-qa-visual
+          path: qa-diagnostico-capturas/
+          if-no-files-found: warn
+          retention-days: 7
