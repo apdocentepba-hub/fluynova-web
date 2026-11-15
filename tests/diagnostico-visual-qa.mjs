@@ -53,7 +53,7 @@ async function run(){
  assert.match(html,/data-diagnostic-cta/);
  const chrome=getChrome(),profile=await mkdtemp(join(tmpdir(),'fluynova-headless-'));
  const server=createServer((req,res)=>{
-  if(req.url==='/'||req.url==='/index.html'){res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store'});res.end(html);}
+  if(req.url==='/'||req.url==='/index.html'||req.url.startsWith('/?')){res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store'});res.end(html);}
   else if(req.url==='/diagnostico/attribution.js'){res.writeHead(200,{'content-type':'text/javascript; charset=utf-8'});res.end(attribution);}
   else{res.writeHead(404);res.end('Not Found');}
  });
