@@ -45,3 +45,7 @@ test('el enlace alternativo es usable con teclado y en pantalla angosta', () => 
   assert.match(html, /\.email-cta\{[^}]*min-height:48px/);
   assert.match(html, /@media\(max-width:730px\)/);
 });
+
+test('mantiene enlace a Instagram oficial con apertura segura', () => {
+  assert.match(html, /href="https:\/\/www\.instagram\.com\/fluynova\/" target="_blank" rel="noopener noreferrer"/);
+});
