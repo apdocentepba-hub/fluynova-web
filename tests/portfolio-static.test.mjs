@@ -104,3 +104,10 @@ test('edición de borrador: correo y link se actualizan, sin envío automático'
  assert.match(js,/link\.hidden=true/);
  assert.doesNotMatch(js,/fetch\s*\(|XMLHttpRequest|sendBeacon|localStorage|sessionStorage|document\.cookie/);
 });
+
+
+test('el banner de staging no niega la existencia del formulario local',()=>{
+ assert.match(html,/VISTA PREVIA AUTÓNOMA/);
+ assert.match(html,/Consulta local sin envío automático ni almacenamiento/);
+ assert.doesNotMatch(html,/Sin formularios ni envíos automáticos/);
+});
