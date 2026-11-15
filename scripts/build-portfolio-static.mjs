@@ -1,6 +1,6 @@
 /**
  * FLUYNOVA: construye un portfolio de revisión 100% estático desde /laboratorio/.
- * NO despliega, NO genera formularios, NO envía contactos.
+ * NO despliega, genera un formulario local sin transmisión, NO envía contactos.
  * Uso local: node scripts/build-portfolio-static.mjs
  */
 import {readFile, mkdir, writeFile} from 'node:fs/promises';
@@ -14,7 +14,7 @@ const CONTACT_JS=join(ROOT,'static','laboratorio','contacto','contacto.js');
 const DEFAULT_OUT=join(ROOT,'dist-portfolio-static');
 const OFFICIAL='https://fluynova-web.onrender.com/';
 const EMAIL='contacto.fluynova@gmail.com';
-const BANNER='<div role="note" data-portfolio-static="true" style="background:#234639;color:#f2fff1;text-align:center;padding:13px 18px;font:600 13px/1.5 system-ui,sans-serif">VISTA PREVIA AUTÓNOMA · Sin formularios ni envíos automáticos. Si la web principal tarda, podés escribir a <strong>'+EMAIL+'</strong>.</div>';
+const BANNER='<div role="note" data-portfolio-static="true" style="background:#234639;color:#f2fff1;text-align:center;padding:13px 18px;font:600 13px/1.5 system-ui,sans-serif">VISTA PREVIA AUTÓNOMA · Consulta local sin envío automático ni almacenamiento. Podés escribir a <strong>'+EMAIL+'</strong>.</div>';
 
 function assertSource(html){
  if(typeof html!=='string'||!html.startsWith('<!doctype html>'))throw Error('HTML de laboratorio inesperado');
