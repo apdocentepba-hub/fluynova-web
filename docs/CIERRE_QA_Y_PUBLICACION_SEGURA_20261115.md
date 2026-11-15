@@ -3,8 +3,8 @@
 **Estado:** IMPLEMENTADO Y PROBADO EN RAMA. **NO publicado**. Sin autorización para fusionar a `main`, desplegar, contactar clientes ni contratar servicios.
 
 ## Producto exacto
-El PR [#26](https://github.com/apdocentepba-hub/fluynova-web/pull/26) incorpora una **galería de tres demostraciones ficticias** y un generador de **único archivo HTML estático** (`node scripts/build-portfolio-static.mjs` → `dist-portfolio-static/index.html`).
-No pretende sustituir el sitio completo, su backend FastAPI, el formulario FormSubmit ni Guardián. **No procesa compras ni consultas automáticas**, no almacena datos; ofrece **dos enlaces de correo manual** y muestra dirección para copiar. Mantiene `noindex,nofollow,noarchive`.
+El PR [#26](https://github.com/apdocentepba-hub/fluynova-web/pull/26) incorpora una **galería de tres demostraciones ficticias** y un generador de **micrositio comercial estático** (`node scripts/build-portfolio-static.mjs` → `dist-portfolio-static/`), con la portada, `contacto/index.html` y `contacto/contacto.js`.
+No pretende sustituir el sitio completo, su backend FastAPI, el formulario FormSubmit ni Guardián. **No procesa compras ni envía consultas automáticamente**. El visitante describe su necesidad, genera un borrador, lo revisa y decide si lo envía. El formulario no guarda datos ni hace peticiones de red, y mantiene `noindex,nofollow,noarchive`.
 
 ## Pruebas ejecutadas y sus límites
 | Control | Resultado / evidencia | Qué NO demuestra |
@@ -15,6 +15,14 @@ No pretende sustituir el sitio completo, su backend FastAPI, el formulario FormS
 | URLs externas de las 3 demos | CRM, pastelería y distribuidora respondieron HTTP 200 en comprobación del 15/11 | No garantiza disponibilidad futura |
 | Sitio principal Render Free | Registros: arranque, respuesta 200, apagado por inactividad y reactivación; en consultas externas se observó 503 | No se comprobó estabilidad continua |
 | Recepción de FormSubmit | Gmail comercial tenía tres notificaciones **históricas de prueba** | No garantiza que hoy se envíen o reciban consultas reales |
+
+## Mejora de captación autónoma — 15/11/2026
+- [GitHub Actions visual 43772461227](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/43772461227): **SUCCESS** en Chrome 320, 390 y 1440 px. Se recorrió la pantalla de consulta, se introdujo un problema ficticio y se verificó generación de un enlace de correo sin navegar ni enviar mensajes.
+- [Regresiones 43772461107](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/43772461107): **SUCCESS** con nueve pruebas del generador estático integradas a CI, más ocho pruebas de galería.
+- Se comprobó que las cinco CTA preservan sus UTM, llevan a `contacto/index.html` y no pasan por Render para preparar el borrador. El servicio se preselecciona según `utm_content=crm/pasteleria/distribuidora`.
+- Se detectó y corrigió un defecto del ZIP de Actions que omitía el formulario. [Artefacto corregido 14185390290](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/43772461227/artifacts/14185390290): **13 entradas, CRC PASS**, incluyendo portada, contacto, JavaScript, capturas e informe.
+- SHA-256 portada generada: `7200a9e579abaa6acae95a9c0ac3abd61541a8db9ab326680c377cafb9d5e845`; contacto: `5cbf6accacb95e304c1fda606e3bea405d5c90c092ee7bd12a4b1ee69b6adcb4`; JavaScript: `595296cf94ae2bb7de9bd6afa2c4f0fd7b4dc1a0869f8488eb064918f849fb51`.
+- **No equivale a envío ni recepción real**: abrir el cliente de correo y pulsar Enviar es una decisión del visitante. Sin JavaScript, el botón de preparación queda deshabilitado y hay un enlace manual.
 
 ## Puertas de aceptación — antes de hacer públicos los enlaces
 1. Confirmar presupuesto **$0 autorizado** y límites del alojamiento estático. No contratar un servicio ni seleccionar un plan pago por omisión.
@@ -32,7 +40,7 @@ No pretende sustituir el sitio completo, su backend FastAPI, el formulario FormS
 
 ## Dependencias que bloquean el cierre comercial
 - **PR #25:** contacto alternativo probado en Chrome 320/390/1440 y CI; la recepción vigente de FormSubmit todavía no fue probada en condiciones reales.
-- **Hosting:** la galería autónoma evita suspensión del backend **solo mientras el visitante permanece en la galería**. Los vínculos hacia `/diagnostico/` o `/webs/` oficiales pueden experimentar 503 por arranque en frío.
+- **Hosting:** las cinco CTA comerciales del portfolio llevan ahora a una página de consulta **local al propio sitio estático**. La navegación secundaria hacia la web oficial todavía puede experimentar 503 por arranque en frío.
 - **Ventas:** no hay aceptación de presupuesto ni cobro confirmado; mostrar demostraciones no equivale a cerrar una venta.
 
 ## Decisión registrada
