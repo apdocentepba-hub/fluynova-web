@@ -46,8 +46,8 @@ footer{border-top:1px solid var(--line);padding:24px 0;font-size:13px;color:var(
 </form>
 <section class="result" id="resultado" hidden aria-live="polite">
 <h2>Revisá el mensaje antes de enviarlo</h2>
-<p>El borrador quedó preparado en este navegador. Si tenés configurado un programa de correo, usá «Abrir en mi correo». Si no, copiá el texto y enviá a <strong>contacto.fluynova@gmail.com</strong>.</p>
-<label for="resumen">Texto del mensaje</label><textarea id="resumen" readonly></textarea>
+<p>El borrador quedó preparado en este navegador. Podés <strong>editarlo</strong> antes de abrirlo en tu correo. Si no tenés una aplicación de correo configurada, copiá el texto y envialo a <strong>contacto.fluynova@gmail.com</strong>.</p>
+<label for="resumen">Texto del mensaje <span>(podés editarlo antes de abrir tu correo)</span></label><textarea id="resumen" maxlength="1500" spellcheck="true" aria-describedby="estado"></textarea>
 <div class="buttons"><a class="button" id="abrir-correo" href="mailto:contacto.fluynova@gmail.com?subject=Consulta%20FLUYNOVA">Abrir en mi correo ↗</a><button type="button" id="copiar" class="button secondary">Copiar texto</button></div>
 <p class="status" id="estado" role="status"></p>
 </section>
