@@ -71,6 +71,35 @@ test("la transferencia desde GUARDIÁN continúa funcionando",()=>{
  assert.equal(x.category,"Automatizar tareas");
  assert.match(x.message,/Guard[iá]án|Guardián/);
 });
+test("Guardián deriva cada necesidad simple a la categoría comercial correcta",()=>{
+ const casos=[
+  ["turnos","Turnos, reservas y agenda"],
+  ["presupuestos","Presupuestos y cotizaciones"],
+  ["stock","Pedidos, ventas y stock"],
+  ["avisos","WhatsApp, correo y respuestas automáticas"],
+  ["cobros","Pedidos, ventas y stock"],
+  ["ordenes","Pedidos, ventas y stock"],
+  ["clientes","Gestionar clientes (CRM)"]
+ ];
+ for(const [key,category] of casos){
+  const x=bootstrap("?utm_source=guardian&utm_medium=asistente&guardian_sector=comercio&guardian_funciones="+key);
+  assert.equal(x.category,category,"función "+key);
+  assert.equal(x.origen_fuente,"guardian");
+  assert.equal(x.origen_canal,"asistente");
+  assert.match(x.message,/Guardián/);
+ }
+});
+test("Guardián conserva diagnóstico general en proyectos y necesidades múltiples",()=>{
+ assert.equal(bootstrap("?utm_source=guardian&guardian_proyecto=legajos&guardian_funciones=turnos").category,"Desarrollar software");
+ assert.equal(bootstrap("?utm_source=guardian&guardian_funciones=turnos,stock").category,"Desarrollar software");
+ assert.equal(bootstrap("?utm_source=guardian&guardian_funciones=turnos,turnos").category,"Turnos, reservas y agenda");
+});
+test("Guardián ignora claves inválidas y no acepta propiedades heredadas en la URL",()=>{
+ const x=bootstrap("?utm_source=guardian&guardian_funciones=__proto__,constructor,desconocida");
+ assert.equal(x.category,"Automatizar tareas");
+ assert.doesNotMatch(x.message,/\\[object Object\\]/);
+ assert.equal(bootstrap("?utm_source=guardian&guardian_funciones=desconocida,presupuestos").category,"Presupuestos y cotizaciones");
+});
 test("las dos CTA comerciales conservan paso por formulario y consentimiento",()=>{
  assert.ok(webs.includes("utm_source=webs"));
  assert.ok(webs.includes("#contacto"));
