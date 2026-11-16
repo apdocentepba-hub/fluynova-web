@@ -123,7 +123,7 @@ test("contacto directo: ejecuta regresiones independientes", () => {
 });
 
 
-test("readiness de contacto: exige diez pruebas sin envío externo", () => {
+test("readiness de contacto: ejecuta todas las pruebas sin envío externo", () => {
  const {execFileSync} = require("node:child_process");
  // Node TEST_CONTEXT se quita para no saltar la sub-suite silenciosamente.
  const env = {...process.env};
@@ -131,6 +131,9 @@ test("readiness de contacto: exige diez pruebas sin envío externo", () => {
  const out = execFileSync(process.execPath,
    ["--test", "tests/contact-readiness.test.js"],
    {cwd:path.join(__dirname, ".."), env, encoding:"utf8", timeout:15000});
- assert.match(out, /# pass 10\b/);
+ const total=Number(out.match(/# tests (\d+)\b/)?.[1]||0);
+ const passes=Number(out.match(/# pass (\d+)\b/)?.[1]||0);
+ assert.ok(total>=10,"Debe ejecutar al menos diez pruebas de readiness");
+ assert.equal(passes,total,"No debe omitir ninguna regresión cuando la suite crece");
  assert.match(out, /# fail 0\b/);
 });
