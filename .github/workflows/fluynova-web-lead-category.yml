@@ -7,12 +7,14 @@ on:
       - 'static/index.html'
       - 'static/main.js'
       - 'tests/fluynova-web-lead-category.test.js'
+      - 'tests/formsubmit-provider-contract.test.cjs'
       - '.github/workflows/fluynova-web-lead-category.yml'
   pull_request:
     paths:
       - 'static/index.html'
       - 'static/main.js'
       - 'tests/fluynova-web-lead-category.test.js'
+      - 'tests/formsubmit-provider-contract.test.cjs'
       - '.github/workflows/fluynova-web-lead-category.yml'
 permissions:
   contents: read
@@ -31,9 +33,10 @@ jobs:
         run: |
           node --check static/main.js
           node --check tests/fluynova-web-lead-category.test.js
+          node --check tests/formsubmit-provider-contract.test.cjs
       - name: Ejecutar prueba de captación comercial sin enviar correos
         run: |
-          node --test tests/fluynova-web-lead-category.test.js
+          node --test tests/fluynova-web-lead-category.test.js tests/formsubmit-provider-contract.test.cjs
       - name: Pruebas anteriores de atribución Instagram y web
         run: |
           node --test tests/instagram-bio-attribution.test.js tests/webs-instagram-traffic.test.js tests/diagnostico-attribution.test.js tests/instagram-referral.test.js
