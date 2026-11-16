@@ -84,7 +84,7 @@ async function loadContactAvailability(){
   contactEnabled=info.contact_enabled===true&&info.contact_method==='formsubmit';
   if(!contactEnabled){
    sendButton.textContent='Formulario en preparación';
-   feedback('El envío automático está pendiente de verificación. Por ahora podés escribirnos directamente al correo indicado abajo.','error');
+   feedback('El envío automático está pendiente de verificación. Usá «Preparar correo con mis datos» para armar un borrador sin FormSubmit.','error');
   } else {
    sendButton.disabled=false;
    sendButton.innerHTML='Enviar mi consulta <span aria-hidden="true">↗</span>';
@@ -92,7 +92,7 @@ async function loadContactAvailability(){
   }
  }catch(error){
   sendButton.textContent='Formulario temporalmente no disponible';
-  feedback('La recepción automática no está disponible. Usá el correo de contacto que aparece debajo del formulario.','error');
+  feedback('La recepción automática no está disponible. Usá «Preparar correo con mis datos»: podés revisar el mensaje antes de enviarlo desde tu correo.','error');
  }
 }
 loadContactAvailability();
@@ -189,7 +189,7 @@ async function deliverDirect(v){
 form?.addEventListener('submit',async event=>{
  event.preventDefault();
  if(!contactEnabled){
-  feedback('El envío automático todavía no está activo. Usá el correo de contacto indicado debajo.','error');
+  feedback('El envío automático todavía no está activo. Elegí «Preparar correo con mis datos»; el correo manual no usa FormSubmit.','error');
   return;
  }
  const v=currentLead();
