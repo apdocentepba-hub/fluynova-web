@@ -178,7 +178,9 @@ async function deliverDirect(v){
  const response=await fetch('https://formsubmit.co/ajax/'+encodeURIComponent(CONTACT_EMAIL),{
   method:'POST',
   headers:{'Content-Type':'application/json','Accept':'application/json'},
-  body:JSON.stringify(body)
+  body:JSON.stringify(body),
+  // Evitar que un proveedor sin respuesta deje el formulario bloqueado indefinidamente.
+  signal:AbortSignal.timeout(15000)
  });
  let result;
  try{result=await response.json();}catch{throw new Error('El proveedor no devolvió una confirmación válida.');}
@@ -210,7 +212,9 @@ form?.addEventListener('submit',async event=>{
   form.reset();
  }catch(error){
   pendingLead=v;
-  feedback('No pudimos confirmar el envío: '+(error?.message||'problema de conexión')+'. Podés intentar el método tradicional o escribir directamente al correo indicado abajo.','error');
+  const timeout=error?.name==='TimeoutError'||error?.name==='AbortError';
+  const reason=timeout?'El proveedor demoró demasiado en responder':String(error?.message||'problema de conexión').slice(0,200);
+  feedback('No pudimos confirmar el envío: '+reason+'. Es posible que la consulta haya llegado igualmente; evitá reintentar sin revisar para no duplicarla. También podés preparar un correo con tus datos o usar el formulario tradicional.','error');
   if(alternateSend)alternateSend.hidden=false;
  }finally{
   sendButton.disabled=false;
