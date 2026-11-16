@@ -5,6 +5,7 @@ on:
       - '.github/workflows/fluynova-contact-readonly-public.yml'
       - 'tests/contact-production-preflight.cjs'
       - 'tests/contact-readiness.js'
+      - 'tests/contact-readiness.test.js'
   workflow_dispatch:
 permissions:
   contents: read
