@@ -47,6 +47,21 @@
    message,
    '',
    'Espero su respuesta. Gracias.'];
+  // Se agrega atribución únicamente si la persona preparó el borrador.
+  // No se guarda actividad ni se consulta la red.
+  const campaignValue=key=>{
+   const input=value(key);
+   return /^[A-Za-z0-9_.-]{1,90}$/.test(input)?input:'';
+  };
+  const source=campaignValue('origen_fuente');
+  if(source&&source!=='web_directo'){
+   const parts=['fuente='+source];
+   for(const [key,label] of [['origen_canal','canal'],['origen_campania','campaña'],['origen_mensaje','pieza']]){
+    const token=campaignValue(key);
+    if(token)parts.push(label+'='+token);
+   }
+   lines.splice(lines.length-2,0,'Origen de la consulta: '+parts.join(' / '),'');
+  }
   const subject='FLUYNOVA | Consulta: '+category;
   const body=lines.join('\n');
   const mailto='mailto:'+address+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
