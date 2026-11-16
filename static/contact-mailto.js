@@ -60,7 +60,7 @@
     const token=campaignValue(key);
     if(token)parts.push(label+'='+token);
    }
-   lines.splice(lines.length-2,0,'Origen de la consulta: '+parts.join(' / '),'');
+   lines.splice(lines.length-2,0,'','Origen de la consulta: '+parts.join(' / '));
   }
   const subject='FLUYNOVA | Consulta: '+category;
   const body=lines.join('\n');
