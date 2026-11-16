@@ -11,6 +11,7 @@ const ROOT=resolve(dirname(fileURLToPath(import.meta.url)),'..');
 const SOURCE=join(ROOT,'static','laboratorio','index.html');
 const CONTACT_SOURCE=join(ROOT,'static','laboratorio','contacto','index.html');
 const CONTACT_JS=join(ROOT,'static','laboratorio','contacto','contacto.js');
+const PRIVACY_SOURCE=join(ROOT,'static','laboratorio','privacidad','index.html');
 const DEFAULT_OUT=join(ROOT,'dist-portfolio-static');
 const OFFICIAL='https://fluynova-web.onrender.com/';
 const EMAIL='contacto.fluynova@gmail.com';
@@ -41,6 +42,8 @@ export function transformPortfolio(html){
  if(internalLinks!==5||originalCampaignCTAs!==5)throw Error('Cambió el inventario de cinco CTA; revisión manual requerida');
  if((html.match(/href="\/diagnostico\/"/g)||[]).length!==1)throw Error('Navegación diagnóstico inesperada');
  html=html.replace('href="/diagnostico/"','href="contacto/index.html"');
+ if(!html.includes('href="/privacidad"'))throw Error('Falta enlace de privacidad en portfolio');
+ html=html.replace('href="/privacidad"','href="privacidad/index.html"');
  let localLinks=0;
  // Absolutizar SOLO enlaces locales del sitio principal. Los anclajes # quedan internos.
  html=html.replace(/\bhref="\/(?!\/)([^"]*)"/g,(_match,path)=>{
@@ -61,10 +64,11 @@ export async function buildPortfolio(outputDir=DEFAULT_OUT){
  const output=resolve(outputDir);
  if(output===ROOT||ROOT.startsWith(output+'/')||output.startsWith(join(ROOT,'static')+'/'))
   throw Error('La salida no puede sobrescribir el repositorio fuente');
- const [source,contact,contactJS]=await Promise.all([
+ const [source,contact,contactJS,privacy]=await Promise.all([
   readFile(SOURCE,'utf8'),
   readFile(CONTACT_SOURCE,'utf8'),
-  readFile(CONTACT_JS,'utf8')
+  readFile(CONTACT_JS,'utf8'),
+  readFile(PRIVACY_SOURCE,'utf8')
  ]);
  if(!contact.includes('form-action &#39;none&#39;')&&!contact.includes("form-action 'none'"))
   throw Error('Falta bloqueo de envío en CSP del contacto');
@@ -73,13 +77,18 @@ export async function buildPortfolio(outputDir=DEFAULT_OUT){
   throw Error('Contacto sin controles básicos');
  if(/fetch\s*\(|XMLHttpRequest|sendBeacon|localStorage|sessionStorage|document\.cookie/.test(contactJS))
   throw Error('El contacto no debe transmitir ni persistir datos');
+ if(!privacy.includes('noindex,nofollow,noarchive')||!privacy.includes("form-action 'none'")||!privacy.includes('contacto.fluynova@gmail.com'))
+  throw Error('Privacidad local sin controles de seguridad o contacto');
+ if(/<script\b|<form\b|\bfetch\s*\(|XMLHttpRequest/.test(privacy))throw Error('Privacidad no debe tener formularios ni scripts');
  const result=transformPortfolio(source);
  await mkdir(join(output,'contacto'),{recursive:true});
+ await mkdir(join(output,'privacidad'),{recursive:true});
  // wx: rechaza sobrescrituras accidentales. Borrar artefactos de prueba es tarea manual.
  await writeFile(join(output,'index.html'),result.html,{encoding:'utf8',flag:'wx'});
  await writeFile(join(output,'contacto','index.html'),contact,{encoding:'utf8',flag:'wx'});
  await writeFile(join(output,'contacto','contacto.js'),contactJS,{encoding:'utf8',flag:'wx'});
- return {file:join(output,'index.html'),contact:join(output,'contacto','index.html'),localLinks:result.localLinks,internalLinks:result.internalLinks,bytes:Buffer.byteLength(result.html)};
+ await writeFile(join(output,'privacidad','index.html'),privacy,{encoding:'utf8',flag:'wx'});
+ return {file:join(output,'index.html'),contact:join(output,'contacto','index.html'),privacy:join(output,'privacidad','index.html'),localLinks:result.localLinks,internalLinks:result.internalLinks,bytes:Buffer.byteLength(result.html)};
 }
 if(process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url)){
  if(process.argv.length!==2){
