@@ -99,6 +99,6 @@ test("portfolio portable: comprueba independencia del backend",()=>{
  const out=execFileSync(process.execPath,['--test','tests/portfolio-static.test.mjs'],{
   cwd:path.join(__dirname,'..'),env,encoding:'utf8',timeout:15000
  });
- assert.match(out,/# pass 11\b/);
+ assert.match(out,/# pass 12\b/);
  assert.match(out,/# fail 0\b/);
 });
