@@ -99,7 +99,7 @@ async function main(){
     const button=document.getElementById('manual-mailto-prepare');
     const consentLabel=f.querySelector('label.consent');
     return {priority:button.classList.contains('btn-primary'),beforeConsent:!!(button.compareDocumentPosition(consentLabel) & Node.DOCUMENT_POSITION_FOLLOWING),source:f.elements.namedItem('origen_fuente').value,width:innerWidth,page:document.documentElement.scrollWidth,panelVisible:!p.hidden,linkVisible:!o.hidden,
-      mailto:o.getAttribute('href'),preview:preview.value,consent:f.elements.namedItem('consent').checked,submitDisabled:f.querySelector('button[type=submit]').disabled,
+      mailto:o.getAttribute('href'),preview:preview.value,subject:document.getElementById('manual-mailto-subject').textContent,editable:!preview.readOnly,consent:f.elements.namedItem('consent').checked,submitDisabled:f.querySelector('button[type=submit]').disabled,
       action:f.getAttribute('action'),
       buttonWidth:document.getElementById('manual-mailto-prepare').getBoundingClientRect().width};
    })()`);
@@ -118,7 +118,23 @@ async function main(){
    assert.match(url.searchParams.get('body'),/gestión de pedidos y presupuestos/);
    assert.match(url.searchParams.get('body'),/Origen de la consulta: fuente=instagram/);
    assert.match(url.searchParams.get('subject'),/Presupuestos y cotizaciones/);
-   assert.match(result.preview,/Visitante prueba/);
+   assert.equal(result.editable,true,'El visitante debe poder revisar y modificar el texto');
+   assert.match(result.subject,/Asunto: FLUYNOVA/);
+   assert.match(result.preview,/Necesito evaluar la gestión/);
+   const edited=await evaluated(cdp,`(()=>{
+    const p=document.getElementById('manual-mailto-preview');
+    const o=document.getElementById('manual-mailto-open');
+    p.value='Consulta revisada: necesito organizar presupuestos y ventas en mi comercio.';
+    p.dispatchEvent(new Event('input',{bubbles:true}));
+    return {body:p.value,href:o.getAttribute('href'),visible:!o.hidden,panel:!document.getElementById('manual-mailto-panel').hidden,subject:document.getElementById('manual-mailto-subject').textContent};
+   })()`);
+   assert.equal(edited.panel,true,'Editar el texto no debe cerrar el borrador');
+   assert.equal(edited.visible,true,'La versión editada breve debe permitir mailto');
+   const revised=new URL(edited.href);
+   assert.equal(revised.pathname,'contacto.fluynova@gmail.com');
+   assert.equal(revised.searchParams.get('body'),edited.body,'mailto debe incluir el texto editado');
+   assert.match(revised.searchParams.get('subject'),/Presupuestos y cotizaciones/);
+   assert.match(edited.subject,/Presupuestos y cotizaciones/);
    // Capturar el flujo revisado en lugar de la portada.
    const panelOnScreen=await evaluated(cdp,`(()=>{
     const p=document.getElementById('manual-mailto-panel');
@@ -133,6 +149,19 @@ async function main(){
    assert.equal(png.subarray(1,4).toString(),'PNG');
    assert.equal(png.readUInt32BE(16),v.w);
    await writeFile('qa-correo-manual/correo_'+v.w+'.png',png);
+   const tooLong=await evaluated(cdp,`(()=>{
+    const p=document.getElementById('manual-mailto-preview');
+    const o=document.getElementById('manual-mailto-open');
+    p.value='Texto editado y extendido. '.repeat(180);
+    p.dispatchEvent(new Event('input',{bubbles:true}));
+    return {hidden:o.hidden,href:o.getAttribute('href'),copyDisabled:document.getElementById('manual-mailto-copy').disabled,
+      panelHidden:document.getElementById('manual-mailto-panel').hidden};
+   })()`);
+   assert.equal(tooLong.hidden,true,'Mensaje demasiado largo no debe generar mailto truncado');
+   assert.equal(tooLong.href,null);
+   assert.equal(tooLong.copyDisabled,false,'Copiar debe funcionar para textos largos');
+   assert.equal(tooLong.panelHidden,false);
+
    evidence.push({width:v.w,documentWidth:result.page,preview:true,mailto:true,consentNotRequired:true});
   }
   assert.equal(posts,0,'La preparación no debe enviar POST');
