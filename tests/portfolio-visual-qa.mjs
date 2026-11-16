@@ -51,6 +51,7 @@ async function run(){
  const html=await readFile(resolve('dist-portfolio-static/index.html'),'utf8');
  const contactHTML=await readFile(resolve('dist-portfolio-static/contacto/index.html'),'utf8');
  const contactJS=await readFile(resolve('dist-portfolio-static/contacto/contacto.js'),'utf8');
+ const privacyHTML=await readFile(resolve('dist-portfolio-static/privacidad/index.html'),'utf8');
  assert.match(html,/data-portfolio-static="true"/);
  const chrome=getChrome(),profile=await mkdtemp(join(tmpdir(),'fluynova-headless-'));
  const server=createServer((req,res)=>{
@@ -58,6 +59,7 @@ async function run(){
   if(pathname==='/'||pathname==='/index.html'){res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store'});res.end(html);}
   else if(pathname==='/contacto/index.html'){res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store'});res.end(contactHTML);}
   else if(pathname==='/contacto/contacto.js'){res.writeHead(200,{'content-type':'text/javascript; charset=utf-8','cache-control':'no-store'});res.end(contactJS);}
+  else if(pathname==='/privacidad/index.html'){res.writeHead(200,{'content-type':'text/html; charset=utf-8','cache-control':'no-store'});res.end(privacyHTML);}
   else{res.writeHead(404);res.end('Not Found');}
  });
  await new Promise((ok,fail)=>server.listen(0,'127.0.0.1',e=>e?fail(e):ok()));
@@ -144,7 +146,29 @@ async function run(){
    await writeFile(join(OUTPUT,'contacto_'+v.name+'.png'),image);
    contactTests.push({viewport:v.width,selected:d.selected,mailtoPrepared:true,samePage:true,noOverflow:true,result:'PASS'});
   }
-  await writeFile(join(OUTPUT,'reporte-visual.json'),JSON.stringify({result:'PASS',environment:'Chrome CDP sobre localhost; sin envíos externos',screenshots:result,contact:contactTests},null,2));
+  const privacyTests=[];
+  for(const v of views){
+   await cdp.send('Emulation.setDeviceMetricsOverride',{width:v.width,height:v.height,deviceScaleFactor:1,mobile:v.mobile});
+   await cdp.send('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/privacidad/index.html'});
+   let ready=false;
+   for(let i=0;i<50;i++){
+    const r=await cdp.send('Runtime.evaluate',{expression:"({ready:document.readyState,heading:document.querySelector('h1')?.textContent||''})",returnByValue:true});
+    if(r.result?.value?.ready==='complete'&&r.result?.value?.heading.includes('Privacidad del portfolio')){ready=true;break;}
+    await sleep(100);
+   }
+   assert.ok(ready,'La privacidad local no cargó correctamente');
+   const r=await cdp.send('Runtime.evaluate',{expression:"(()=>({viewport:innerWidth,doc:document.documentElement.scrollWidth,body:document.body.scrollWidth,link:!!document.querySelector('a[href="../contacto/index.html"]'),safe:document.querySelector('meta[name="robots"]')?.content.includes('noindex'),noScripts:document.querySelectorAll('script,form').length===0}))()",returnByValue:true});
+   if(r.exceptionDetails)throw Error('Error inspeccionando privacidad');
+   const m=r.result?.value;
+   assert.ok(m&&m.viewport===v.width&&m.doc<=v.width+1&&m.body<=v.width+1&&m.link&&m.safe&&m.noScripts,'Privacidad incompleta: '+JSON.stringify(m));
+   const shot=await cdp.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:true});
+   const image=Buffer.from(shot.data,'base64');
+   assert.equal(image.subarray(1,4).toString(),'PNG');
+   await writeFile(join(OUTPUT,'privacidad_'+v.name+'.png'),image);
+   privacyTests.push({viewport:v.width,noOverflow:true,contactLink:true,noindex:true,noScripts:true,result:'PASS'});
+  }
+  await writeFile(join(OUTPUT,'reporte-visual.json'),JSON.stringify({result:'PASS',environment:'Chrome CDP sobre localhost; sin envíos externos',screenshots:result,contact:contactTests,privacy:privacyTests},null,2));
+  console.log('PRIVACIDAD_LOCAL_PASS '+JSON.stringify(privacyTests));
   console.log('CONTACTO_LOCAL_PASS '+JSON.stringify(contactTests));
   console.log('PORTFOLIO_VISUAL_PASS '+JSON.stringify(result));
  }finally{
