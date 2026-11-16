@@ -40,16 +40,31 @@ if(form){
  if(referral.get('utm_source')==='guardian'){
   const sectores={taller:'taller mecánico',peluqueria:'peluquería o centro de estética',comercio:'comercio',gastronomia:'local gastronómico',inmobiliaria:'inmobiliaria',salud:'consultorio',educacion:'institución educativa',servicios:'servicio técnico u oficio'};
   const funciones={turnos:'turnos',presupuestos:'presupuestos',stock:'stock',avisos:'avisos',cobros:'cobros',ordenes:'seguimiento de trabajos',clientes:'consultas de clientes'};
-  const rubro=sectores[referral.get('guardian_sector')]||'negocio';
-  const claves=String(referral.get('guardian_funciones')||'').split(',').slice(0,5);
-  const interes=[...new Set(claves.map(k=>funciones[k]).filter(Boolean))];
+  const sector=referral.get('guardian_sector');
+  const rubro=Object.prototype.hasOwnProperty.call(sectores,sector)?sectores[sector]:'negocio';
+  const claves=String(referral.get('guardian_funciones')||'').split(',').slice(0,5)
+   .filter(k=>Object.prototype.hasOwnProperty.call(funciones,k));
+  const funcionesUnicas=[...new Set(claves)];
+  const interes=funcionesUnicas.map(k=>funciones[k]);
   const proyectos={legajos:'la gestión de legajos digitales, calificaciones anuales y preparación del libro matriz',analiticos:'la gestión de solicitudes de analíticos',pases:'las solicitudes de pases escolares',equivalencias:'los dictámenes de equivalencias',solicitudes:'las solicitudes web'};
-  const proyecto=proyectos[referral.get('guardian_proyecto')]||'';
+  const proyectoClave=referral.get('guardian_proyecto');
+  const proyecto=Object.prototype.hasOwnProperty.call(proyectos,proyectoClave)?proyectos[proyectoClave]:'';
   const objetivo=proyecto?'Quiero automatizar '+proyecto+'.':interes.length?'Me interesa automatizar '+interes.join(', ')+'.':'Quiero evaluar automatizaciones.';
   const texto='Hola, estuve hablando con Guardián. Mi rubro o actividad es: '+rubro+'. '+objetivo+' Me gustaría conocer una propuesta y qué información necesitan para presupuestar.';
   const input=form.elements.namedItem('message'),category=form.elements.namedItem('category');
   if(input&&!input.value)input.value=texto;
-  if(category)category.value=proyecto||interes.length>1?'Desarrollar software':'Automatizar tareas';
+  // Una necesidad simple se deriva a su servicio; varias o un proyecto requieren diagnóstico.
+  const categoriaPorFuncion={
+   turnos:'Turnos, reservas y agenda',
+   presupuestos:'Presupuestos y cotizaciones',
+   stock:'Pedidos, ventas y stock',
+   avisos:'WhatsApp, correo y respuestas automáticas',
+   cobros:'Pedidos, ventas y stock',
+   ordenes:'Pedidos, ventas y stock',
+   clientes:'Gestionar clientes (CRM)'
+  };
+  if(category)category.value=proyecto||funcionesUnicas.length>1?'Desarrollar software':
+    funcionesUnicas.length===1?categoriaPorFuncion[funcionesUnicas[0]]:'Automatizar tareas';
  }
 }
 let contactEnabled=false;
@@ -69,7 +84,7 @@ async function loadContactAvailability(){
   contactEnabled=info.contact_enabled===true&&info.contact_method==='formsubmit';
   if(!contactEnabled){
    sendButton.textContent='Formulario en preparación';
-   feedback('El envío automático está pendiente de verificación. Por ahora podés escribirnos directamente al correo indicado abajo.','error');
+   feedback('El envío automático está pendiente de verificación. Usá «Preparar correo con mis datos» para armar un borrador sin FormSubmit.','error');
   } else {
    sendButton.disabled=false;
    sendButton.innerHTML='Enviar mi consulta <span aria-hidden="true">↗</span>';
@@ -77,7 +92,7 @@ async function loadContactAvailability(){
   }
  }catch(error){
   sendButton.textContent='Formulario temporalmente no disponible';
-  feedback('La recepción automática no está disponible. Usá el correo de contacto que aparece debajo del formulario.','error');
+  feedback('La recepción automática no está disponible. Usá «Preparar correo con mis datos»: podés revisar el mensaje antes de enviarlo desde tu correo.','error');
  }
 }
 loadContactAvailability();
@@ -120,7 +135,7 @@ renderEffortEstimate();
 
 document.querySelectorAll('[data-topic]').forEach(link=>link.addEventListener('click',()=>{
  if(!form)return;
- const categories=['Automatizar tareas','Desarrollar software','Crear página web / catálogo digital','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
+ const categories=['Automatizar tareas','Desarrollar software','Crear página web / catálogo digital','Gestionar clientes (CRM)','Presupuestos y cotizaciones','Pedidos, ventas y stock','Turnos, reservas y agenda','Planillas, reportes y tableros','WhatsApp, correo y respuestas automáticas','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
  const selected=link.dataset.category;
  form.elements.namedItem('category').value=categories.includes(selected)?selected:'Otro / no estoy seguro';
  const msg=form.elements.namedItem('message');
@@ -146,7 +161,7 @@ function leadValidationError(v){
  if(v.name.length<2||v.name.length>100) return 'Ingresá un nombre de 2 a 100 caracteres.';
  const emailInput=form?.elements.namedItem('email');
  if(!v.email||v.email.length>180||!emailInput?.checkValidity()) return 'Ingresá un correo electrónico válido.';
- const categories=['Automatizar tareas','Desarrollar software','Crear página web / catálogo digital','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
+ const categories=['Automatizar tareas','Desarrollar software','Crear página web / catálogo digital','Gestionar clientes (CRM)','Presupuestos y cotizaciones','Pedidos, ventas y stock','Turnos, reservas y agenda','Planillas, reportes y tableros','WhatsApp, correo y respuestas automáticas','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
  if(!categories.includes(v.category)) return 'Elegí qué tipo de servicio necesitás.';
  if(v.message.length<15||v.message.length>5000) return 'Contanos tu idea con al menos 15 caracteres (máximo 5.000).';
  if(!v.consent) return 'Tenés que aceptar el tratamiento de los datos para enviar tu consulta.';
@@ -163,7 +178,9 @@ async function deliverDirect(v){
  const response=await fetch('https://formsubmit.co/ajax/'+encodeURIComponent(CONTACT_EMAIL),{
   method:'POST',
   headers:{'Content-Type':'application/json','Accept':'application/json'},
-  body:JSON.stringify(body)
+  body:JSON.stringify(body),
+  // Evitar que un proveedor sin respuesta deje el formulario bloqueado indefinidamente.
+  signal:AbortSignal.timeout(15000)
  });
  let result;
  try{result=await response.json();}catch{throw new Error('El proveedor no devolvió una confirmación válida.');}
@@ -174,7 +191,7 @@ async function deliverDirect(v){
 form?.addEventListener('submit',async event=>{
  event.preventDefault();
  if(!contactEnabled){
-  feedback('El envío automático todavía no está activo. Usá el correo de contacto indicado debajo.','error');
+  feedback('El envío automático todavía no está activo. Elegí «Preparar correo con mis datos»; el correo manual no usa FormSubmit.','error');
   return;
  }
  const v=currentLead();
@@ -195,7 +212,9 @@ form?.addEventListener('submit',async event=>{
   form.reset();
  }catch(error){
   pendingLead=v;
-  feedback('No pudimos confirmar el envío: '+(error?.message||'problema de conexión')+'. Podés intentar el método tradicional o escribir directamente al correo indicado abajo.','error');
+  const timeout=error?.name==='TimeoutError'||error?.name==='AbortError';
+  const reason=timeout?'El proveedor demoró demasiado en responder':String(error?.message||'problema de conexión').slice(0,200);
+  feedback('No pudimos confirmar el envío: '+reason+'. Es posible que la consulta haya llegado igualmente; evitá reintentar sin revisar para no duplicarla. También podés preparar un correo con tus datos o usar el formulario tradicional.','error');
   if(alternateSend)alternateSend.hidden=false;
  }finally{
   sendButton.disabled=false;

@@ -107,3 +107,33 @@ test("sin píxeles, cookies, localStorage ni envío independiente", () => {
   assert.ok(!js.includes("document.cookie"));
   assert.ok(!js.includes("sendBeacon("));
 });
+
+
+test("contacto directo: ejecuta regresiones independientes", () => {
+  const {execFileSync} = require("node:child_process");
+  // Node's test runner sets NODE_TEST_CONTEXT in workers; inherited context
+  // causes nested "node --test" to silently skip tests with exit code zero.
+  const env = {...process.env};
+  delete env.NODE_TEST_CONTEXT;
+  const output = execFileSync(process.execPath,
+    ["--test", "tests/diagnostico-contacto-directo.test.mjs"],
+    {cwd: path.join(__dirname, ".."), encoding: "utf8", timeout: 15000, env});
+  assert.match(output, /# pass 6\b/);
+  assert.match(output, /# fail 0\b/);
+});
+
+
+test("readiness de contacto: ejecuta todas las pruebas sin envío externo", () => {
+ const {execFileSync} = require("node:child_process");
+ // Node TEST_CONTEXT se quita para no saltar la sub-suite silenciosamente.
+ const env = {...process.env};
+ delete env.NODE_TEST_CONTEXT;
+ const out = execFileSync(process.execPath,
+   ["--test", "tests/contact-readiness.test.js"],
+   {cwd:path.join(__dirname, ".."), env, encoding:"utf8", timeout:15000});
+ const total=Number(out.match(/# tests (\d+)\b/)?.[1]||0);
+ const passes=Number(out.match(/# pass (\d+)\b/)?.[1]||0);
+ assert.ok(total>=10,"Debe ejecutar al menos diez pruebas de readiness");
+ assert.equal(passes,total,"No debe omitir ninguna regresión cuando la suite crece");
+ assert.match(out, /# fail 0\b/);
+});

@@ -1,0 +1,39 @@
+name: FLUYNOVA 12 temas — QA Chrome sin envíos
+
+on:
+  pull_request:
+    paths:
+      - 'app.py'
+      - 'static/index.html'
+      - 'static/main.js'
+      - 'static/styles.css'
+      - 'static/conversion-ux-2026.css'
+      - 'tests/categorias-formulario.visual.mjs'
+      - '.github/workflows/fluynova-categories-visual-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  browser-qa:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar Chrome
+        run: |
+          command -v google-chrome || command -v google-chrome-stable || command -v chromium
+      - name: Inspección Chrome real, 12 opciones, móvil y escritorio sin envíos
+        run: node tests/categorias-formulario.visual.mjs
+      - name: Adjuntar capturas y reporte de QA
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluynova-categorias-12-qa
+          path: qa-temas-consultas/
+          retention-days: 7
+          if-no-files-found: warn
