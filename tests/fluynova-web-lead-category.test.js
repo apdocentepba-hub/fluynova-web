@@ -159,3 +159,12 @@ test("FormSubmit, alternativa tradicional, consentimiento y respuesta no fueron 
  assert.ok(source.includes("HTMLFormElement.prototype.submit.call(form)"));
  assert.ok(source.includes("const res=await fetch('/api/config'"));
 });
+
+test("Guardián carga motor y widget exactamente una vez, en ese orden",()=>{
+ const engine='src="/guardian/guardian_brain.js?v=6"';
+ const widget='src="/guardian/guardian.js?v=3"';
+ assert.equal(home.split(engine).length-1,1,"No descargar dos veces el motor");
+ assert.equal(home.split(widget).length-1,1,"No inicializar dos veces el widget");
+ assert.ok(home.indexOf(engine)<home.indexOf(widget),"Motor antes del widget");
+ assert.match(home,/<script defer src="\/guardian\/guardian_brain\.js\?v=6"><\/script>\s*<script defer src="\/guardian\/guardian\.js\?v=3"><\/script>/);
+});
