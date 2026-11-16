@@ -94,10 +94,11 @@ test("Guardián conserva diagnóstico general en proyectos y necesidades múltip
  assert.equal(bootstrap("?utm_source=guardian&guardian_funciones=turnos,stock").category,"Desarrollar software");
  assert.equal(bootstrap("?utm_source=guardian&guardian_funciones=turnos,turnos").category,"Turnos, reservas y agenda");
 });
-test("Guardián ignora claves inválidas y no acepta propiedades heredadas en la URL",()=>{
- const x=bootstrap("?utm_source=guardian&guardian_funciones=__proto__,constructor,desconocida");
+test("Guardián ignora parámetros inválidos y propiedades heredadas",()=>{
+ const x=bootstrap("?utm_source=guardian&guardian_sector=__proto__&guardian_proyecto=constructor&guardian_funciones=__proto__,constructor,desconocida");
  assert.equal(x.category,"Automatizar tareas");
- assert.doesNotMatch(x.message,/\\[object Object\\]/);
+ assert.ok(x.message.includes("Mi rubro o actividad es: negocio."));
+ assert.equal(x.message.includes("[object Object]"),false);
  assert.equal(bootstrap("?utm_source=guardian&guardian_funciones=desconocida,presupuestos").category,"Presupuestos y cotizaciones");
 });
 test("las dos CTA comerciales conservan paso por formulario y consentimiento",()=>{
