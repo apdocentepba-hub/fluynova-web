@@ -7,16 +7,21 @@
  const prepare=document.getElementById('manual-mailto-prepare');
  const panel=document.getElementById('manual-mailto-panel');
  const preview=document.getElementById('manual-mailto-preview');
+ const subjectNode=document.getElementById('manual-mailto-subject');
  const open=document.getElementById('manual-mailto-open');
  const copy=document.getElementById('manual-mailto-copy');
  const status=document.getElementById('manual-mailto-status');
- if(!form||!prepare||!panel||!preview||!open||!copy||!status)return;
+ if(!form||!prepare||!panel||!preview||!subjectNode||!open||!copy||!status)return;
  const address='contacto.fluynova@gmail.com';
  const field=k=>form.elements.namedItem(k);
  const value=k=>String(field(k)?.value||'').trim();
+ let activeSubject='';
  const clear=()=>{
   panel.hidden=true;
   preview.value='';
+  activeSubject='';
+  subjectNode.textContent='';
+  copy.disabled=true;
   open.hidden=true;
   open.removeAttribute('href');
   status.textContent='';
@@ -64,8 +69,26 @@
   }
   const subject='FLUYNOVA | Consulta: '+category;
   const body=lines.join('\n');
-  const mailto='mailto:'+address+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
-  return {subject,body,mailto};
+  return {subject,body};
+ };
+ const syncMailto=()=>{
+  if(panel.hidden)return;
+  open.hidden=true;
+  open.removeAttribute('href');
+  const body=preview.value.trim();
+  copy.disabled=!body;
+  if(!body){
+   status.textContent='Escribí un mensaje para preparar el correo.';
+   return;
+  }
+  const mailto='mailto:'+address+'?subject='+encodeURIComponent(activeSubject)+'&body='+encodeURIComponent(preview.value);
+  if(mailto.length<=1800){
+   open.href=mailto;
+   open.hidden=false;
+   status.textContent='El mensaje se puede editar. Abrir el correo no significa enviarlo.';
+  }else{
+   status.textContent='El mensaje es demasiado largo para un enlace de correo. Usá Copiar borrador y pegalo en tu correo.';
+  }
  };
  prepare.addEventListener('click',()=>{
   clear();
@@ -75,29 +98,26 @@
    field(draft.focus)?.focus();
    return;
   }
-  preview.value='Para: '+address+'\nAsunto: '+draft.subject+'\n\n'+draft.body;
+  activeSubject=draft.subject;
+  subjectNode.textContent='Asunto: '+activeSubject;
+  preview.value=draft.body;
   panel.hidden=false;
-  if(draft.mailto.length<=1800){
-   open.href=draft.mailto;
-   open.hidden=false;
-   status.textContent='El borrador está listo. Abrir el correo no significa enviarlo.';
-  }else{
-   status.textContent='El texto es largo para un enlace de correo. Usá Copiar borrador y pegalo en tu correo.';
-  }
+  syncMailto();
  });
+ preview.addEventListener('input',syncMailto);
  copy.addEventListener('click',async()=>{
   if(panel.hidden||!preview.value)return;
   try{
    if(!navigator.clipboard?.writeText)throw Error('clipboard unavailable');
-   await navigator.clipboard.writeText(preview.value);
-   status.textContent='Borrador copiado. Pegalo en tu aplicación de correo y decidí si querés enviarlo.';
+   await navigator.clipboard.writeText('Para: '+address+'\nAsunto: '+activeSubject+'\n\n'+preview.value);
+   status.textContent='Borrador completo copiado. Pegalo en tu aplicación de correo y decidí si querés enviarlo.';
   }catch{
    preview.focus();
    preview.select();
    status.textContent='No se pudo copiar automáticamente. Seleccioná el texto y copialo manualmente.';
   }
  });
- form.addEventListener('input',clear);
+ form.addEventListener('input',event=>{if(event?.target!==preview)clear();});
  form.addEventListener('change',clear);
  form.addEventListener('reset',clear);
 })();
