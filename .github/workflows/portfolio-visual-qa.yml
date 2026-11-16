@@ -36,6 +36,10 @@ jobs:
           test -s dist-portfolio-static/index.html
           test -s dist-portfolio-static/contacto/index.html
           test -s dist-portfolio-static/contacto/contacto.js
+          test -s dist-portfolio-static/privacidad/index.html
+          test -s qa-portfolio-capturas/privacidad_movil_320.png
+          test -s qa-portfolio-capturas/privacidad_movil_390.png
+          test -s qa-portfolio-capturas/privacidad_escritorio_1440.png
           test -s qa-portfolio-capturas/reporte-visual.json
       - name: Conservar capturas, reporte y HTML autónomo sin desplegar
         if: always()
