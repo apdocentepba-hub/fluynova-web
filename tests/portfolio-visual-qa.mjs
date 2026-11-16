@@ -157,7 +157,7 @@ async function run(){
     await sleep(100);
    }
    assert.ok(ready,'La privacidad local no cargó correctamente');
-   const r=await cdp.send('Runtime.evaluate',{expression:"(()=>({viewport:innerWidth,doc:document.documentElement.scrollWidth,body:document.body.scrollWidth,link:!!document.querySelector('a[href="../contacto/index.html"]'),safe:document.querySelector('meta[name="robots"]')?.content.includes('noindex'),noScripts:document.querySelectorAll('script,form').length===0}))()",returnByValue:true});
+   const r=await cdp.send('Runtime.evaluate',{expression:"(()=>({viewport:innerWidth,doc:document.documentElement.scrollWidth,body:document.body.scrollWidth,link:!!document.querySelector('a[href=\"../contacto/index.html\"]'),safe:document.querySelector('meta[name=\"robots\"]')?.content.includes('noindex'),noScripts:document.querySelectorAll('script,form').length===0}))()",returnByValue:true});
    if(r.exceptionDetails)throw Error('Error inspeccionando privacidad');
    const m=r.result?.value;
    assert.ok(m&&m.viewport===v.width&&m.doc<=v.width+1&&m.body<=v.width+1&&m.link&&m.safe&&m.noScripts,'Privacidad incompleta: '+JSON.stringify(m));
