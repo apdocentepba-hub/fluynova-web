@@ -91,7 +91,7 @@ async function main(){
     const f=document.getElementById('contact-form');
     const put=(key,value)=>{const node=f.elements.namedItem(key);node.value=value;node.dispatchEvent(new Event('input',{bubbles:true}))};
     put('name','Visitante prueba');put('email','prueba@example.com');
-    put('category','Automatizar tareas');put('message','Necesito evaluar la gestión de pedidos y presupuestos en mi negocio.');
+    put('category','Presupuestos y cotizaciones');put('message','Necesito evaluar la gestión de pedidos y presupuestos en mi negocio.');
     document.getElementById('manual-mailto-prepare').click();
     const p=document.getElementById('manual-mailto-panel');
     const o=document.getElementById('manual-mailto-open');
@@ -110,6 +110,7 @@ async function main(){
    const url=new URL(result.mailto);
    assert.equal(url.protocol,'mailto:');assert.equal(url.pathname,'contacto.fluynova@gmail.com');
    assert.match(url.searchParams.get('body'),/gestión de pedidos y presupuestos/);
+   assert.match(url.searchParams.get('subject'),/Presupuestos y cotizaciones/);
    assert.match(result.preview,/Visitante prueba/);
    // Capturar el flujo revisado en lugar de la portada.
    const panelOnScreen=await evaluated(cdp,`(()=>{
