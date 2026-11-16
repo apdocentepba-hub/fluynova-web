@@ -28,7 +28,8 @@ test('sin rutas relativas de otros dominios en la vista portátil',()=>{
  assert.ok(result.localLinks>=4);
  assert.doesNotMatch(html,/\bhref="\/(?!\/)/);
  assert.ok(hrefs.includes('https://fluynova-web.onrender.com/'));
- assert.ok(hrefs.includes('https://fluynova-web.onrender.com/privacidad'));
+ assert.ok(hrefs.includes('privacidad/index.html'));
+ assert.ok(!hrefs.includes('https://fluynova-web.onrender.com/privacidad'));
  assert.ok(hrefs.includes('contacto/index.html'));
  assert.ok(hrefs.filter(x=>x.startsWith('contacto/index.html?')).length===5);
 });
@@ -74,6 +75,11 @@ test('escribe un HTML en carpeta temporal y no sobrescribe en un segundo intento
   assert.ok(created.bytes>10000);
   const contact=await readFile(join(tmp,'salida','contacto','index.html'),'utf8');
   const js=await readFile(join(tmp,'salida','contacto','contacto.js'),'utf8');
+  const privacy=await readFile(join(tmp,'salida','privacidad','index.html'),'utf8');
+  assert.match(privacy,/<title>Privacidad del portfolio/);
+  assert.match(privacy,/noindex,nofollow,noarchive/);
+  assert.match(privacy,/contacto.fluynova@gmail.com/);
+  assert.doesNotMatch(privacy,/<script\b|<form\b|XMLHttpRequest|fetch\s*\(/);
   assert.match(contact,/form-action 'none'/);
   assert.match(contact,/type="submit" disabled/);
   assert.match(contact,/src="contacto.js"/);
@@ -110,4 +116,18 @@ test('el banner de staging no niega la existencia del formulario local',()=>{
  assert.match(html,/VISTA PREVIA AUTÓNOMA/);
  assert.match(html,/Consulta local sin envío automático ni almacenamiento/);
  assert.doesNotMatch(html,/Sin formularios ni envíos automáticos/);
+});
+
+
+test('la privacidad es local, accesible y explica entrega y datos técnicos',async()=>{
+ const privacy=await readFile(join(ROOT,'static/laboratorio/privacidad/index.html'),'utf8');
+ const contact=await readFile(join(ROOT,'static/laboratorio/contacto/index.html'),'utf8');
+ assert.ok(hrefs.includes('privacidad/index.html'));
+ assert.ok(contact.includes('href="../privacidad/index.html"'));
+ assert.match(privacy,/FLUYNOVA no recibe ese texto hasta que decidís enviarlo/);
+ assert.match(privacy,/dirección IP/);
+ assert.match(privacy,/proveedor y Gmail gestionan el mensaje/);
+ assert.match(privacy,/sitios externos|demostraciones externas/i);
+ assert.match(privacy,/href="\.\.\/contacto\/index.html"/);
+ assert.doesNotMatch(privacy,/<script\b|<form\b|XMLHttpRequest|fetch\s*\(/);
 });
