@@ -53,5 +53,13 @@ No pretende sustituir el sitio completo, su backend FastAPI, el formulario FormS
 - **Web principal:** `/api/config` y `/api/health` mostraron HTTP 503 en consulta externa durante el corte; sin modificaciones ni nuevo despliegue de `fluynova-web` desde `main`.
 - **Decisión:** GO para revisión del staging aislado y prueba controlada de correo que llegó al buzón. **NO-GO para afirmar recepción por FormSubmit o anunciar la web principal como estable**, y aún no se modifican Instagram ni DNS.
 
+## Privacidad local y navegación sin backend — 15/11/2026
+- **Problema corregido:** la portada enlazaba a `https://fluynova-web.onrender.com/privacidad`, dependiente del backend que puede dar 503. Ahora el builder transforma ese enlace en `privacidad/index.html` local y la consulta incluye enlace `../privacidad/index.html`.
+- **Archivo añadido:** `static/laboratorio/privacidad/index.html`, disponible en `dist-portfolio-static/privacidad/index.html`. Explica preparación local del borrador, envío opcional por el proveedor de correo del visitante, posibles registros técnicos del alojamiento, UTM y datos compartidos voluntariamente. No contiene scripts ni formularios y mantiene `noindex`.
+- **Pruebas de código:** [GitHub Actions 43782263909](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/43782263909) SUCCESS; sub-suite de portfolio ahora exige 12 pruebas.
+- **Pruebas Chrome:** [GitHub Actions 43782263934](https://github.com/apdocentepba-hub/fluynova-web/actions/runs/43782263934) SUCCESS, navegación y capturas de privacidad a 320, 390 y 1440 px, sin desbordes horizontales; vínculo de retorno a consulta y `noindex` verificados.
+- **Staging actualizado:** Render deploy `dep-dbt54p9srm7s73a8ned0`, commit `14a97220275ba51b467e9b3b0dbeb6742b462336`, estado **live**; `autoDeploy=no`. Verificación HTTPS real con URLs sin caché: portada, privacidad y contacto devuelven HTTP 200 y conservan sus enlaces locales.
+- **Lo pendiente:** ni estas pruebas ni la publicación de staging demuestran que un visitante haya enviado un correo o pagado un servicio. FormSubmit de producción sigue sin certificarse; no se modificaron `main`, DNS ni Instagram.
+
 ## Decisión registrada
 **GO para conservar el artefacto de prueba y ofrecerlo a revisión interna. NO-GO para deploy, merge, reconfiguración o comunicación a terceros sin autorización.**
