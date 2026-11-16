@@ -67,16 +67,19 @@ async function run(){
   else{res.writeHead(404);res.end('Not Found');}
  });
  await new Promise((ok,fail)=>server.listen(0,'127.0.0.1',e=>e?fail(e):ok()));
- let child,cdp;
+ let child,cdp,chromeStderr='';
  try{
-  child=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--disable-background-networking','--disable-extensions','--no-first-run','--remote-allow-origins=*','--user-data-dir='+profile,'--remote-debugging-port=0','about:blank'],{stdio:'ignore'});
+  child=spawn(chrome,['--headless=new','--no-sandbox','--disable-gpu','--disable-dev-shm-usage','--disable-background-networking','--disable-extensions','--no-first-run','--remote-allow-origins=*','--user-data-dir='+profile,'--remote-debugging-port=0','about:blank'],{stdio:['ignore','ignore','pipe']});
+  child.stderr?.on('data',part=>{chromeStderr=(chromeStderr+String(part)).slice(-2000);});
+  child.on('error',error=>{chromeStderr=('Error de arranque: '+error.message+'; '+chromeStderr).slice(-2000);});
   let port=0;
-  for(let i=0;i<120;i++){
-   if(child.exitCode!==null)throw Error('Chrome se cerró antes de iniciar');
+  // No omitir Chrome: ampliar tiempo de inicio con diagnóstico si el runner está saturado.
+  for(let i=0;i<300;i++){
+   if(child.exitCode!==null)throw Error('Chrome terminó antes de CDP (exit='+child.exitCode+'): '+chromeStderr.slice(-700));
    try{const data=await readFile(join(profile,'DevToolsActivePort'),'utf8');port=Number(data.trim().split('\n')[0]);if(port)break;}catch{}
    await sleep(100);
   }
-  if(!port)throw Error('Chrome no abrió CDP');
+  if(!port)throw Error('Chrome no abrió CDP en 30 s (exit='+child.exitCode+'): '+chromeStderr.slice(-700));
   const targets=await (await fetch('http://127.0.0.1:'+port+'/json/list')).json();
   const target=targets.find(x=>x.type==='page'&&x.webSocketDebuggerUrl);
   assert.ok(target,'Pestaña Chrome ausente');
