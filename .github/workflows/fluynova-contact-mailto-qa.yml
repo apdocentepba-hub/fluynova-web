@@ -5,6 +5,7 @@ on:
       - 'static/index.html'
       - 'static/contact-mailto.js'
       - 'tests/contact-mailto-fallback.test.cjs'
+      - 'tests/contact-mailto-browser-qa.mjs'
       - '.github/workflows/fluynova-contact-mailto-qa.yml'
   workflow_dispatch:
 permissions:
@@ -26,3 +27,15 @@ jobs:
         run: node --test tests/contact-mailto-fallback.test.cjs
       - name: Regresión formulario y diagnóstico existentes
         run: node --test tests/fluynova-web-lead-category.test.js tests/diagnostico-contacto-directo.test.mjs
+      - name: Verificar Chrome disponible
+        run: command -v google-chrome || command -v google-chrome-stable || command -v chromium
+      - name: Chrome real, 320/390/1440 y API caída sin envíos
+        run: node tests/contact-mailto-browser-qa.mjs
+      - name: Adjuntar capturas de prueba local
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluynova-correo-manual-chrome
+          path: qa-correo-manual/
+          if-no-files-found: warn
+          retention-days: 7
