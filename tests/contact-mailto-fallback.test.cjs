@@ -16,7 +16,7 @@ function harness(changes={},withClipboard=true){
    .map(m=>({value:m[1]===undefined?m[2]:m[1]}));
  const focus=[];
  const fields=Object.fromEntries(Object.entries(values).map(([key,value])=>[key,{
-  value,focus(){focus.push(key)},checkValidity(){return key==="email"?/^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$/.test(String(this.value)):true}
+  value,focus(){focus.push(key)},checkValidity(){return key==="email"?/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(String(this.value)):true}
  }]));
  fields.category.options=options;
  const make=(id)=>({id,hidden:id==="manual-mailto-panel"||id==="manual-mailto-open",value:"",textContent:"",
