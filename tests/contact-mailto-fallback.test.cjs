@@ -94,3 +94,33 @@ test("cuando el portapapeles está bloqueado conserva texto seleccionable",async
  assert.equal(t.nodes["manual-mailto-preview"].selected,true);
  assert.match(t.nodes["manual-mailto-status"].textContent,/copialo manualmente/);
 });
+
+test("las 12 categorías de FLUYNOVA funcionan con el mismo borrador manual",()=>{
+ const categories=[
+  "Automatizar tareas","Desarrollar software","Crear página web / catálogo digital",
+  "Gestionar clientes (CRM)","Presupuestos y cotizaciones","Pedidos, ventas y stock",
+  "Turnos, reservas y agenda","Planillas, reportes y tableros",
+  "WhatsApp, correo y respuestas automáticas","Conectar herramientas / datos",
+  "Inteligencia artificial","Otro / no estoy seguro"
+ ];
+ const select=html.match(/<select name="category" required>([\s\S]*?)<\/select>/);
+ assert.ok(select);
+ const actual=[...select[1].matchAll(/<option>([^<]+)<\/option>/g)].map(m=>m[1]);
+ assert.deepEqual(actual,categories,"no perder ni duplicar temas de consulta");
+ for(const category of categories){
+  const t=harness({category});
+  t.prepare();
+  assert.equal(t.nodes["manual-mailto-panel"].hidden,false,"panel para "+category);
+  assert.equal(t.nodes["manual-mailto-open"].hidden,false,"mailto para "+category);
+  const url=new URL(t.nodes["manual-mailto-open"].href);
+  assert.ok(url.searchParams.get("subject").includes(category),"asunto para "+category);
+  assert.ok(url.searchParams.get("body").includes("Servicio: "+category),"cuerpo para "+category);
+ }
+});
+test("categorías no presentes en el selector no se envían por mailto",()=>{
+ const t=harness({category:"Servicio malicioso inyectado"});
+ t.prepare();
+ assert.equal(t.nodes["manual-mailto-panel"].hidden,true);
+ assert.equal(t.nodes["manual-mailto-open"].href,"");
+ assert.match(t.nodes["manual-mailto-status"].textContent,/servicio/);
+});
