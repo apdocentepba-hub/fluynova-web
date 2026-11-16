@@ -40,13 +40,15 @@ if(form){
  if(referral.get('utm_source')==='guardian'){
   const sectores={taller:'taller mecánico',peluqueria:'peluquería o centro de estética',comercio:'comercio',gastronomia:'local gastronómico',inmobiliaria:'inmobiliaria',salud:'consultorio',educacion:'institución educativa',servicios:'servicio técnico u oficio'};
   const funciones={turnos:'turnos',presupuestos:'presupuestos',stock:'stock',avisos:'avisos',cobros:'cobros',ordenes:'seguimiento de trabajos',clientes:'consultas de clientes'};
-  const rubro=sectores[referral.get('guardian_sector')]||'negocio';
+  const sector=referral.get('guardian_sector');
+  const rubro=Object.prototype.hasOwnProperty.call(sectores,sector)?sectores[sector]:'negocio';
   const claves=String(referral.get('guardian_funciones')||'').split(',').slice(0,5)
    .filter(k=>Object.prototype.hasOwnProperty.call(funciones,k));
   const funcionesUnicas=[...new Set(claves)];
   const interes=funcionesUnicas.map(k=>funciones[k]);
   const proyectos={legajos:'la gestión de legajos digitales, calificaciones anuales y preparación del libro matriz',analiticos:'la gestión de solicitudes de analíticos',pases:'las solicitudes de pases escolares',equivalencias:'los dictámenes de equivalencias',solicitudes:'las solicitudes web'};
-  const proyecto=proyectos[referral.get('guardian_proyecto')]||'';
+  const proyectoClave=referral.get('guardian_proyecto');
+  const proyecto=Object.prototype.hasOwnProperty.call(proyectos,proyectoClave)?proyectos[proyectoClave]:'';
   const objetivo=proyecto?'Quiero automatizar '+proyecto+'.':interes.length?'Me interesa automatizar '+interes.join(', ')+'.':'Quiero evaluar automatizaciones.';
   const texto='Hola, estuve hablando con Guardián. Mi rubro o actividad es: '+rubro+'. '+objetivo+' Me gustaría conocer una propuesta y qué información necesitan para presupuestar.';
   const input=form.elements.namedItem('message'),category=form.elements.namedItem('category');
