@@ -106,7 +106,7 @@
  });
  preview.addEventListener('input',syncMailto);
  copy.addEventListener('click',async()=>{
-  if(panel.hidden||!preview.value)return;
+  if(panel.hidden||copy.disabled||!preview.value.trim())return;
   try{
    if(!navigator.clipboard?.writeText)throw Error('clipboard unavailable');
    await navigator.clipboard.writeText('Para: '+address+'\nAsunto: '+activeSubject+'\n\n'+preview.value);
@@ -118,6 +118,6 @@
   }
  });
  form.addEventListener('input',event=>{if(event?.target!==preview)clear();});
- form.addEventListener('change',clear);
+ form.addEventListener('change',event=>{if(event?.target!==preview)clear();});
  form.addEventListener('reset',clear);
 })();
