@@ -170,6 +170,7 @@ test("el cuerpo del correo es editable y actualiza mailto sin cambiar destinatar
  t.nodes["manual-mailto-preview"].value=message;
  t.nodes["manual-mailto-preview"].handlers.input({target:t.nodes["manual-mailto-preview"]});
  t.nodes["contact-form"].handlers.input({target:t.nodes["manual-mailto-preview"]});
+ t.nodes["contact-form"].handlers.change({target:t.nodes["manual-mailto-preview"]});
  const after=new URL(t.nodes["manual-mailto-open"].href);
  assert.equal(t.nodes["manual-mailto-panel"].hidden,false);
  assert.equal(after.protocol,"mailto:");
