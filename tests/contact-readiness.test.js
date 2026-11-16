@@ -11,11 +11,11 @@ const fetcher=(health,config)=>async(url,opts)=>{
 };
 test('GET salud y configuración habilitada NO prueban recepción de FormSubmit',async()=>{
  const f=fetcher(u=>json(u,{ok:true}),u=>json(u,{contact_enabled:true,contact_method:'formsubmit'}));
- const x=await check({fetcher:f});assert.equal(x.code,'CONFIG_HABILITADA_SIN_RECEPCION_PROBADA');assert.equal(x.canClaimReception,false);
+ const x=await check({fetcher:f});assert.equal(x.code,'CONFIG_HABILITADA_SIN_RECEPCION_PROBADA');assert.equal(x.canClaimReception,false);assert.equal(x.publicContactEnabled,true);
 });
 test('configuración deshabilitada no se presenta como formulario listo',async()=>{
  const f=fetcher(u=>json(u,{ok:true}),u=>json(u,{contact_enabled:false,contact_method:'formsubmit'}));
- const x=await check({fetcher:f});assert.equal(x.code,'FORMULARIO_DESHABILITADO');
+ const x=await check({fetcher:f});assert.equal(x.code,'FORMULARIO_DESHABILITADO');assert.equal(x.publicContactEnabled,false);
 });
 test('HTTP 503 hace fallar revisión de disponibilidad',async()=>{
  const f=fetcher(u=>json(u,{error:'unavailable'},503),u=>json(u,{contact_enabled:true,contact_method:'formsubmit'}));
@@ -46,4 +46,20 @@ test('rechaza respuestas de red y errores de tiempo',async()=>{
 });
 test('no confunde otras rutas HTTPS con endpoints configurados',async()=>{
  await assert.rejects(readEndpoint('https://attacker.example/'),TypeError);
+});
+
+test('GET de salud falla pero muestra el estado público de configuración válido',async()=>{
+ const f=fetcher(u=>json(u,{error:'unavailable'},503),u=>json(u,{contact_enabled:false,contact_method:'formsubmit'}));
+ const x=await check({fetcher:f});
+ assert.equal(x.code,'NO_CONFIABLE');
+ assert.equal(x.health,'HTTP_503');
+ assert.equal(x.config,'OK');
+ assert.equal(x.publicContactEnabled,false);
+ assert.equal(x.canClaimReception,false);
+});
+test('No expone un estado booleano inventado cuando config no es válida',async()=>{
+ const f=fetcher(u=>json(u,{ok:true}),u=>json(u,{contact_enabled:'false',contact_method:'formsubmit'}));
+ const x=await check({fetcher:f});
+ assert.equal(x.publicContactEnabled,null);
+ assert.equal(x.code,'NO_CONFIABLE');
 });
