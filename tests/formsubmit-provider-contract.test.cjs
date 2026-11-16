@@ -41,16 +41,21 @@ function harness({enabled=true,provider={ok:true,result:{success:'true'}},change
   rejected:{ok:false,result:{success:false,message:'Rechazado por proveedor'}},
   noConfirmation:{ok:true,result:{success:false,message:'No hubo confirmación'}},
   malformed:{ok:true,throwJson:true},
-  transportError:{throwFetch:true}
+  transportError:{throwFetch:true},
+  timeout:{throwTimeout:true}
  };
  const request=typeof provider==='string'?replies[provider]:provider;
  const fetcher=async(url,options)=>{
   assert.equal(url,'https://formsubmit.co/ajax/contacto.fluynova%40gmail.com');
   assert.equal(options.method,'POST');
   assert.equal(options.headers.Accept,'application/json');
+  assert.equal(options.signal?.timeoutMs,15000,'FormSubmit AJAX siempre debe cortar a 15s');
   const payload=JSON.parse(options.body);
   calls.push({url,options,payload});
   if(request?.throwFetch)throw Error('Red sin respuesta');
+  if(request?.throwTimeout){
+   const e=Error('The operation was aborted due to timeout');e.name='TimeoutError';throw e;
+  }
   return {ok:request.ok,async json(){if(request.throwJson)throw Error('JSON incorrecto');return request.result;}};
  };
  const sandbox={
@@ -58,6 +63,7 @@ function harness({enabled=true,provider={ok:true,result:{success:'true'}},change
   form,status,sendButton,CONTACT_EMAIL:'contacto.fluynova@gmail.com',
   contactEnabled:enabled,
   fetch:fetcher,
+  AbortSignal:{timeout(ms){return {timeoutMs:ms}}},
   FormData:class{constructor(element){assert.equal(element,form)}get(k){return values[k]??null}},
   HTMLFormElement:{prototype:{submit(){native.push({form:this,values:{...values}})}}},
   feedback(message,kind){status.textContent=message;status.className='form-status '+kind;feedbacks.push({message,kind})}
@@ -104,7 +110,8 @@ for(const [label,provider] of [
  ['HTTP 403','rejected'],
  ['respuesta sin success','noConfirmation'],
  ['JSON inválido','malformed'],
- ['red caída','transportError']
+ ['red caída','transportError'],
+ ['timeout de 15 segundos','timeout']
 ]){
  test(label+' no declara éxito, conserva formulario y habilita alternativa tradicional',async()=>{
   const h=harness({provider});
@@ -114,6 +121,8 @@ for(const [label,provider] of [
   assert.equal(h.sendButton.disabled,false);
   assert.equal(h.alternate.hidden,false);
   assert.match(h.status.textContent,/No pudimos confirmar el envío/);
+  assert.match(h.status.textContent,/evitá reintentar sin revisar/,'Evitar leads duplicados si hubo timeout');
+  if(provider==='timeout')assert.match(h.status.textContent,/demoró demasiado/);
   h.fallback();
   assert.equal(h.native.length,1,'Alternativa requiere clic explícito');
   assert.equal(h.native[0].form,h.form);
@@ -150,4 +159,15 @@ test('respuesta sospechosa del proveedor no se inserta como HTML',async()=>{
  assert.equal(h.resetCount,0);
  assert.match(h.status.textContent,/<script>alert\(1\)<\/script>/);
  assert.equal(h.status.innerHTML,undefined,'El código usa exclusivamente textContent');
+});
+
+test('timeout de proveedor no activa una entrega alternativa automática',async()=>{
+ const h=harness({provider:'timeout'});
+ await h.submit();
+ assert.equal(h.calls.length,1,'Un único intento de AJAX');
+ assert.equal(h.native.length,0,'Sin segundo POST implícito');
+ assert.equal(h.resetCount,0,'Los datos del visitante permanecen para revisar');
+ assert.equal(h.sendButton.disabled,false,'Se recupera el botón después del timeout');
+ assert.equal(h.alternate.hidden,false,'La alternativa se muestra pero requiere clic');
+ assert.match(h.status.textContent,/Es posible que la consulta haya llegado igualmente/);
 });
