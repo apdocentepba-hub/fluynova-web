@@ -22,7 +22,7 @@ function harness(changes={},withClipboard=true){
  const make=(id)=>({id,hidden:id==="manual-mailto-panel"||id==="manual-mailto-open",value:"",textContent:"",
   handlers:{},href:"",addEventListener(name,fn){this.handlers[name]=fn},removeAttribute(name){if(name==="href")this.href=""},focus(){focus.push(id)},select(){this.selected=true}});
  const nodes={};
- for(const id of ["manual-mailto-prepare","manual-mailto-panel","manual-mailto-preview","manual-mailto-open","manual-mailto-copy","manual-mailto-status"])nodes[id]=make(id);
+ for(const id of ["manual-mailto-prepare","manual-mailto-panel","manual-mailto-preview","manual-mailto-subject","manual-mailto-open","manual-mailto-copy","manual-mailto-status"])nodes[id]=make(id);
  const form={elements:{namedItem(k){return fields[k]||null}},handlers:{},addEventListener(name,fn){this.handlers[name]=fn}};
  nodes["contact-form"]=form;
  const copies=[];
@@ -33,7 +33,7 @@ function harness(changes={},withClipboard=true){
  return {nodes,fields,focus,copies,prepare,change,trigger:async(id)=>nodes[id].handlers.click()};
 }
 test("se inserta un respaldo junto al formulario original, sin cambiar FormSubmit",()=>{
- for(const id of ["manual-mailto-prepare","manual-mailto-panel","manual-mailto-preview","manual-mailto-open","manual-mailto-copy","manual-mailto-status"])
+ for(const id of ["manual-mailto-prepare","manual-mailto-panel","manual-mailto-preview","manual-mailto-subject","manual-mailto-open","manual-mailto-copy","manual-mailto-status"])
   assert.match(html,new RegExp('id="'+id+'"'));
  assert.match(html,/<script src="\/contact-mailto\.js" defer><\/script>/);
  assert.match(html,/action="https:\/\/formsubmit\.co\/contacto\.fluynova@gmail\.com"/);
@@ -51,7 +51,9 @@ test("el visitante construye un mailto sin FormSubmit ni checkbox y revisa su bo
  assert.match(u.searchParams.get("subject"),/FLUYNOVA.*Automatizar tareas/);
  assert.match(u.searchParams.get("body"),/Empresa ficticia/);
  assert.match(u.searchParams.get("body"),/consultas de mis clientes/);
- assert.match(t.nodes["manual-mailto-preview"].value,/Para: contacto.fluynova@gmail.com/);
+ assert.match(t.nodes["manual-mailto-subject"].textContent,/Asunto: FLUYNOVA/);
+ assert.doesNotMatch(t.nodes["manual-mailto-preview"].value,/^Para:/);
+ assert.match(t.nodes["manual-mailto-preview"].value,/consultas de mis clientes/);
  assert.match(t.nodes["manual-mailto-status"].textContent,/no significa enviarlo/);
 });
 test("solo permite preparar datos mínimos válidos y bloquea honeypot",()=>{
@@ -157,4 +159,62 @@ test("correo manual omite fuente directa y rechaza parámetros maliciosos o exte
   assert.doesNotMatch(body,/Origen de la consulta/);
   assert.doesNotMatch(body,/externo.example/);
  }
+});
+
+
+test("el cuerpo del correo es editable y actualiza mailto sin cambiar destinatario ni asunto",()=>{
+ const t=harness({category:"Gestionar clientes (CRM)"});
+ t.prepare();
+ const before=new URL(t.nodes["manual-mailto-open"].href);
+ const message="Necesito una mejora distinta para organizar mis clientes y tareas.";
+ t.nodes["manual-mailto-preview"].value=message;
+ t.nodes["manual-mailto-preview"].handlers.input({target:t.nodes["manual-mailto-preview"]});
+ t.nodes["contact-form"].handlers.input({target:t.nodes["manual-mailto-preview"]});
+ const after=new URL(t.nodes["manual-mailto-open"].href);
+ assert.equal(t.nodes["manual-mailto-panel"].hidden,false);
+ assert.equal(after.protocol,"mailto:");
+ assert.equal(after.pathname,before.pathname);
+ assert.equal(after.searchParams.get("subject"),before.searchParams.get("subject"));
+ assert.equal(after.searchParams.get("body"),message);
+ assert.match(t.nodes["manual-mailto-status"].textContent,/se puede editar/);
+ assert.match(html,/id="manual-mailto-preview" rows="8" maxlength="10000"/);
+ assert.doesNotMatch(html,/id="manual-mailto-preview" readonly/);
+});
+test("borrador editado largo oculta enlace, permite copiar la versión revisada",async()=>{
+ const t=harness();
+ t.prepare();
+ t.nodes["manual-mailto-preview"].value="Texto revisado ".repeat(180);
+ t.nodes["manual-mailto-preview"].handlers.input({target:t.nodes["manual-mailto-preview"]});
+ assert.equal(t.nodes["manual-mailto-panel"].hidden,false);
+ assert.equal(t.nodes["manual-mailto-open"].hidden,true);
+ assert.equal(t.nodes["manual-mailto-open"].href,"");
+ assert.equal(t.nodes["manual-mailto-copy"].disabled,false);
+ await t.trigger("manual-mailto-copy");
+ assert.equal(t.copies.length,1);
+ assert.match(t.copies[0],/Para: contacto.fluynova@gmail.com/);
+ assert.match(t.copies[0],/Asunto: FLUYNOVA/);
+ assert.match(t.copies[0],/Texto revisado Texto revisado/);
+});
+test("borrador editado vacío bloquea la apertura y la copia",async()=>{
+ const t=harness();
+ t.prepare();
+ t.nodes["manual-mailto-preview"].value="   ";
+ t.nodes["manual-mailto-preview"].handlers.input({target:t.nodes["manual-mailto-preview"]});
+ assert.equal(t.nodes["manual-mailto-open"].hidden,true);
+ assert.equal(t.nodes["manual-mailto-open"].href,"");
+ assert.equal(t.nodes["manual-mailto-copy"].disabled,true);
+ assert.match(t.nodes["manual-mailto-status"].textContent,/Escribí un mensaje/);
+ await t.trigger("manual-mailto-copy");
+ assert.equal(t.copies.length,0);
+});
+test("al editar los campos principales no se conserva un borrador viejo",()=>{
+ const t=harness();
+ t.prepare();
+ t.nodes["manual-mailto-preview"].value="Mi correo revisado por el visitante.";
+ t.nodes["manual-mailto-preview"].handlers.input({target:t.nodes["manual-mailto-preview"]});
+ t.change("email","otro@example.com");
+ assert.equal(t.nodes["manual-mailto-panel"].hidden,true);
+ assert.equal(t.nodes["manual-mailto-subject"].textContent,"");
+ assert.equal(t.nodes["manual-mailto-preview"].value,"");
+ assert.equal(t.nodes["manual-mailto-open"].href,"");
 });
