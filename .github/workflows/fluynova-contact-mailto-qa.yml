@@ -1,0 +1,28 @@
+name: FLUYNOVA correo manual sin envíos — QA offline
+on:
+  pull_request:
+    paths:
+      - 'static/index.html'
+      - 'static/contact-mailto.js'
+      - 'tests/contact-mailto-fallback.test.cjs'
+      - '.github/workflows/fluynova-contact-mailto-qa.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  manual-contact:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Comprobar sintaxis sin tráfico de red
+        run: |
+          node --check static/contact-mailto.js
+          node --check tests/contact-mailto-fallback.test.cjs
+      - name: Probar borrador, validación, privacidad y alternativa copiar
+        run: node --test tests/contact-mailto-fallback.test.cjs
+      - name: Regresión formulario y diagnóstico existentes
+        run: node --test tests/fluynova-web-lead-category.test.js tests/diagnostico-contacto-directo.test.mjs
