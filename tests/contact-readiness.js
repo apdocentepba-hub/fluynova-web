@@ -53,7 +53,7 @@ async function check({fetcher=fetch}={}){
  else if(!config.json.contact_enabled)code='FORMULARIO_DESHABILITADO';
  else code='CONFIG_HABILITADA_SIN_RECEPCION_PROBADA';
  // NUNCA return ready:true: aún debe probarse activación del proveedor y recepción del buzón.
- return Object.freeze({code,health:healthOk?'OK':health.reason||'INVALID_SCHEMA',config:configOk?'OK':config.reason||'INVALID_SCHEMA',canClaimReception:false});
+ return Object.freeze({code,health:healthOk?'OK':health.reason||'INVALID_SCHEMA',config:configOk?'OK':config.reason||'INVALID_SCHEMA',publicContactEnabled:configOk?config.json.contact_enabled:null,canClaimReception:false});
 }
 module.exports=Object.freeze({BASE,ENDPOINTS,readSmallJson,readEndpoint,check});
 if(require.main===module){
