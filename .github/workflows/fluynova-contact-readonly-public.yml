@@ -1,0 +1,33 @@
+name: FLUYNOVA — observación pública solo GET (sin captación)
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/fluynova-contact-readonly-public.yml'
+      - 'tests/contact-production-preflight.cjs'
+      - 'tests/contact-readiness.js'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  observe-public-endpoints:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar código y pruebas de seguridad de preflight
+        run: |
+          node --check tests/contact-production-preflight.cjs
+          node --test tests/contact-readiness.test.js
+      - name: Solo GET públicos, máximo 2 intentos, ningún envío
+        run: node tests/contact-production-preflight.cjs
+      - name: Guardar reporte sin datos personales
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluynova-contacto-publico-readonly
+          path: qa-contact-readiness/report.json
+          if-no-files-found: warn
+          retention-days: 7
