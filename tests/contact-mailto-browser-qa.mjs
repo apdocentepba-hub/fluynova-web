@@ -111,6 +111,15 @@ async function main(){
    assert.equal(url.protocol,'mailto:');assert.equal(url.pathname,'contacto.fluynova@gmail.com');
    assert.match(url.searchParams.get('body'),/gestión de pedidos y presupuestos/);
    assert.match(result.preview,/Visitante prueba/);
+   // Capturar el flujo revisado en lugar de la portada.
+   const panelOnScreen=await evaluated(cdp,`(()=>{
+    const p=document.getElementById('manual-mailto-panel');
+    p.scrollIntoView({behavior:'instant',block:'center'});
+    const rect=p.getBoundingClientRect();
+    return {top:rect.top,bottom:rect.bottom,height:innerHeight};
+   })()`);
+   assert.ok(panelOnScreen.bottom>0&&panelOnScreen.top<panelOnScreen.height,'Panel fuera del viewport');
+   await sleep(120);
    const shot=await cdp.send('Page.captureScreenshot',{format:'png',fromSurface:true,captureBeyondViewport:false});
    const png=Buffer.from(shot.data,'base64');
    assert.equal(png.subarray(1,4).toString(),'PNG');
