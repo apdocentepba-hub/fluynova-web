@@ -120,7 +120,7 @@ renderEffortEstimate();
 
 document.querySelectorAll('[data-topic]').forEach(link=>link.addEventListener('click',()=>{
  if(!form)return;
- const categories=['Automatizar tareas','Desarrollar software','Crear página web / catálogo digital','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
+ const categories=['Automatizar tareas','Desarrollar software','Crear página web / catálogo digital','Gestionar clientes (CRM)','Presupuestos y cotizaciones','Pedidos, ventas y stock','Turnos, reservas y agenda','Planillas, reportes y tableros','WhatsApp, correo y respuestas automáticas','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
  const selected=link.dataset.category;
  form.elements.namedItem('category').value=categories.includes(selected)?selected:'Otro / no estoy seguro';
  const msg=form.elements.namedItem('message');
@@ -146,7 +146,7 @@ function leadValidationError(v){
  if(v.name.length<2||v.name.length>100) return 'Ingresá un nombre de 2 a 100 caracteres.';
  const emailInput=form?.elements.namedItem('email');
  if(!v.email||v.email.length>180||!emailInput?.checkValidity()) return 'Ingresá un correo electrónico válido.';
- const categories=['Automatizar tareas','Desarrollar software','Crear página web / catálogo digital','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
+ const categories=['Automatizar tareas','Desarrollar software','Crear página web / catálogo digital','Gestionar clientes (CRM)','Presupuestos y cotizaciones','Pedidos, ventas y stock','Turnos, reservas y agenda','Planillas, reportes y tableros','WhatsApp, correo y respuestas automáticas','Conectar herramientas / datos','Inteligencia artificial','Otro / no estoy seguro'];
  if(!categories.includes(v.category)) return 'Elegí qué tipo de servicio necesitás.';
  if(v.message.length<15||v.message.length>5000) return 'Contanos tu idea con al menos 15 caracteres (máximo 5.000).';
  if(!v.consent) return 'Tenés que aceptar el tratamiento de los datos para enviar tu consulta.';
