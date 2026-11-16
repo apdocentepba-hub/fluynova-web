@@ -26,6 +26,11 @@ h1 em{color:var(--accent);font-style:normal}
 .lead{font-size:19px;max-width:770px;color:var(--muted);margin:0 0 22px}
 .cta{background:var(--accent);color:#10231a;text-decoration:none;display:inline-flex;padding:15px 22px;border-radius:8px;font-weight:800;min-height:48px;align-items:center;margin:13px 12px 10px 0}
 .ghost{color:var(--accent);text-decoration:none;font-weight:700}
+.email-cta{display:inline-flex;min-height:48px;align-items:center;padding:13px 18px;margin:13px 12px 10px 0;border:1px solid #84bd91;border-radius:8px;color:#edf8f3;text-decoration:none;font-weight:750;background:#17302b}
+.email-cta:hover{background:#24443b;border-color:var(--accent)}
+.email-cta:focus-visible,.cta:focus-visible,.ghost:focus-visible{outline:3px solid #c1ff88;outline-offset:4px}
+.direct-email{color:#c9d7ce;font-size:14px;margin:12px 0 0;overflow-wrap:anywhere}
+.direct-email a{color:var(--accent);font-weight:750}
 .note{color:#a9c0b7;font-size:12px;margin-top:14px}
 .section{padding:58px 0;border-top:1px solid #324448}.section h2{font-size:clamp(28px,3.5vw,39px);margin:0 0 17px}.section>div>p{max-width:780px;color:var(--muted)}
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:25px}
@@ -49,8 +54,9 @@ footer{padding:27px 0;border-top:1px solid #304340;color:#a9bdb7;font-size:13px}
 <h1>¿Qué tarea te está haciendo <em>perder tiempo</em> todos los días?</h1>
 <p class="lead">Pedidos que llegan por varios canales, planillas que hay que completar a mano, informes que se repiten. Contanos cómo trabajás hoy y evaluamos si conviene automatizar una parte.</p>
 <a class="cta" data-diagnostic-cta href="/?utm_source=diagnostico&utm_medium=landing&utm_campaign=primera_evaluacion#contacto">Contar mi tarea repetitiva ↗</a>
+<a class="email-cta" href="mailto:contacto.fluynova@gmail.com?subject=FLUYNOVA%20%7C%20Consulta%20de%20evaluaci%C3%B3n%20inicial&amp;body=Hola%2C%20FLUYNOVA%3A%0A%0AQuisiera%20consultar%20por%20una%20evaluaci%C3%B3n%20inicial%20sin%20cargo.%0A%0AMi%20rubro%20o%20actividad%3A%0ALa%20tarea%20que%20repito%3A%0AQu%C3%A9%20herramientas%20uso%20hoy%3A%0ACu%C3%A1ntas%20veces%20por%20semana%20la%20hago%3A%0A%0ANo%20incluyo%20contrase%C3%B1as%20ni%20datos%20sensibles.%0A%0AGracias." aria-label="Preparar consulta por correo electrónico para FLUYNOVA">Prefiero consultar por correo ↗</a>
 <a class="ghost" href="/#calculadora">Calcular horas de trabajo actual →</a>
-<p class="note">Primera evaluación orientativa sin cargo y sin compromiso de contratación. No requiere entregar claves ni datos sensibles.</p>
+<p class="note">Primera evaluación orientativa sin cargo y sin compromiso de contratación. No requiere entregar claves ni datos sensibles. La opción por correo solo prepara un mensaje en tu aplicación: vos decidís si enviarlo.</p>
 </div></section>
 <section class="section"><div class="wrap"><div class="kicker">PROBLEMAS CONCRETOS</div><h2>Empezamos por lo que realmente hacés</h2><div class="cards">
 <article class="card"><h3>📊 Planillas y reportes</h3><p>Pasar datos entre Excel o Google Sheets, consolidar registros o preparar los mismos informes.</p></article>
@@ -63,8 +69,9 @@ footer{padding:27px 0;border-top:1px solid #304340;color:#a9bdb7;font-size:13px}
 <li><strong>Evaluamos por dónde empezar</strong>Revisamos si tiene sentido automatizar, qué riesgos o permisos habría que considerar y qué información falta.</li>
 <li><strong>Te planteamos el siguiente paso</strong>Si hay una solución viable, definimos alcance y, si querés avanzar, elaboramos una propuesta. Desarrollar software es un servicio aparte.</li>
 </ol></div></section>
-<section class="section"><div class="wrap"><div class="box"><h2>¿Tenés una tarea para simplificar?</h2><p>No necesitás saber de tecnología. Una descripción de tu proceso actual alcanza para comenzar. La consulta se envía a nuestro correo mediante FormSubmit, con tu consentimiento.</p>
+<section class="section"><div class="wrap"><div class="box"><h2>¿Tenés una tarea para simplificar?</h2><p>No necesitás saber de tecnología. Una descripción de tu proceso actual alcanza para comenzar. Podés usar el formulario con tu consentimiento o preparar un correo directo, sin intermediarios.</p>
 <a class="cta" data-diagnostic-cta href="/?utm_source=diagnostico&utm_medium=landing&utm_campaign=primera_evaluacion#contacto">Pedir evaluación inicial ↗</a>
+<p class="direct-email">¿No te funciona el formulario? Escribinos a <a href="mailto:contacto.fluynova@gmail.com?subject=FLUYNOVA%20%7C%20Consulta%20de%20evaluaci%C3%B3n%20inicial&amp;body=Hola%2C%20FLUYNOVA%3A%0A%0AQuisiera%20consultar%20por%20una%20evaluaci%C3%B3n%20inicial%20sin%20cargo.%0A%0AMi%20rubro%20o%20actividad%3A%0ALa%20tarea%20que%20repito%3A%0AQu%C3%A9%20herramientas%20uso%20hoy%3A%0ACu%C3%A1ntas%20veces%20por%20semana%20la%20hago%3A%0A%0ANo%20incluyo%20contrase%C3%B1as%20ni%20datos%20sensibles.%0A%0AGracias.">contacto.fluynova@gmail.com</a>. Tu aplicación de correo te permite revisar y enviar el mensaje.</p>
 <p class="note">La evaluación es orientativa: puede requerir información adicional para definir la viabilidad, el costo o los plazos de un desarrollo.</p></div></div></section>
 <section class="section faq"><div class="wrap"><h2>Preguntas frecuentes</h2>
 <details><summary>¿La evaluación inicial es realmente sin cargo?</summary><p>Sí. Es una primera orientación sobre el problema que nos describís. No incluye desarrollo, implementación, soporte ni auditorías de datos.</p></details>
@@ -73,6 +80,6 @@ footer{padding:27px 0;border-top:1px solid #304340;color:#a9bdb7;font-size:13px}
 <details><summary>¿Trabajan solamente en Avellaneda?</summary><p>FLUYNOVA tiene base en Buenos Aires y puede analizar proyectos que se gestionen a distancia.</p></details>
 </div></section>
 </main>
-<footer><div class="wrap"><span>FLUYNOVA · Automatización y software a medida · Buenos Aires</span><span><a href="/">Inicio</a> · <a href="/privacidad">Privacidad</a> · <a href="/guia-automatizacion/">Guía gratuita</a></span></div></footer>
+<footer><div class="wrap"><span>FLUYNOVA · Automatización y software a medida · Buenos Aires</span><span><a href="/">Inicio</a> · <a href="/privacidad">Privacidad</a> · <a href="/guia-automatizacion/">Guía gratuita</a> · <a href="https://www.instagram.com/fluynova/" target="_blank" rel="noopener noreferrer" aria-label="Instagram de FLUYNOVA, abre en otra pestaña">Instagram @fluynova ↗</a></span></div></footer>
 <script defer src="/diagnostico/attribution.js"></script>
 </body></html>
