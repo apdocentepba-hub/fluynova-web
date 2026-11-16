@@ -24,6 +24,7 @@ async function run(){
   requests_sent:['GET /api/health','GET /api/config'],
   submissions_sent:0,
   status:last.code,
+  contact_enabled_observed:last.publicContactEnabled,
   health:last.health,
   config:last.config,
   can_claim_formsubmit_delivery:false,
@@ -38,13 +39,14 @@ async function run(){
   FORMULARIO_DESHABILITADO:'La web responde; el envío automático está DESHABILITADO por su configuración.',
   CONFIG_HABILITADA_SIN_RECEPCION_PROBADA:'La configuración declara el envío habilitado, pero no se probó la recepción del proveedor.'
  }[last.code]||'Resultado no esperado: revisión requerida.';
- console.log('FLUYNOVA_CONTACT_READINESS_OBSERVATION '+JSON.stringify({status:report.status,health:report.health,config:report.config,attempts:attempts.length,submissions_sent:0}));
+ console.log('FLUYNOVA_CONTACT_READINESS_OBSERVATION '+JSON.stringify({status:report.status,contact_enabled_observed:report.contact_enabled_observed,health:report.health,config:report.config,attempts:attempts.length,submissions_sent:0}));
  if(process.env.GITHUB_STEP_SUMMARY){
   await fs.appendFile(process.env.GITHUB_STEP_SUMMARY,
    '## FLUYNOVA — observación pública (solo GET)\n\n'+
    '- Resultado: **'+report.status+'**\n'+
    '- '+description+'\n'+
    '- /api/health: '+report.health+'; /api/config: '+report.config+'\n'+
+   '- Activación observada en /api/config: **'+(report.contact_enabled_observed===null?'DESCONOCIDA':report.contact_enabled_observed?'TRUE (sin confirmar entregabilidad)':'FALSE (envío deshabilitado)')+'**\n'+
    '- Intentos: '+attempts.length+'; POST: **0**; envío de correo: **0**\n'+
    '- Una configuración habilitada **NO confirma recepción** en Gmail.\n');
  }
