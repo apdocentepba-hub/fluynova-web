@@ -97,7 +97,7 @@ async function main(){
     const o=document.getElementById('manual-mailto-open');
     const preview=document.getElementById('manual-mailto-preview');
     return {width:innerWidth,page:document.documentElement.scrollWidth,panelVisible:!p.hidden,linkVisible:!o.hidden,
-      mailto:o.getAttribute('href'),preview:preview.value,consent:f.elements.namedItem('consent').checked,
+      mailto:o.getAttribute('href'),preview:preview.value,consent:f.elements.namedItem('consent').checked,submitDisabled:f.querySelector('button[type=submit]').disabled,
       action:f.getAttribute('action'),
       buttonWidth:document.getElementById('manual-mailto-prepare').getBoundingClientRect().width};
    })()`);
@@ -105,6 +105,7 @@ async function main(){
    assert.ok(result.page<=v.w+1,'overflow en '+v.w+': '+result.page);
    assert.ok(result.panelVisible&&result.linkVisible,'Correo no preparado en '+v.w);
    assert.equal(result.consent,false,'Consentimiento FormSubmit no exigido para correo manual');
+   assert.equal(result.submitDisabled,true,'FormSubmit debe permanecer bloqueado con config HTTP 503');
    assert.equal(result.action,'https://formsubmit.co/contacto.fluynova@gmail.com');
    assert.ok(result.buttonWidth>0,'Botón oculto en '+v.w);
    const url=new URL(result.mailto);
