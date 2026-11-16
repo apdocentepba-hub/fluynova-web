@@ -126,6 +126,7 @@ async function main(){
     const o=document.getElementById('manual-mailto-open');
     p.value='Consulta revisada: necesito organizar presupuestos y ventas en mi comercio.';
     p.dispatchEvent(new Event('input',{bubbles:true}));
+    p.dispatchEvent(new Event('change',{bubbles:true}));
     return {body:p.value,href:o.getAttribute('href'),visible:!o.hidden,panel:!document.getElementById('manual-mailto-panel').hidden,subject:document.getElementById('manual-mailto-subject').textContent};
    })()`);
    assert.equal(edited.panel,true,'Editar el texto no debe cerrar el borrador');
