@@ -124,3 +124,10 @@ test("categorías no presentes en el selector no se envían por mailto",()=>{
  assert.equal(t.nodes["manual-mailto-open"].href,"");
  assert.match(t.nodes["manual-mailto-status"].textContent,/servicio/);
 });
+
+test("el HTML queda cerrado sin JavaScript y conserva correo directo sin FormSubmit",()=>{
+ assert.match(html,/<button class="btn btn-primary submit-btn" type="submit" disabled>Enviar mi consulta/);
+ assert.match(html,/<noscript>[^<]*<p class="form-note">El envío automático necesita JavaScript/);
+ assert.match(html,/href="mailto:contacto\.fluynova@gmail\.com\?subject=Consulta%20FLUYNOVA"/);
+ assert.match(html,/<script src="\/main\.js" defer><\/script>/);
+});
