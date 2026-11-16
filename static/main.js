@@ -41,15 +41,28 @@ if(form){
   const sectores={taller:'taller mecánico',peluqueria:'peluquería o centro de estética',comercio:'comercio',gastronomia:'local gastronómico',inmobiliaria:'inmobiliaria',salud:'consultorio',educacion:'institución educativa',servicios:'servicio técnico u oficio'};
   const funciones={turnos:'turnos',presupuestos:'presupuestos',stock:'stock',avisos:'avisos',cobros:'cobros',ordenes:'seguimiento de trabajos',clientes:'consultas de clientes'};
   const rubro=sectores[referral.get('guardian_sector')]||'negocio';
-  const claves=String(referral.get('guardian_funciones')||'').split(',').slice(0,5);
-  const interes=[...new Set(claves.map(k=>funciones[k]).filter(Boolean))];
+  const claves=String(referral.get('guardian_funciones')||'').split(',').slice(0,5)
+   .filter(k=>Object.prototype.hasOwnProperty.call(funciones,k));
+  const funcionesUnicas=[...new Set(claves)];
+  const interes=funcionesUnicas.map(k=>funciones[k]);
   const proyectos={legajos:'la gestión de legajos digitales, calificaciones anuales y preparación del libro matriz',analiticos:'la gestión de solicitudes de analíticos',pases:'las solicitudes de pases escolares',equivalencias:'los dictámenes de equivalencias',solicitudes:'las solicitudes web'};
   const proyecto=proyectos[referral.get('guardian_proyecto')]||'';
   const objetivo=proyecto?'Quiero automatizar '+proyecto+'.':interes.length?'Me interesa automatizar '+interes.join(', ')+'.':'Quiero evaluar automatizaciones.';
   const texto='Hola, estuve hablando con Guardián. Mi rubro o actividad es: '+rubro+'. '+objetivo+' Me gustaría conocer una propuesta y qué información necesitan para presupuestar.';
   const input=form.elements.namedItem('message'),category=form.elements.namedItem('category');
   if(input&&!input.value)input.value=texto;
-  if(category)category.value=proyecto||interes.length>1?'Desarrollar software':'Automatizar tareas';
+  // Una necesidad simple se deriva a su servicio; varias o un proyecto requieren diagnóstico.
+  const categoriaPorFuncion={
+   turnos:'Turnos, reservas y agenda',
+   presupuestos:'Presupuestos y cotizaciones',
+   stock:'Pedidos, ventas y stock',
+   avisos:'WhatsApp, correo y respuestas automáticas',
+   cobros:'Pedidos, ventas y stock',
+   ordenes:'Pedidos, ventas y stock',
+   clientes:'Gestionar clientes (CRM)'
+  };
+  if(category)category.value=proyecto||funcionesUnicas.length>1?'Desarrollar software':
+    funcionesUnicas.length===1?categoriaPorFuncion[funcionesUnicas[0]]:'Automatizar tareas';
  }
 }
 let contactEnabled=false;
