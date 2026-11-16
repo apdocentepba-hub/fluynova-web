@@ -1,0 +1,53 @@
+name: FLUYNOVA portfolio visual QA (sin despliegue)
+
+on:
+  pull_request:
+    paths:
+      - 'static/laboratorio/**'
+      - 'scripts/build-portfolio-static.mjs'
+      - 'tests/portfolio-visual-qa.mjs'
+      - '.github/workflows/portfolio-visual-qa.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  visual:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 7
+    steps:
+      - name: Descargar fuentes de la rama (sin merge)
+        uses: actions/checkout@v4
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verificar Chrome
+        run: |
+          (command -v google-chrome || command -v google-chrome-stable || command -v chromium)
+          (google-chrome --version || google-chrome-stable --version || chromium --version)
+      - name: Generar portfolio estático local sin formularios
+        run: node scripts/build-portfolio-static.mjs
+      - name: Prueba real de geometría y capturas a 320, 390 y 1440
+        run: node tests/portfolio-visual-qa.mjs
+      - name: Verificar que el entregable contiene el recorrido completo
+        run: |
+          test -s dist-portfolio-static/index.html
+          test -s dist-portfolio-static/contacto/index.html
+          test -s dist-portfolio-static/contacto/contacto.js
+          test -s dist-portfolio-static/privacidad/index.html
+          test -s qa-portfolio-capturas/privacidad_movil_320.png
+          test -s qa-portfolio-capturas/privacidad_movil_390.png
+          test -s qa-portfolio-capturas/privacidad_escritorio_1440.png
+          test -s qa-portfolio-capturas/reporte-visual.json
+      - name: Conservar capturas, reporte y HTML autónomo sin desplegar
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fluynova-portfolio-qa-visual
+          path: |
+            qa-portfolio-capturas/
+            dist-portfolio-static/
+          if-no-files-found: warn
+          retention-days: 7
