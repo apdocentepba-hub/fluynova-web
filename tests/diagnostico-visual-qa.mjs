@@ -4,6 +4,7 @@
  */
 import assert from 'node:assert/strict';
 import {spawn,execFileSync} from 'node:child_process';
+import {accessSync,constants} from 'node:fs';
 import {createServer} from 'node:http';
 import {readFile,writeFile,mkdir,mkdtemp,rm} from 'node:fs/promises';
 import {join,resolve} from 'node:path';
@@ -13,10 +14,18 @@ const sleep=ms=>new Promise(resolve=>setTimeout(resolve,ms));
 const OUTPUT=resolve('qa-diagnostico-capturas');
 const views=[{name:'movil_320',width:320,height:780,mobile:true},{name:'movil_390',width:390,height:844,mobile:true},{name:'escritorio_1440',width:1440,height:900,mobile:false}];
 function getChrome(){
- for(const bin of (process.env.CHROME_BIN?[process.env.CHROME_BIN]:['google-chrome','google-chrome-stable','chromium'])){
-  try{execFileSync(bin,['--version'],{stdio:'ignore',timeout:5000});return bin;}catch{}
+ // Detectar ejecutable sin basarse en --version (intermitente en GitHub Actions).
+ // La prueba posterior debe iniciar Chrome, conectar CDP y navegar realmente.
+ const candidates=[process.env.CHROME_BIN,'google-chrome','google-chrome-stable','chromium'].filter(Boolean);
+ for(const bin of candidates){
+  try{
+   const path=bin.includes('/')?bin:execFileSync('which',[bin],{encoding:'utf8',timeout:3000}).trim();
+   if(!path)continue;
+   accessSync(path,constants.X_OK);
+   return path;
+  }catch{}
  }
- throw Error('Chrome no instalado: QA visual no ejecutado');
+ throw Error('No se halló ningún ejecutable Chrome accesible: QA visual no ejecutado');
 }
 class Connection{
  constructor(ws){this.ws=ws;this.pending=new Map();this.seq=0;
