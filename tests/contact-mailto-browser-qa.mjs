@@ -79,7 +79,7 @@ async function main(){
   const evidence=[];
   for(const v of views){
    await cdp.send('Emulation.setDeviceMetricsOverride',{width:v.w,height:v.h,deviceScaleFactor:1,mobile:v.mobile});
-   await cdp.send('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/'});
+   await cdp.send('Page.navigate',{url:'http://127.0.0.1:'+server.address().port+'/?utm_source=instagram&utm_medium=profile&utm_campaign=perfil_ig_202611&utm_content=contacto'});
    let ready=false;
    for(let i=0;i<60;i++){
     const q=await evaluated(cdp,"({state:document.readyState,button:!!document.getElementById('manual-mailto-prepare')})");
@@ -96,7 +96,9 @@ async function main(){
     const p=document.getElementById('manual-mailto-panel');
     const o=document.getElementById('manual-mailto-open');
     const preview=document.getElementById('manual-mailto-preview');
-    return {width:innerWidth,page:document.documentElement.scrollWidth,panelVisible:!p.hidden,linkVisible:!o.hidden,
+    const button=document.getElementById('manual-mailto-prepare');
+    const consentLabel=f.querySelector('label.consent');
+    return {priority:button.classList.contains('btn-primary'),beforeConsent:!!(button.compareDocumentPosition(consentLabel) & Node.DOCUMENT_POSITION_FOLLOWING),source:f.elements.namedItem('origen_fuente').value,width:innerWidth,page:document.documentElement.scrollWidth,panelVisible:!p.hidden,linkVisible:!o.hidden,
       mailto:o.getAttribute('href'),preview:preview.value,consent:f.elements.namedItem('consent').checked,submitDisabled:f.querySelector('button[type=submit]').disabled,
       action:f.getAttribute('action'),
       buttonWidth:document.getElementById('manual-mailto-prepare').getBoundingClientRect().width};
@@ -106,11 +108,15 @@ async function main(){
    assert.ok(result.panelVisible&&result.linkVisible,'Correo no preparado en '+v.w);
    assert.equal(result.consent,false,'Consentimiento FormSubmit no exigido para correo manual');
    assert.equal(result.submitDisabled,true,'FormSubmit debe permanecer bloqueado con config HTTP 503');
+   assert.equal(result.priority,true,'Correo manual debe ser opción destacada');
+   assert.equal(result.beforeConsent,true,'Correo manual debe preceder el consentimiento FormSubmit');
+   assert.equal(result.source,'instagram','Atribución de URL conservada');
    assert.equal(result.action,'https://formsubmit.co/contacto.fluynova@gmail.com');
    assert.ok(result.buttonWidth>0,'Botón oculto en '+v.w);
    const url=new URL(result.mailto);
    assert.equal(url.protocol,'mailto:');assert.equal(url.pathname,'contacto.fluynova@gmail.com');
    assert.match(url.searchParams.get('body'),/gestión de pedidos y presupuestos/);
+   assert.match(url.searchParams.get('body'),/Origen de la consulta: fuente=instagram/);
    assert.match(url.searchParams.get('subject'),/Presupuestos y cotizaciones/);
    assert.match(result.preview,/Visitante prueba/);
    // Capturar el flujo revisado en lugar de la portada.
